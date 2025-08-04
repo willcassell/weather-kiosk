@@ -1,0 +1,176 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(222, 84%, 4.9%);
+  --foreground: hsl(210, 40%, 98%);
+  --muted: hsl(217, 32%, 17%);
+  --muted-foreground: hsl(215, 20%, 65%);
+  --popover: hsl(222, 84%, 4.9%);
+  --popover-foreground: hsl(210, 40%, 98%);
+  --card: hsl(217, 33%, 17%);
+  --card-foreground: hsl(210, 40%, 98%);
+  --border: hsl(217, 32%, 27%);
+  --input: hsl(217, 32%, 17%);
+  --primary: hsl(217, 91%, 60%);
+  --primary-foreground: hsl(222, 47%, 11%);
+  --secondary: hsl(217, 32%, 17%);
+  --secondary-foreground: hsl(210, 40%, 98%);
+  --accent: hsl(217, 32%, 17%);
+  --accent-foreground: hsl(210, 40%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(217, 32%, 17%);
+  --radius: 0.5rem;
+  
+  /* Weather-specific colors */
+  --weather-primary: hsl(217, 33%, 17%);
+  --weather-secondary: hsl(222, 84%, 4.9%);
+  --weather-accent: hsl(217, 91%, 60%);
+  --weather-success: hsl(142, 76%, 36%);
+  --weather-warning: hsl(38, 92%, 50%);
+  --weather-danger: hsl(0, 72%, 51%);
+}
+
+.dark {
+  --background: hsl(222, 84%, 4.9%);
+  --foreground: hsl(210, 40%, 98%);
+  --muted: hsl(217, 32%, 17%);
+  --muted-foreground: hsl(215, 20%, 65%);
+  --popover: hsl(222, 84%, 4.9%);
+  --popover-foreground: hsl(210, 40%, 98%);
+  --card: hsl(217, 33%, 17%);
+  --card-foreground: hsl(210, 40%, 98%);
+  --border: hsl(217, 32%, 27%);
+  --input: hsl(217, 32%, 17%);
+  --primary: hsl(217, 91%, 60%);
+  --primary-foreground: hsl(222, 47%, 11%);
+  --secondary: hsl(217, 32%, 17%);
+  --secondary-foreground: hsl(210, 40%, 98%);
+  --accent: hsl(217, 32%, 17%);
+  --accent-foreground: hsl(210, 40%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(217, 32%, 17%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    overflow: hidden;
+  }
+}
+
+@layer components {
+  .weather-card {
+    @apply bg-card rounded-lg border border-border p-2;
+  }
+  
+  .weather-card-header {
+    @apply flex items-center justify-between mb-1;
+  }
+  
+  .weather-card-title {
+    @apply text-xs font-medium text-muted-foreground uppercase tracking-wide;
+  }
+  
+  .weather-card-icon {
+    @apply text-primary;
+  }
+}
+
+@layer utilities {
+  .compact-spacing {
+    @apply space-y-2;
+  }
+  
+  .minimal-padding {
+    @apply p-2;
+  }
+  
+  .tight-grid {
+    @apply gap-2;
+  }
+}
+
+/* Custom animations for live data */
+@keyframes pulse-green {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-green {
+  animation: pulse-green 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background-color: hsl(var(--weather-success));
+}
+
+/* Compact scrollbar for weather data panel */
+.weather-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.weather-scroll::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+.weather-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 2px;
+}
+
+.weather-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Wind direction animation styles */
+.animate-bounce-gentle {
+  animation: bounce-gentle 2s ease-in-out infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
+}
+
+@keyframes bounce-gentle {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-3px);
+  }
+  60% {
+    transform: translateY(-1.5px);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(34, 211, 238, 0.1);
+  }
+}
+
+/* Cardinal direction glow effect */
+.animate-glow {
+  animation: glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor;
+  }
+  to {
+    text-shadow: 0 0 2px currentColor, 0 0 5px currentColor, 0 0 8px currentColor;
+  }
+}
