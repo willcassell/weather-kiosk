@@ -98,9 +98,34 @@ async function fetchWeatherFlowData(): Promise<any> {
     // Get historical data for pressure trend calculation
     const historicalData = await storage.getWeatherHistory(STATION_ID, 6);
     
+    // Get today's recorded data for actual high/low calculations
+    const todayHistory = await storage.getWeatherHistory(STATION_ID, 24);
+    
     const currentConditions = forecastData.current_conditions;
     const todayForecast = forecastData.forecast?.daily[0];
     const yesterdayForecast = forecastData.forecast?.daily[1];
+
+    // Calculate actual daily high and low from recorded station data
+    const currentTemp = celsiusToFahrenheit(currentConditions.air_temperature);
+    let actualHigh = currentTemp;
+    let actualLow = currentTemp;
+    
+    if (todayHistory && todayHistory.length > 0) {
+      // Find the actual high and low from today's recorded temperatures
+      const temperatures = todayHistory.map(record => record.temperature).filter(temp => temp !== null && temp !== undefined);
+      
+      if (temperatures.length > 0) {
+        // Include current temperature in the calculation
+        temperatures.push(currentTemp);
+        actualHigh = Math.max(...temperatures);
+        actualLow = Math.min(...temperatures);
+        console.log(`Calculated actual daily temps from ${temperatures.length} readings: High ${actualHigh.toFixed(1)}°F, Low ${actualLow.toFixed(1)}°F`);
+      } else {
+        console.log("No historical temperature data available, using current temperature for high/low");
+      }
+    } else {
+      console.log("No historical data available, using current temperature for high/low");
+    }
 
     // Get station name
     const stationName = await fetchStationInfo();
@@ -109,10 +134,10 @@ async function fetchWeatherFlowData(): Promise<any> {
     const weatherData = {
       stationId: STATION_ID,
       stationName: stationName,
-      temperature: celsiusToFahrenheit(currentConditions.air_temperature),
+      temperature: currentTemp,
       feelsLike: celsiusToFahrenheit(currentConditions.feels_like),
-      temperatureHigh: celsiusToFahrenheit(todayForecast?.air_temp_high || currentConditions.air_temperature),
-      temperatureLow: celsiusToFahrenheit(todayForecast?.air_temp_low || currentConditions.air_temperature),
+      temperatureHigh: actualHigh, // Use actual recorded high temperature
+      temperatureLow: actualLow,   // Use actual recorded low temperature
       windSpeed: currentConditions.wind_avg * 2.237, // Convert m/s to mph
       windGust: currentConditions.wind_gust * 2.237, // Convert m/s to mph
       windDirection: currentConditions.wind_direction,
