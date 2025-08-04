@@ -70,7 +70,7 @@ export default function WeatherDashboard() {
       {/* Top Banner */}
       <TopBanner 
         stationId="38335" 
-        stationName={weatherData?.stationName}
+        stationName={weatherData?.stationName || undefined}
         lastUpdated={weatherData?.lastUpdated}
         isLoading={isLoading}
       />
@@ -91,30 +91,30 @@ export default function WeatherDashboard() {
           ) : weatherData ? (
             <>
               <TemperatureCard 
-                currentTemp={weatherData.temperature}
-                feelsLike={weatherData.feelsLike}
-                highTemp={weatherData.temperatureHigh}
-                lowTemp={weatherData.temperatureLow}
+                currentTemp={weatherData.temperature ?? 0}
+                feelsLike={weatherData.feelsLike ?? 0}
+                highTemp={weatherData.temperatureHigh ?? 0}
+                lowTemp={weatherData.temperatureLow ?? 0}
               />
               <WindCard 
-                windSpeed={weatherData.windSpeed}
-                windGust={weatherData.windGust}
-                windDirection={weatherData.windDirection}
-                windDirectionCardinal={weatherData.windDirectionCardinal}
+                windSpeed={weatherData.windSpeed ?? 0}
+                windGust={weatherData.windGust ?? 0}
+                windDirection={weatherData.windDirection ?? 0}
+                windDirectionCardinal={weatherData.windDirectionCardinal ?? "N"}
               />
               <PressureCard 
-                pressure={weatherData.pressure}
-                trend={weatherData.pressureTrend}
+                pressure={weatherData.pressure ?? 0}
+                trend={weatherData.pressureTrend ?? "Steady"}
               />
               <RainfallCard 
-                todayRain={weatherData.rainToday}
-                yesterdayRain={weatherData.rainYesterday}
+                todayRain={weatherData.rainToday ?? 0}
+                yesterdayRain={weatherData.rainYesterday ?? 0}
               />
               <AdditionalDataCard 
-                humidity={weatherData.humidity}
-                uvIndex={weatherData.uvIndex}
-                visibility={weatherData.visibility}
-                dewPoint={weatherData.dewPoint}
+                humidity={weatherData.humidity ?? 0}
+                uvIndex={weatherData.uvIndex ?? 0}
+                visibility={weatherData.visibility ?? 0}
+                dewPoint={weatherData.dewPoint ?? 0}
               />
               <ThermostatCard 
                 thermostats={thermostatData?.map(t => ({

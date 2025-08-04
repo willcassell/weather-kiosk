@@ -165,16 +165,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const currentData = await storage.getLatestWeatherData(STATION_ID);
       
-      // If no data or data is older than 10 minutes, fetch fresh data
-      const shouldRefresh = !currentData || 
-        (currentData.lastUpdated && Date.now() - currentData.lastUpdated.getTime() > 10 * 60 * 1000);
+      // If no data or data is older than 3 minutes, fetch fresh data
+      // Allow force refresh with query parameter
+      const forceRefresh = req.query.force === 'true';
+      const shouldRefresh = forceRefresh || !currentData || 
+        (currentData.lastUpdated && Date.now() - currentData.lastUpdated.getTime() > 3 * 60 * 1000);
       
       if (shouldRefresh) {
-        console.log("Fetching fresh weather data from WeatherFlow API...");
+        const reason = forceRefresh ? "Force refresh requested" : "Data is stale";
+        console.log(`${reason} - Fetching fresh weather data from WeatherFlow API...`);
         const freshData = await fetchWeatherFlowData();
         const savedData = await storage.saveWeatherData(freshData);
         res.json(savedData);
       } else {
+        console.log(`Using cached data from ${currentData.lastUpdated}`);
         res.json(currentData);
       }
     } catch (error) {

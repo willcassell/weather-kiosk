@@ -45,9 +45,9 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
+      refetchInterval: 3 * 60 * 1000, // Refetch every 3 minutes for live weather data
+      refetchOnWindowFocus: true, // Refetch when window gains focus
+      staleTime: 2 * 60 * 1000, // Data is stale after 2 minutes
       retry: false,
     },
     mutations: {
