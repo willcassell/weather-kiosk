@@ -242,4 +242,4 @@ This project is for personal use with WeatherFlow Tempest station ID 38335.
 ---
 
 **Last Updated**: July 23, 2025  
-**Version**: 2.0.0 with Ecobee Integration
+**Version**: 2.0.0 with Ecobee Integration# weather-kiosk
