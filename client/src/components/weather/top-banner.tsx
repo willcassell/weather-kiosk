@@ -15,7 +15,7 @@ export default function TopBanner({ stationId, stationName, lastUpdated, isLoadi
   };
 
   return (
-    <header className="bg-card border-b border-border py-1.5 px-4">
+    <header className="bg-slate-700 border-b border-slate-600 py-1.5 px-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <Radio className="text-primary h-4 w-4" />

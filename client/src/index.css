@@ -31,6 +31,7 @@
   --weather-success: hsl(142, 76%, 36%);
   --weather-warning: hsl(38, 92%, 50%);
   --weather-danger: hsl(0, 72%, 51%);
+  --header-bg: hsl(200, 30%, 25%); /* Distinctive slate-blue for header */
 }
 
 .dark {
