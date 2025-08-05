@@ -43,44 +43,53 @@ export default function PressureCard({ pressure, trend }: PressureCardProps) {
     <div className="weather-card minimal-padding">
       <div className="weather-card-header">
         <h3 className="weather-card-title">Barometric Pressure</h3>
-        <Gauge className="weather-card-icon h-4 w-4" />
+        <Gauge className="weather-card-icon" />
       </div>
-      <div className="flex items-center space-x-4">
-        {/* Large Pressure Gauge - Takes up most of the card */}
-        <div className="flex-1 relative">
-          <div className="relative w-full h-8">
-            {/* Background track */}
-            <div className="absolute inset-0 bg-gray-700 rounded-full"></div>
-            
-            {/* Colored pressure zones */}
-            <div className="absolute top-0 left-0 w-full h-full rounded-full overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-red-400 to-yellow-400" style={{ width: '33%' }}></div>
-              <div className="absolute top-0 h-full bg-gradient-to-r from-yellow-400 to-green-400" style={{ left: '33%', width: '34%' }}></div>
-              <div className="absolute top-0 right-0 h-full bg-gradient-to-r from-green-400 to-green-500" style={{ width: '33%' }}></div>
+      <div className="weather-card-content">
+        <div className="flex items-center space-x-4 w-full">
+          {/* Large Pressure Gauge - Takes up most of the card */}
+          <div className="flex-1 relative">
+            <div className="relative w-full" style={{ height: 'clamp(24px, 4vh, 40px)' }}>
+              {/* Background track */}
+              <div className="absolute inset-0 bg-gray-700 rounded-full"></div>
+              
+              {/* Colored pressure zones */}
+              <div className="absolute top-0 left-0 w-full h-full rounded-full overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-red-500 via-red-400 to-yellow-400" style={{ width: '33%' }}></div>
+                <div className="absolute top-0 h-full bg-gradient-to-r from-yellow-400 to-green-400" style={{ left: '33%', width: '34%' }}></div>
+                <div className="absolute top-0 right-0 h-full bg-gradient-to-r from-green-400 to-green-500" style={{ width: '33%' }}></div>
+              </div>
+              
+              {/* Pressure indicator needle */}
+              <div 
+                className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 bg-white rounded-full shadow-lg border border-gray-800"
+                style={{ 
+                  left: `${pressurePosition}%`,
+                  width: 'clamp(3px, 0.5vh, 6px)',
+                  height: 'clamp(20px, 3vh, 32px)'
+                }}
+              />
+              
+              {/* Zone labels */}
+              <div className="absolute left-0 text-responsive-sm text-red-400 font-medium" 
+                   style={{ bottom: 'clamp(-16px, -2vh, -12px)' }}>LOW</div>
+              <div className="absolute left-1/2 transform -translate-x-1/2 text-responsive-sm text-yellow-400 font-medium" 
+                   style={{ bottom: 'clamp(-16px, -2vh, -12px)' }}>NORMAL</div>
+              <div className="absolute right-0 text-responsive-sm text-green-400 font-medium" 
+                   style={{ bottom: 'clamp(-16px, -2vh, -12px)' }}>HIGH</div>
             </div>
-            
-            {/* Pressure indicator needle */}
-            <div 
-              className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-1 h-6 bg-white rounded-full shadow-lg border border-gray-800"
-              style={{ left: `${pressurePosition}%` }}
-            />
-            
-            {/* Zone labels */}
-            <div className="absolute -bottom-4 left-0 text-xs text-red-400 font-medium">LOW</div>
-            <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 text-xs text-yellow-400 font-medium">NORMAL</div>
-            <div className="absolute -bottom-4 right-0 text-xs text-green-400 font-medium">HIGH</div>
           </div>
-        </div>
-        
-        {/* Right side - Current pressure and trend */}
-        <div className="text-right flex-shrink-0">
-          <div className="text-xl font-bold text-foreground">
-            {formatPressure(pressure)}
-          </div>
-          <div className="text-xs text-muted-foreground">inHg</div>
-          <div className={`flex items-center justify-end space-x-1 text-sm mt-1 ${getTrendColor(trend)}`}>
-            {getTrendIcon(trend)}
-            <span className="capitalize">{trend || 'Steady'}</span>
+          
+          {/* Right side - Current pressure and trend */}
+          <div className="text-right flex-shrink-0">
+            <div className="text-responsive-xl font-bold text-foreground">
+              {formatPressure(pressure)}
+            </div>
+            <div className="text-responsive-sm text-muted-foreground">inHg</div>
+            <div className={`flex items-center justify-end space-x-1 mt-1 ${getTrendColor(trend)}`}>
+              {getTrendIcon(trend)}
+              <span className="capitalize text-responsive-sm">{trend || 'Steady'}</span>
+            </div>
           </div>
         </div>
       </div>

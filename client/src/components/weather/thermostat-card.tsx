@@ -39,10 +39,10 @@ export default function ThermostatCard({ thermostats, isLoading, error }: Thermo
       <div className="weather-card col-span-2 minimal-padding">
         <div className="weather-card-header">
           <h3 className="weather-card-title">Indoor Climate</h3>
-          <Thermometer className="weather-card-icon h-4 w-4" />
+          <Thermometer className="weather-card-icon" />
         </div>
-        <div className="flex items-center justify-center py-4">
-          <div className="text-sm text-muted-foreground">
+        <div className="weather-card-content">
+          <div className="text-responsive-md text-muted-foreground">
             {error || "No thermostat data available"}
           </div>
         </div>
@@ -66,8 +66,8 @@ export default function ThermostatCard({ thermostats, isLoading, error }: Thermo
     if (!active || mode === 'off') {
       return (
         <div className="flex items-center space-x-1 text-gray-400">
-          <Pause className="h-3 w-3" />
-          <span className="text-xs">Idle</span>
+          <Pause style={{ width: 'clamp(10px, 1.5vw, 14px)', height: 'clamp(10px, 1.5vw, 14px)' }} />
+          <span className="text-responsive-sm">Idle</span>
         </div>
       );
     }
@@ -75,9 +75,9 @@ export default function ThermostatCard({ thermostats, isLoading, error }: Thermo
     if (mode === 'cool' || (mode === 'auto' && diff > 0)) {
       return (
         <div className="flex items-center space-x-1 text-blue-400">
-          <Snowflake className="h-3 w-3 animate-pulse" />
-          <Activity className="h-3 w-3 animate-bounce" />
-          <span className="text-xs font-medium">Cooling</span>
+          <Snowflake className="animate-pulse" style={{ width: 'clamp(10px, 1.5vw, 14px)', height: 'clamp(10px, 1.5vw, 14px)' }} />
+          <Activity className="animate-bounce" style={{ width: 'clamp(10px, 1.5vw, 14px)', height: 'clamp(10px, 1.5vw, 14px)' }} />
+          <span className="text-responsive-sm font-medium">Cooling</span>
         </div>
       );
     }
@@ -85,17 +85,17 @@ export default function ThermostatCard({ thermostats, isLoading, error }: Thermo
     if (mode === 'heat' || (mode === 'auto' && diff < 0)) {
       return (
         <div className="flex items-center space-x-1 text-red-400">
-          <Flame className="h-3 w-3 animate-pulse" />
-          <Activity className="h-3 w-3 animate-bounce" />
-          <span className="text-xs font-medium">Heating</span>
+          <Flame className="animate-pulse" style={{ width: 'clamp(10px, 1.5vw, 14px)', height: 'clamp(10px, 1.5vw, 14px)' }} />
+          <Activity className="animate-bounce" style={{ width: 'clamp(10px, 1.5vw, 14px)', height: 'clamp(10px, 1.5vw, 14px)' }} />
+          <span className="text-responsive-sm font-medium">Heating</span>
         </div>
       );
     }
 
     return (
       <div className="flex items-center space-x-1 text-green-400">
-        <Target className="h-3 w-3" />
-        <span className="text-xs">Auto</span>
+        <Target style={{ width: 'clamp(10px, 1.5vw, 14px)', height: 'clamp(10px, 1.5vw, 14px)' }} />
+        <span className="text-responsive-sm">Auto</span>
       </div>
     );
   };
@@ -122,60 +122,63 @@ export default function ThermostatCard({ thermostats, isLoading, error }: Thermo
       <div className="weather-card-header">
         <h3 className="weather-card-title">Indoor Climate</h3>
         <div className="flex items-center space-x-1">
-          <Home className="weather-card-icon h-4 w-4" />
-          <Thermometer className="weather-card-icon h-4 w-4" />
+          <Home className="weather-card-icon" />
+          <Thermometer className="weather-card-icon" />
         </div>
       </div>
       
-      <div className="flex items-stretch justify-between space-x-6 flex-1">
-        {thermostats.map((thermostat, index) => {
-          const tempColor = getTemperatureColor(thermostat.temperature, thermostat.targetTemp, thermostat.mode);
-          const active = isHvacActive(thermostat.mode, thermostat.temperature, thermostat.targetTemp);
-          
-          return (
-            <div key={thermostat.id} className="flex-1 relative flex flex-col justify-center">
-              <div className="flex items-center justify-between">
-                {/* Left - Location Name & HVAC Status */}
-                <div className="text-left flex flex-col justify-center space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg font-semibold text-foreground">
-                      {thermostat.name}
-                    </span>
-                  </div>
-                  {getHvacStatusIndicator(thermostat.mode, thermostat.temperature, thermostat.targetTemp)}
-                </div>
-                
-                {/* Center - Current Temperature with Activity Indicator */}
-                <div className="text-center flex flex-col justify-center">
-                  <div className={`text-3xl font-bold ${tempColor} ${active ? 'animate-pulse' : ''}`}>
-                    {thermostat.temperature.toFixed(1)}°
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Current
-                  </div>
-                </div>
-                
-                {/* Right - Target & Humidity */}
-                <div className="text-right flex flex-col justify-center space-y-1">
-                  <div className="text-lg font-medium text-cyan-400">
-                    → {thermostat.targetTemp}°
-                  </div>
-                  <div className="text-xs text-muted-foreground">Target</div>
-                  {thermostat.humidity && (
-                    <div className="text-xs text-blue-300">
-                      {thermostat.humidity}% RH
+      <div className="weather-card-content">
+        <div className="flex items-stretch justify-between space-x-6 w-full">
+          {thermostats.map((thermostat, index) => {
+            const tempColor = getTemperatureColor(thermostat.temperature, thermostat.targetTemp, thermostat.mode);
+            const active = isHvacActive(thermostat.mode, thermostat.temperature, thermostat.targetTemp);
+            
+            return (
+              <div key={thermostat.id} className="flex-1 relative flex flex-col justify-center">
+                <div className="flex items-center justify-between">
+                  {/* Left - Location Name & HVAC Status */}
+                  <div className="text-left flex flex-col justify-center space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-responsive-lg font-semibold text-foreground">
+                        {thermostat.name}
+                      </span>
                     </div>
-                  )}
+                    {getHvacStatusIndicator(thermostat.mode, thermostat.temperature, thermostat.targetTemp)}
+                  </div>
+                  
+                  {/* Center - Current Temperature with Activity Indicator */}
+                  <div className="text-center flex flex-col justify-center">
+                    <div className={`text-responsive-2xl font-bold ${tempColor} ${active ? 'animate-pulse' : ''}`}>
+                      {thermostat.temperature.toFixed(1)}°
+                    </div>
+                    <div className="text-responsive-sm text-muted-foreground">
+                      Current
+                    </div>
+                  </div>
+                  
+                  {/* Right - Target & Humidity */}
+                  <div className="text-right flex flex-col justify-center space-y-1">
+                    <div className="text-responsive-lg font-medium text-cyan-400">
+                      → {thermostat.targetTemp}°
+                    </div>
+                    <div className="text-responsive-sm text-muted-foreground">Target</div>
+                    {thermostat.humidity && (
+                      <div className="text-responsive-sm text-blue-300">
+                        {thermostat.humidity}% RH
+                      </div>
+                    )}
+                  </div>
                 </div>
+                
+                {/* Add divider between thermostats */}
+                {index < thermostats.length - 1 && (
+                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px bg-border" 
+                       style={{ height: 'clamp(32px, 6vh, 56px)' }}></div>
+                )}
               </div>
-              
-              {/* Add divider between thermostats */}
-              {index < thermostats.length - 1 && (
-                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-12 bg-border"></div>
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

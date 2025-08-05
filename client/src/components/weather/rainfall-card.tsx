@@ -14,25 +14,27 @@ export default function RainfallCard({ todayRain, yesterdayRain }: RainfallCardP
     <div className="weather-card minimal-padding">
       <div className="weather-card-header">
         <h3 className="weather-card-title">Rain</h3>
-        <CloudRain className="weather-card-icon h-4 w-4" />
+        <CloudRain className="weather-card-icon" />
       </div>
-      <div className="flex items-center justify-between space-x-2">
-        {/* Today's rainfall */}
-        <div className="text-center flex-1">
-          <div className="text-lg font-bold text-cyan-400">
-            {formatRain(todayRain)}"
+      <div className="weather-card-content">
+        <div className="flex items-center justify-between space-x-2 w-full">
+          {/* Today's rainfall */}
+          <div className="text-center flex-1">
+            <div className="text-responsive-xl font-bold text-cyan-400">
+              {formatRain(todayRain)}"
+            </div>
+            <div className="text-responsive-sm text-muted-foreground">Today</div>
           </div>
-          <div className="text-xs text-muted-foreground">Today</div>
-        </div>
-        
-        <div className="w-px h-8 bg-border"></div>
-        
-        {/* Yesterday's rainfall */}
-        <div className="text-center flex-1">
-          <div className="text-lg font-bold text-blue-300">
-            {formatRain(yesterdayRain)}"
+          
+          <div className="w-px bg-border" style={{ height: 'clamp(24px, 4vh, 40px)' }}></div>
+          
+          {/* Yesterday's rainfall */}
+          <div className="text-center flex-1">
+            <div className="text-responsive-xl font-bold text-blue-300">
+              {formatRain(yesterdayRain)}"
+            </div>
+            <div className="text-responsive-sm text-muted-foreground">Yesterday</div>
           </div>
-          <div className="text-xs text-muted-foreground">Yesterday</div>
         </div>
       </div>
     </div>

@@ -21,35 +21,37 @@ export default function AdditionalDataCard({
     <div className="weather-card minimal-padding">
       <div className="weather-card-header">
         <h3 className="weather-card-title">Additional Data</h3>
-        <BarChart3 className="weather-card-icon h-4 w-4" />
+        <BarChart3 className="weather-card-icon" />
       </div>
-      <div className="flex items-center justify-between space-x-2">
-        <div className="text-center flex-1">
-          <div className="text-sm font-bold text-blue-400">
-            {formatValue(humidity)}%
+      <div className="weather-card-content">
+        <div className="flex items-center justify-between space-x-2 w-full">
+          <div className="text-center flex-1">
+            <div className="text-responsive-md font-bold text-blue-400">
+              {formatValue(humidity)}%
+            </div>
+            <div className="text-responsive-sm text-muted-foreground">Humidity</div>
           </div>
-          <div className="text-xs text-muted-foreground">Humidity</div>
-        </div>
-        <div className="w-px h-8 bg-border"></div>
-        <div className="text-center flex-1">
-          <div className="text-sm font-bold text-orange-400">
-            {formatValue(uvIndex)}
+          <div className="w-px bg-border" style={{ height: 'clamp(24px, 4vh, 40px)' }}></div>
+          <div className="text-center flex-1">
+            <div className="text-responsive-md font-bold text-orange-400">
+              {formatValue(uvIndex)}
+            </div>
+            <div className="text-responsive-sm text-muted-foreground">UV Index</div>
           </div>
-          <div className="text-xs text-muted-foreground">UV Index</div>
-        </div>
-        <div className="w-px h-8 bg-border"></div>
-        <div className="text-center flex-1">
-          <div className="text-sm font-bold text-green-400">
-            {formatValue(visibility)}mi
+          <div className="w-px bg-border" style={{ height: 'clamp(24px, 4vh, 40px)' }}></div>
+          <div className="text-center flex-1">
+            <div className="text-responsive-md font-bold text-green-400">
+              {formatValue(visibility)}mi
+            </div>
+            <div className="text-responsive-sm text-muted-foreground">Visibility</div>
           </div>
-          <div className="text-xs text-muted-foreground">Visibility</div>
-        </div>
-        <div className="w-px h-8 bg-border"></div>
-        <div className="text-center flex-1">
-          <div className="text-sm font-bold text-cyan-400">
-            {formatValue(dewPoint, 1)}°F
+          <div className="w-px bg-border" style={{ height: 'clamp(24px, 4vh, 40px)' }}></div>
+          <div className="text-center flex-1">
+            <div className="text-responsive-md font-bold text-cyan-400">
+              {formatValue(dewPoint, 1)}°F
+            </div>
+            <div className="text-responsive-sm text-muted-foreground">Dew Point</div>
           </div>
-          <div className="text-xs text-muted-foreground">Dew Point</div>
         </div>
       </div>
     </div>

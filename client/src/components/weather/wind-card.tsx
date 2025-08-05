@@ -43,52 +43,57 @@ export default function WindCard({
     <div className="weather-card minimal-padding">
       <div className="weather-card-header">
         <h3 className="weather-card-title">Wind</h3>
-        <Wind className="weather-card-icon h-4 w-4" />
+        <Wind className="weather-card-icon" />
       </div>
-      <div className="flex items-center justify-between space-x-4">
-        {/* Left - Wind Speed and Gust with larger text */}
-        <div className="flex flex-col space-y-1">
-          <div className="flex items-baseline space-x-2">
-            <span className="text-3xl font-bold text-cyan-400">{formatWindSpeed(windSpeed)}</span>
-            <span className="text-sm text-muted-foreground">mph</span>
-          </div>
-          <div className="flex items-baseline space-x-2">
-            <span className="text-sm">Gust:</span>
-            <span className="text-xl font-semibold text-blue-300">{formatWindSpeed(windGust)}</span>
-            <span className="text-xs text-muted-foreground">mph</span>
-          </div>
-        </div>
-        
-        {/* Center - Clean Compass Display */}
-        <div className="flex-shrink-0">
-          <div className="relative w-14 h-14 rounded-full border-2 border-primary/30 bg-primary/10">
-            {/* Cardinal direction markers */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 text-xs font-bold text-muted-foreground">N</div>
-              <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 text-xs font-bold text-muted-foreground">E</div>
-              <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-xs font-bold text-muted-foreground">S</div>
-              <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 text-xs font-bold text-muted-foreground">W</div>
+      <div className="weather-card-content">
+        <div className="flex items-center justify-between space-x-4 w-full">
+          {/* Left - Wind Speed and Gust with larger text */}
+          <div className="flex flex-col space-y-1">
+            <div className="flex items-baseline space-x-2">
+              <span className="text-responsive-2xl font-bold text-cyan-400">{formatWindSpeed(windSpeed)}</span>
+              <span className="text-responsive-sm text-muted-foreground">mph</span>
             </div>
-            {/* Wind direction arrow */}
-            <Navigation 
-              className="absolute inset-0 m-auto h-7 w-7 text-cyan-400" 
-              style={{ 
-                transform: `rotate(${(windDirection ?? 0) - 45}deg)` 
-              }} 
-            />
+            <div className="flex items-baseline space-x-2">
+              <span className="text-responsive-sm">Gust:</span>
+              <span className="text-responsive-lg font-semibold text-blue-300">{formatWindSpeed(windGust)}</span>
+              <span className="text-responsive-sm text-muted-foreground">mph</span>
+            </div>
           </div>
-        </div>
-        
-        {/* Right - Direction and Details */}
-        <div className="text-right">
-          <div className="text-2xl font-bold text-foreground">
-            {windDirectionCardinal || "CALM"}
+          
+          {/* Center - Responsive Compass Display */}
+          <div className="flex-shrink-0">
+            <div className="relative rounded-full border-2 border-primary/30 bg-primary/10" 
+                 style={{ width: 'clamp(48px, 8vw, 80px)', height: 'clamp(48px, 8vw, 80px)' }}>
+              {/* Cardinal direction markers */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 text-responsive-sm font-bold text-muted-foreground">N</div>
+                <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 text-responsive-sm font-bold text-muted-foreground">E</div>
+                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-responsive-sm font-bold text-muted-foreground">S</div>
+                <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 text-responsive-sm font-bold text-muted-foreground">W</div>
+              </div>
+              {/* Wind direction arrow */}
+              <Navigation 
+                className="absolute inset-0 m-auto text-cyan-400" 
+                style={{ 
+                  width: 'clamp(24px, 5vw, 40px)',
+                  height: 'clamp(24px, 5vw, 40px)',
+                  transform: `rotate(${(windDirection ?? 0) - 45}deg)` 
+                }} 
+              />
+            </div>
           </div>
-          <div className="text-sm text-muted-foreground">
-            {formatDirection(windDirection)}
-          </div>
-          <div className="text-xs text-muted-foreground mt-1">
-            {getWindDescription(windSpeed || 0)}
+          
+          {/* Right - Direction and Details */}
+          <div className="text-right">
+            <div className="text-responsive-xl font-bold text-foreground">
+              {windDirectionCardinal || "CALM"}
+            </div>
+            <div className="text-responsive-md text-muted-foreground">
+              {formatDirection(windDirection)}
+            </div>
+            <div className="text-responsive-sm text-muted-foreground mt-1">
+              {getWindDescription(windSpeed || 0)}
+            </div>
           </div>
         </div>
       </div>

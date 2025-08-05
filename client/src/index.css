@@ -69,7 +69,13 @@
 
 @layer components {
   .weather-card {
-    @apply bg-card rounded-lg border border-border p-2 h-full flex flex-col justify-between;
+    @apply bg-card rounded-lg border border-border p-2 h-full flex flex-col;
+    /* Vertical centering - header at top, content centered, grow to fill */
+  }
+  
+  .weather-card-content {
+    @apply flex-1 flex items-center justify-center;
+    /* This centers the main content vertically */
   }
   
   .weather-card-row {
@@ -81,15 +87,46 @@
   }
   
   .weather-card-header {
-    @apply flex items-center justify-between mb-1;
+    @apply flex items-center justify-between mb-2;
+    /* Slightly more space below header for better separation */
   }
   
   .weather-card-title {
-    @apply text-xs font-medium text-muted-foreground uppercase tracking-wide;
+    @apply font-medium text-muted-foreground uppercase tracking-wide;
+    /* Responsive text size */
+    font-size: clamp(10px, 1.5vw, 14px);
   }
   
   .weather-card-icon {
     @apply text-primary;
+    /* Responsive icon size */
+    width: clamp(14px, 2vw, 20px);
+    height: clamp(14px, 2vw, 20px);
+  }
+  
+  /* Responsive text scaling for larger screens */
+  .text-responsive-sm {
+    font-size: clamp(12px, 2vw, 16px);
+  }
+  
+  .text-responsive-md {
+    font-size: clamp(14px, 2.5vw, 20px);
+  }
+  
+  .text-responsive-lg {
+    font-size: clamp(18px, 3vw, 28px);
+  }
+  
+  .text-responsive-xl {
+    font-size: clamp(24px, 4vw, 40px);
+  }
+  
+  .text-responsive-2xl {
+    font-size: clamp(32px, 5vw, 56px);
+  }
+  
+  .text-responsive-3xl {
+    font-size: clamp(40px, 6vw, 72px);
   }
 }
 
