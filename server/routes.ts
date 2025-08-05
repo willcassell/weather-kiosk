@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertWeatherDataSchema, insertThermostatDataSchema, type WeatherFlowStation, type WeatherFlowObservation, type WeatherFlowForecast, type ThermostatData } from "@shared/schema";
+import { insertWeatherDataSchema, insertThermostatDataSchema, type WeatherFlowStation, type WeatherFlowObservation, type WeatherFlowForecast, type ThermostatData, type WeatherData } from "@shared/schema";
 import { EcobeeAPI, convertEcobeeToThermostatData } from "./ecobee-api";
 import { z } from "zod";
 
@@ -98,14 +98,16 @@ async function fetchWeatherFlowData(): Promise<any> {
     // Get historical data for pressure trend calculation
     const historicalData = await storage.getWeatherHistory(STATION_ID, 6);
     
-    // Get today's recorded data for actual high/low calculations
-    const todayHistory = await storage.getWeatherHistory(STATION_ID, 24);
+    // Get today's recorded data for actual high/low calculations (only from today, not past 24 hours)
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const todayHistory = await storage.getWeatherHistorySince(STATION_ID, todayStart);
     
     const currentConditions = forecastData.current_conditions;
     const todayForecast = forecastData.forecast?.daily[0];
     const yesterdayForecast = forecastData.forecast?.daily[1];
 
-    // Calculate actual daily high and low from recorded station data with timestamps
+    // Calculate actual daily high and low from recorded station data with timestamps (only from today)
     const currentTemp = celsiusToFahrenheit(currentConditions.air_temperature);
     const currentTime = new Date();
     let actualHigh = currentTemp;
@@ -114,12 +116,16 @@ async function fetchWeatherFlowData(): Promise<any> {
     let lowTime = currentTime;
     
     if (todayHistory && todayHistory.length > 0) {
-      // Find the actual high and low from today's recorded temperatures with their timestamps
-      const validRecords = todayHistory.filter(record => record.temperature !== null && record.temperature !== undefined);
+      // Filter records to only include those from today (since midnight)
+      const todayValidRecords = todayHistory.filter((record: WeatherData) => {
+        if (!record.temperature || !record.timestamp) return false;
+        const recordDate = new Date(record.timestamp);
+        return recordDate >= todayStart; // Only records from today
+      });
       
-      if (validRecords.length > 0) {
+      if (todayValidRecords.length > 0) {
         // Add current reading to the mix
-        const allReadings = [...validRecords, { temperature: currentTemp, timestamp: currentTime }];
+        const allReadings = [...todayValidRecords, { temperature: currentTemp, timestamp: currentTime }];
         
         // Find high and low with their times
         const highRecord = allReadings.reduce((max, record) => 
@@ -134,12 +140,12 @@ async function fetchWeatherFlowData(): Promise<any> {
         highTime = highRecord.timestamp;
         lowTime = lowRecord.timestamp;
         
-        console.log(`Calculated actual daily temps from ${allReadings.length} readings: High ${actualHigh.toFixed(1)}°F at ${highTime.toLocaleTimeString()}, Low ${actualLow.toFixed(1)}°F at ${lowTime.toLocaleTimeString()}`);
+        console.log(`Calculated daily temps from ${allReadings.length} readings since midnight: High ${actualHigh.toFixed(1)}°F at ${new Date(highTime).toLocaleTimeString()}, Low ${actualLow.toFixed(1)}°F at ${new Date(lowTime).toLocaleTimeString()}`);
       } else {
-        console.log("No historical temperature data available, using current temperature for high/low");
+        console.log("No temperature data recorded since midnight, using current temperature for high/low");
       }
     } else {
-      console.log("No historical data available, using current temperature for high/low");
+      console.log("No historical data available since midnight, using current temperature for high/low");
     }
 
     // Get station name

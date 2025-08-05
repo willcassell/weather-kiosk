@@ -7,6 +7,7 @@ export interface IStorage {
   getLatestWeatherData(stationId: string): Promise<WeatherData | undefined>;
   saveWeatherData(data: InsertWeatherData): Promise<WeatherData>;
   getWeatherHistory(stationId: string, hours: number): Promise<WeatherData[]>;
+  getWeatherHistorySince(stationId: string, since: Date): Promise<WeatherData[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -70,6 +71,11 @@ export class MemStorage implements IStorage {
     const history = this.weatherHistory.get(stationId) || [];
     const cutoffTime = Date.now() - (hours * 60 * 60 * 1000);
     return history.filter(record => record.timestamp && record.timestamp.getTime() > cutoffTime);
+  }
+
+  async getWeatherHistorySince(stationId: string, since: Date): Promise<WeatherData[]> {
+    const history = this.weatherHistory.get(stationId) || [];
+    return history.filter(record => record.timestamp && record.timestamp.getTime() >= since.getTime());
   }
 }
 
@@ -146,6 +152,26 @@ export class PostgreSQLStorage implements IStorage {
       return result;
     } catch (error) {
       console.error("Error getting weather history:", error);
+      throw new Error("Failed to retrieve weather history from database");
+    }
+  }
+
+  async getWeatherHistorySince(stationId: string, since: Date): Promise<WeatherData[]> {
+    try {
+      const result = await this.db
+        .select()
+        .from(weatherData)
+        .where(
+          and(
+            eq(weatherData.stationId, stationId),
+            gte(weatherData.timestamp, since)
+          )
+        )
+        .orderBy(desc(weatherData.timestamp));
+      
+      return result;
+    } catch (error) {
+      console.error("Error getting weather history since date:", error);
       throw new Error("Failed to retrieve weather history from database");
     }
   }
