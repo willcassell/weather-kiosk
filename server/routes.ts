@@ -43,6 +43,8 @@ function millimetersToInches(millimeters: number): number {
   return millimeters * 0.0393701;
 }
 
+
+
 // Helper function to determine pressure trend
 function determinePressureTrend(currentPressure: number, historicalData: any[]): string {
   if (historicalData.length < 2) return "Steady";
@@ -94,6 +96,10 @@ async function fetchWeatherFlowData(): Promise<any> {
     }
 
     const forecastData: WeatherFlowForecast = await forecastResponse.json();
+    
+
+    
+
     
     // Get historical data for pressure trend calculation
     const historicalData = await storage.getWeatherHistory(STATION_ID, 6);
@@ -150,6 +156,8 @@ async function fetchWeatherFlowData(): Promise<any> {
 
     // Get station name
     const stationName = await fetchStationInfo();
+    
+
 
     // Convert WeatherFlow data to our format (with proper unit conversions)
     const weatherData = {
@@ -171,8 +179,8 @@ async function fetchWeatherFlowData(): Promise<any> {
       uvIndex: currentConditions.uv,
       visibility: 10.0, // WeatherFlow doesn't provide visibility, using default
       dewPoint: celsiusToFahrenheit(currentConditions.dew_point),
-      rainToday: 0.0, // Would need additional API call for precipitation data
-      rainYesterday: 0.0, // Would need historical precipitation data
+      rainToday: currentConditions.precip_accum_local_day || 0,
+      rainYesterday: currentConditions.precip_accum_local_yesterday || 0
     };
 
     return weatherData;
