@@ -73,7 +73,7 @@ export default function WindCard({
             <Navigation 
               className="absolute inset-0 m-auto h-7 w-7 text-cyan-400" 
               style={{ 
-                transform: `rotate(${(windDirection ?? 0) + 45}deg)` 
+                transform: `rotate(${(windDirection ?? 0) - 45}deg)` 
               }} 
             />
           </div>
