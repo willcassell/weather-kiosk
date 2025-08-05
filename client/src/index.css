@@ -77,7 +77,7 @@
   }
   
   .weather-card-row .weather-card {
-    @apply flex-1;
+    @apply h-full;
   }
   
   .weather-card-header {
