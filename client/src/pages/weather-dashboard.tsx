@@ -102,8 +102,8 @@ export default function WeatherDashboard() {
                 />
               </div>
               
-              {/* Wind and Rain on the same row - Wind takes 2/3, Rain takes 1/3 */}
-              <div className="flex gap-2 flex-[1.2]">
+              {/* Wind and Rain on the same row - Wind takes 2/3, Rain takes 1/3 - Shortened height */}
+              <div className="flex gap-2 flex-[0.9]">
                 <div className="w-2/3">
                   <WindCard 
                     windSpeed={weatherData.windSpeed ?? 0}
@@ -128,8 +128,8 @@ export default function WeatherDashboard() {
                 />
               </div>
               
-              {/* Additional Data Card - Smaller since it's just 4 compact values in a row */}
-              <div className="flex-[0.7]">
+              {/* Additional Data Card - More space with horizontal rain layout freed up */}
+              <div className="flex-[0.8]">
                 <AdditionalDataCard 
                   humidity={weatherData.humidity ?? 0}
                   uvIndex={weatherData.uvIndex ?? 0}
@@ -138,8 +138,8 @@ export default function WeatherDashboard() {
                 />
               </div>
               
-              {/* Thermostat Card - Largest since it has 2 thermostats with detailed status */}
-              <div className="flex-[2]">
+              {/* Thermostat Card - More space for detailed thermostat information */}
+              <div className="flex-[2.3]">
                 <ThermostatCard 
                   thermostats={thermostatData?.map(t => ({
                     ...t,
