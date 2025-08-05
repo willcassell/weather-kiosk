@@ -98,19 +98,22 @@ export default function WeatherDashboard() {
                 highTempTime={weatherData.temperatureHighTime ? new Date(weatherData.temperatureHighTime) : undefined}
                 lowTempTime={weatherData.temperatureLowTime ? new Date(weatherData.temperatureLowTime) : undefined}
               />
-              <WindCard 
-                windSpeed={weatherData.windSpeed ?? 0}
-                windGust={weatherData.windGust ?? 0}
-                windDirection={weatherData.windDirection ?? 0}
-                windDirectionCardinal={weatherData.windDirectionCardinal ?? "N"}
-              />
+              {/* Wind and Rain on the same row */}
+              <div className="flex gap-2 flex-1">
+                <WindCard 
+                  windSpeed={weatherData.windSpeed ?? 0}
+                  windGust={weatherData.windGust ?? 0}
+                  windDirection={weatherData.windDirection ?? 0}
+                  windDirectionCardinal={weatherData.windDirectionCardinal ?? "N"}
+                />
+                <RainfallCard 
+                  todayRain={weatherData.rainToday ?? 0}
+                  yesterdayRain={weatherData.rainYesterday ?? 0}
+                />
+              </div>
               <PressureCard 
                 pressure={weatherData.pressure ?? 0}
                 trend={weatherData.pressureTrend ?? "Steady"}
-              />
-              <RainfallCard 
-                todayRain={weatherData.rainToday ?? 0}
-                yesterdayRain={weatherData.rainYesterday ?? 0}
               />
               <AdditionalDataCard 
                 humidity={weatherData.humidity ?? 0}

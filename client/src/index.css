@@ -72,6 +72,14 @@
     @apply bg-card rounded-lg border border-border p-2 flex-1 min-h-0;
   }
   
+  .weather-card-row {
+    @apply flex gap-2 flex-1;
+  }
+  
+  .weather-card-row .weather-card {
+    @apply flex-1;
+  }
+  
   .weather-card-header {
     @apply flex items-center justify-between mb-1;
   }
