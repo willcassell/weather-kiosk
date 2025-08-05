@@ -177,6 +177,42 @@ async function fetchWeatherFlowData(): Promise<any> {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Health check endpoint for deployment monitoring
+  app.get("/api/health", async (req, res) => {
+    try {
+      const healthStatus = {
+        status: "healthy",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || "development",
+        database: !!process.env.DATABASE_URL,
+        memory: process.memoryUsage(),
+        version: process.version,
+        port: process.env.PORT || "5000"
+      };
+
+      // Test database connection if available
+      if (process.env.DATABASE_URL) {
+        try {
+          const latestData = await storage.getLatestWeatherData("38335");
+          healthStatus.database = true;
+          (healthStatus as any).lastWeatherUpdate = latestData?.lastUpdated || null;
+        } catch (error) {
+          healthStatus.database = false;
+          (healthStatus as any).databaseError = "Connection failed";
+        }
+      }
+
+      res.status(200).json(healthStatus);
+    } catch (error) {
+      res.status(500).json({
+        status: "unhealthy",
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Get current weather data
   app.get("/api/weather/current", async (req, res) => {
     try {

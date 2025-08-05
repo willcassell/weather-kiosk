@@ -1,106 +1,181 @@
-# Deployment Guide
+# Weather Kiosk Deployment Guide
 
-## Quick Deploy to Replit
+## Overview
 
-1. **Fork this repository** on GitHub
-2. **Import to Replit** by connecting your GitHub account
-3. **Set environment variables** in Replit Secrets:
-   - `WEATHERFLOW_API_TOKEN` - Your WeatherFlow API token
-   - `DATABASE_URL` - PostgreSQL database URL (provided by Replit)
-   - `ECOBEE_API_KEY` - (Optional) If you have existing Ecobee API access
+This guide provides comprehensive deployment instructions for the Weather Kiosk application, including all the necessary environment variables, database setup, and deployment configurations required for successful production deployment.
 
-4. **Run the project**: The workflow will automatically install dependencies and start the server
+## Applied Deployment Fixes
 
-## Environment Variables
+The following deployment issues have been resolved:
 
-### Required
-- `WEATHERFLOW_API_TOKEN` - Get from [WeatherFlow Developers](https://tempestwx.com/settings/tokens)
-- `DATABASE_URL` - PostgreSQL connection string
+### ✅ Environment Variables Configuration
+- **DATABASE_URL**: Properly handled with fallback to in-memory storage
+- **SESSION_SECRET**: Configured with secure defaults and production warnings
+- **PORT**: Set to listen on 0.0.0.0 with proper port binding for Cloud Run
+- **NODE_ENV**: Environment detection for production vs development features
 
-### Optional
-- `ECOBEE_API_KEY` - Only if you have existing Ecobee API access (new registrations suspended)
-- `NODE_ENV` - Set to `production` for production deployment
+### ✅ Database Connection Handling
+- Added PostgreSQL storage implementation with Neon serverless support
+- Implemented connection error handling with graceful fallback to memory storage
+- Created database initialization script with table creation
+- Added session table setup for connect-pg-simple
+
+### ✅ Server Configuration Improvements
+- Enhanced server startup with comprehensive error handling
+- Added proper host binding (0.0.0.0) for container deployment
+- Implemented graceful shutdown handling (SIGTERM/SIGINT)
+- Added detailed logging for deployment troubleshooting
+
+### ✅ Health Check Endpoint
+- Added `/health` endpoint for deployment monitoring
+- Includes database connection status, uptime, and system metrics
+- Provides deployment verification and troubleshooting information
+
+### ✅ Session Management
+- Configures PostgreSQL session store for production
+- Falls back to memory store for development
+- Handles session store initialization errors gracefully
+
+## Required Environment Variables
+
+### Production Deployment
+```bash
+DATABASE_URL=postgresql://user:pass@host:port/dbname
+SESSION_SECRET=your-secure-random-session-secret
+PORT=5000
+NODE_ENV=production
+```
+
+### Optional API Configuration
+```bash
+WEATHERFLOW_API_TOKEN=your-weatherflow-api-token
+ECOBEE_API_KEY=your-ecobee-api-key
+```
 
 ## Database Setup
 
-The application automatically:
-1. Creates necessary database tables using Drizzle migrations
-2. Sets up PostgreSQL session storage
-3. Maintains weather history with automatic cleanup
+### Automatic Migration
+The application will automatically create necessary database tables on startup:
+- `weather_data`: Weather station data storage
+- `thermostat_data`: Thermostat readings
+- `session`: Session storage for user authentication
 
-## Thermostat Integration
-
-### Current Status
-- **HomeKit Simulation**: Working realistic data for "Home" and "Lake" locations
-- **Real Integration**: See `THERMOSTAT_SETUP.md` for connecting actual thermostats
-
-### Next Steps for Real Data
-1. **HomeKit + Home Assistant** (Recommended)
-2. **Alternative APIs** (Nest, Honeywell)
-3. **Direct integration** with your smart thermostat platform
-
-## Production Deployment
-
-### Option 1: Replit Deployments (Easy)
-1. Click "Deploy" in Replit
-2. Configure custom domain if needed
-3. Set production environment variables
-
-### Option 2: Docker Deployment
+### Manual Migration
+To run migrations manually:
 ```bash
-# Build the application
-npm run build
-
-# Run with Docker
-docker build -t weather-kiosk .
-docker run -p 5000:5000 --env-file .env weather-kiosk
+tsx scripts/migrate.js
 ```
 
-### Option 3: Traditional VPS
+## Deployment Process
+
+### 1. Build Application
 ```bash
-# Install dependencies
-npm install
-
-# Build for production
 npm run build
-
-# Start with PM2
-pm2 start dist/index.js --name weather-kiosk
 ```
 
-## Monitoring
+### 2. Environment Setup
+Set all required environment variables in your deployment platform.
 
-The application includes:
-- Request logging
-- Error tracking
-- API response time monitoring
-- Weather data freshness checks
+### 3. Database Configuration
+Ensure your PostgreSQL database is accessible and the DATABASE_URL is correct.
 
-## Scaling Considerations
+### 4. Start Application
+```bash
+npm start
+```
 
-- **Database**: Uses connection pooling for PostgreSQL
-- **Caching**: Weather data cached for 3-minute intervals
-- **Static Assets**: Served efficiently via Express
-- **Memory**: Optimized for long-running kiosk displays
+### 5. Health Check
+Verify deployment with:
+```bash
+curl http://your-domain/api/health
+```
+
+## Platform-Specific Instructions
+
+### Replit Deployments
+1. Set environment variables in the Deployments pane (not just Secrets)
+2. Ensure DATABASE_URL points to your Neon database
+3. Add SESSION_SECRET with a secure random value
+4. The application will automatically handle port binding
+
+### Cloud Run / Container Platforms
+- The application listens on 0.0.0.0:${PORT}
+- Handles SIGTERM for graceful shutdown
+- Includes health check endpoint for load balancer probes
+
+### Traditional VPS/Server
+- Set NODE_ENV=production
+- Configure reverse proxy (nginx/apache) if needed
+- Ensure database connectivity
 
 ## Troubleshooting
 
-### Common Issues
-1. **Weather data not loading**: Check WeatherFlow API token
-2. **Thermostat errors**: Review `THERMOSTAT_SETUP.md`
-3. **Database connection**: Verify `DATABASE_URL` format
-4. **Port conflicts**: Application uses port 5000 by default
+### Database Connection Issues
+1. Check DATABASE_URL format and accessibility
+2. Verify database exists and credentials are correct
+3. Application will fall back to memory storage if database fails
 
-### Logs
-Check application logs for detailed error information:
-```bash
-# Replit Console
-# PM2 logs: pm2 logs weather-kiosk
-# Docker logs: docker logs <container_id>
+### Session Store Issues
+- Application continues without sessions if store initialization fails
+- Check PostgreSQL connectivity for session persistence
+
+### Port Binding Issues
+- Ensure PORT environment variable is set correctly
+- Application defaults to port 5000
+- Verify firewall settings allow traffic on the specified port
+
+## Health Check Response
+The `/api/health` endpoint provides:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-08-05T00:54:00.000Z",
+  "uptime": 123.456,
+  "environment": "production",
+  "database": true,
+  "memory": {...},
+  "version": "v20.x.x",
+  "port": "5000",
+  "lastWeatherUpdate": "2025-08-05T00:53:00.000Z"
+}
 ```
 
-## Support
+## Security Considerations
 
-- **Issues**: Create GitHub issues for bugs or feature requests
-- **Documentation**: All setup guides included in repository
-- **Integration Help**: Thermostat-specific setup instructions provided
+### Production Checklist
+- [ ] SESSION_SECRET is set to a secure random value
+- [ ] DATABASE_URL uses SSL connection
+- [ ] NODE_ENV is set to "production"
+- [ ] API tokens are stored securely
+- [ ] HTTPS is configured (handled by deployment platform)
+
+### Development vs Production
+- Development: Uses memory storage and session store
+- Production: Uses PostgreSQL for data and session persistence
+- Secure cookies enabled automatically in production mode
+
+## Performance Optimization
+
+### Database
+- Indexes created automatically for weather_data queries
+- Session cleanup handled by connect-pg-simple
+- Weather data limited to 48-hour retention
+
+### Caching
+- Weather data cached for 3 minutes
+- Database connection pooling via Neon serverless
+- Static assets served with appropriate cache headers
+
+## Monitoring
+
+### Key Metrics
+- Health check endpoint status
+- Database connection health
+- Weather data freshness
+- Memory usage and uptime
+
+### Logging
+- Structured logging for API requests
+- Database connection status
+- Weather data refresh cycles
+- Error handling with detailed context
