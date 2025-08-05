@@ -112,6 +112,27 @@ Preferred communication style: Simple, everyday language.
 - **Replit Integration**: Banner and cartographer for Replit environment
 - **Live Reloading**: Automatic server restart on changes
 
+## Recent Changes (August 5, 2025)
+
+### Temperature Timestamp Enhancement (August 5, 2025)
+- **High/Low Time Tracking**: Added database fields and logic to track when daily high and low temperatures were observed
+- **Timestamp Display**: Temperature card now shows time (e.g., "3:24 PM") when each high/low was recorded
+- **Improved Data Flow**: Enhanced weather data processing to find actual temperature extremes with their observation times
+- **Better User Experience**: Users can now see exactly when temperature peaks occurred during the day
+
+### Responsive Layout Optimization (August 5, 2025)
+- **Dynamic Height Adjustment**: Weather cards and radar now automatically fill available screen space
+- **Equal Bottom Alignment**: Cards and radar maintain consistent bottom edge regardless of display size
+- **Wind/Rain Row Layout**: Combined wind and rain cards on same row with 2/3 and 1/3 width split respectively
+- **Vertical Rain Display**: Changed rain card to show today above yesterday, both right-aligned
+- **Improved Space Utilization**: Better use of horizontal space while maintaining responsive design
+
+### Data Refresh Improvements (August 5, 2025)
+- **Faster Updates**: Reduced weather data cache time from 10 minutes to 3 minutes
+- **Force Refresh Option**: Added ability to force immediate data refresh via URL parameter
+- **Better Synchronization**: Weather readings now stay closer to actual Tempest website values
+- **Enhanced Logging**: Improved server-side logging for data freshness tracking
+
 ## Recent Changes (August 4, 2025)
 
 ### Space Optimization Updates
