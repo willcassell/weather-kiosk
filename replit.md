@@ -115,17 +115,17 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes (August 5, 2025)
 
 ### Responsive Layout and Vertical Centering (August 5, 2025)
+- **Mobile-First Responsive Design**: Implemented mobile-first layout that stacks cards vertically on phones and displays side-by-side on larger screens
+- **Breakpoint-Based Font Scaling**: Added Tailwind breakpoint-based responsive typography that scales up from mobile to desktop:
+  - Mobile: Standard text sizes (text-xs, text-sm, text-lg, etc.)
+  - Large screens (lg): Increased by one size level
+  - Extra large (xl): Increased by two size levels  
+  - 2XL screens: Increased by three size levels for optimal readability
+- **Adaptive Layout Structure**: Main layout uses `flex-col lg:flex-row` for mobile stacking with horizontal split on large screens
 - **Vertical Centering System**: Implemented `.weather-card-content` wrapper that centers all card content vertically using flexbox
-- **Responsive Font Scaling**: Added CSS clamp() functions for automatic font scaling based on screen size:
-  - `.text-responsive-sm`: 12px-16px range for small text
-  - `.text-responsive-md`: 14px-20px range for medium text  
-  - `.text-responsive-lg`: 18px-28px range for large text
-  - `.text-responsive-xl`: 24px-40px range for extra large text
-  - `.text-responsive-2xl`: 32px-56px range for headings
-  - `.text-responsive-3xl`: 40px-72px range for main temperature display
-- **Responsive Icons**: All weather card icons and UI elements now scale with viewport using clamp() functions
+- **Responsive Icons**: All icons scale consistently across breakpoints (h-4 w-4 to h-7 w-7) for better visibility on larger displays
 - **Enhanced Card Structure**: Updated all weather cards to use consistent header-content layout with proper vertical centering
-- **Improved Space Utilization**: Better content distribution across all card types for optimal display on larger screens
+- **Mobile Optimization**: Cards maintain readability on small screens while scaling appropriately for kiosk displays
 - **Wind Direction Fix**: Corrected compass arrow rotation from +45° to -45° offset to properly align with cardinal directions
 
 ### Production Deployment Fixes (August 5, 2025)

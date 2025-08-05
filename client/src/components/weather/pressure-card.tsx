@@ -49,7 +49,7 @@ export default function PressureCard({ pressure, trend }: PressureCardProps) {
         <div className="flex items-center space-x-4 w-full">
           {/* Large Pressure Gauge - Takes up most of the card */}
           <div className="flex-1 relative">
-            <div className="relative w-full" style={{ height: 'clamp(24px, 4vh, 40px)' }}>
+            <div className="relative w-full h-8 lg:h-10 xl:h-12 2xl:h-16">
               {/* Background track */}
               <div className="absolute inset-0 bg-gray-700 rounded-full"></div>
               
@@ -62,21 +62,16 @@ export default function PressureCard({ pressure, trend }: PressureCardProps) {
               
               {/* Pressure indicator needle */}
               <div 
-                className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 bg-white rounded-full shadow-lg border border-gray-800"
+                className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 bg-white rounded-full shadow-lg border border-gray-800 w-1 h-6 lg:w-1.5 lg:h-8 xl:w-2 xl:h-10 2xl:w-2.5 2xl:h-12"
                 style={{ 
-                  left: `${pressurePosition}%`,
-                  width: 'clamp(3px, 0.5vh, 6px)',
-                  height: 'clamp(20px, 3vh, 32px)'
+                  left: `${pressurePosition}%`
                 }}
               />
               
               {/* Zone labels */}
-              <div className="absolute left-0 text-responsive-sm text-red-400 font-medium" 
-                   style={{ bottom: 'clamp(-16px, -2vh, -12px)' }}>LOW</div>
-              <div className="absolute left-1/2 transform -translate-x-1/2 text-responsive-sm text-yellow-400 font-medium" 
-                   style={{ bottom: 'clamp(-16px, -2vh, -12px)' }}>NORMAL</div>
-              <div className="absolute right-0 text-responsive-sm text-green-400 font-medium" 
-                   style={{ bottom: 'clamp(-16px, -2vh, -12px)' }}>HIGH</div>
+              <div className="absolute left-0 -bottom-4 lg:-bottom-5 xl:-bottom-6 2xl:-bottom-7 text-responsive-sm text-red-400 font-medium">LOW</div>
+              <div className="absolute left-1/2 transform -translate-x-1/2 -bottom-4 lg:-bottom-5 xl:-bottom-6 2xl:-bottom-7 text-responsive-sm text-yellow-400 font-medium">NORMAL</div>
+              <div className="absolute right-0 -bottom-4 lg:-bottom-5 xl:-bottom-6 2xl:-bottom-7 text-responsive-sm text-green-400 font-medium">HIGH</div>
             </div>
           </div>
           

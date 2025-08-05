@@ -62,8 +62,7 @@ export default function WindCard({
           
           {/* Center - Responsive Compass Display */}
           <div className="flex-shrink-0">
-            <div className="relative rounded-full border-2 border-primary/30 bg-primary/10" 
-                 style={{ width: 'clamp(48px, 8vw, 80px)', height: 'clamp(48px, 8vw, 80px)' }}>
+            <div className="relative w-14 h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 2xl:w-24 2xl:h-24 rounded-full border-2 border-primary/30 bg-primary/10">
               {/* Cardinal direction markers */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 text-responsive-sm font-bold text-muted-foreground">N</div>
@@ -73,10 +72,8 @@ export default function WindCard({
               </div>
               {/* Wind direction arrow */}
               <Navigation 
-                className="absolute inset-0 m-auto text-cyan-400" 
+                className="absolute inset-0 m-auto h-7 w-7 lg:h-8 lg:w-8 xl:h-10 xl:w-10 2xl:h-12 2xl:w-12 text-cyan-400" 
                 style={{ 
-                  width: 'clamp(24px, 5vw, 40px)',
-                  height: 'clamp(24px, 5vw, 40px)',
                   transform: `rotate(${(windDirection ?? 0) - 45}deg)` 
                 }} 
               />

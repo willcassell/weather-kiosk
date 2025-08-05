@@ -66,7 +66,7 @@ export default function WeatherDashboard() {
   }
 
   return (
-    <div className="bg-background text-foreground overflow-hidden">
+    <div className="bg-background text-foreground min-h-screen">
       {/* Top Banner */}
       <TopBanner 
         stationId="38335" 
@@ -75,10 +75,10 @@ export default function WeatherDashboard() {
         isLoading={isLoading}
       />
 
-      {/* Main Content - 50/50 Split */}
-      <main className="flex h-[calc(100vh-3rem)]">
-        {/* Left Half - Weather Data Cards */}
-        <section className="w-1/2 bg-background p-2 flex flex-col gap-2">
+      {/* Main Content - Responsive Layout */}
+      <main className="flex flex-col lg:flex-row lg:h-[calc(100vh-3rem)]">
+        {/* Weather Data Cards - Full width on mobile, left half on large screens */}
+        <section className="w-full lg:w-1/2 bg-background p-2 flex flex-col gap-2 lg:overflow-y-auto">
           {isLoading ? (
             <div className="flex flex-col justify-between gap-2 h-full">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -163,8 +163,8 @@ export default function WeatherDashboard() {
           )}
         </section>
 
-        {/* Right Half - Radar Display */}
-        <section className="w-1/2 bg-card overflow-hidden">
+        {/* Radar Display - Full width on mobile, right half on large screens */}
+        <section className="w-full lg:w-1/2 bg-card overflow-hidden min-h-[50vh] lg:min-h-0">
           <div className="h-full">
             <RadarDisplay />
           </div>

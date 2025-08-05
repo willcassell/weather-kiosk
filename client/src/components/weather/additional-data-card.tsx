@@ -31,21 +31,21 @@ export default function AdditionalDataCard({
             </div>
             <div className="text-responsive-sm text-muted-foreground">Humidity</div>
           </div>
-          <div className="w-px bg-border" style={{ height: 'clamp(24px, 4vh, 40px)' }}></div>
+          <div className="w-px h-8 lg:h-10 xl:h-12 2xl:h-16 bg-border"></div>
           <div className="text-center flex-1">
             <div className="text-responsive-md font-bold text-orange-400">
               {formatValue(uvIndex)}
             </div>
             <div className="text-responsive-sm text-muted-foreground">UV Index</div>
           </div>
-          <div className="w-px bg-border" style={{ height: 'clamp(24px, 4vh, 40px)' }}></div>
+          <div className="w-px h-8 lg:h-10 xl:h-12 2xl:h-16 bg-border"></div>
           <div className="text-center flex-1">
             <div className="text-responsive-md font-bold text-green-400">
               {formatValue(visibility)}mi
             </div>
             <div className="text-responsive-sm text-muted-foreground">Visibility</div>
           </div>
-          <div className="w-px bg-border" style={{ height: 'clamp(24px, 4vh, 40px)' }}></div>
+          <div className="w-px h-8 lg:h-10 xl:h-12 2xl:h-16 bg-border"></div>
           <div className="text-center flex-1">
             <div className="text-responsive-md font-bold text-cyan-400">
               {formatValue(dewPoint, 1)}°F

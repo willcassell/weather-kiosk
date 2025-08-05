@@ -66,7 +66,7 @@ export default function ThermostatCard({ thermostats, isLoading, error }: Thermo
     if (!active || mode === 'off') {
       return (
         <div className="flex items-center space-x-1 text-gray-400">
-          <Pause style={{ width: 'clamp(10px, 1.5vw, 14px)', height: 'clamp(10px, 1.5vw, 14px)' }} />
+          <Pause className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
           <span className="text-responsive-sm">Idle</span>
         </div>
       );
@@ -75,8 +75,8 @@ export default function ThermostatCard({ thermostats, isLoading, error }: Thermo
     if (mode === 'cool' || (mode === 'auto' && diff > 0)) {
       return (
         <div className="flex items-center space-x-1 text-blue-400">
-          <Snowflake className="animate-pulse" style={{ width: 'clamp(10px, 1.5vw, 14px)', height: 'clamp(10px, 1.5vw, 14px)' }} />
-          <Activity className="animate-bounce" style={{ width: 'clamp(10px, 1.5vw, 14px)', height: 'clamp(10px, 1.5vw, 14px)' }} />
+          <Snowflake className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 animate-pulse" />
+          <Activity className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 animate-bounce" />
           <span className="text-responsive-sm font-medium">Cooling</span>
         </div>
       );
@@ -85,8 +85,8 @@ export default function ThermostatCard({ thermostats, isLoading, error }: Thermo
     if (mode === 'heat' || (mode === 'auto' && diff < 0)) {
       return (
         <div className="flex items-center space-x-1 text-red-400">
-          <Flame className="animate-pulse" style={{ width: 'clamp(10px, 1.5vw, 14px)', height: 'clamp(10px, 1.5vw, 14px)' }} />
-          <Activity className="animate-bounce" style={{ width: 'clamp(10px, 1.5vw, 14px)', height: 'clamp(10px, 1.5vw, 14px)' }} />
+          <Flame className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 animate-pulse" />
+          <Activity className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 animate-bounce" />
           <span className="text-responsive-sm font-medium">Heating</span>
         </div>
       );
@@ -94,7 +94,7 @@ export default function ThermostatCard({ thermostats, isLoading, error }: Thermo
 
     return (
       <div className="flex items-center space-x-1 text-green-400">
-        <Target style={{ width: 'clamp(10px, 1.5vw, 14px)', height: 'clamp(10px, 1.5vw, 14px)' }} />
+        <Target className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
         <span className="text-responsive-sm">Auto</span>
       </div>
     );
@@ -172,8 +172,7 @@ export default function ThermostatCard({ thermostats, isLoading, error }: Thermo
                 
                 {/* Add divider between thermostats */}
                 {index < thermostats.length - 1 && (
-                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px bg-border" 
-                       style={{ height: 'clamp(32px, 6vh, 56px)' }}></div>
+                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 lg:h-12 xl:h-16 2xl:h-20 bg-border"></div>
                 )}
               </div>
             );
