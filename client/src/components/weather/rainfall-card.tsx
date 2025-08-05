@@ -16,20 +16,17 @@ export default function RainfallCard({ todayRain, yesterdayRain }: RainfallCardP
         <h3 className="weather-card-title">Rain</h3>
         <CloudRain className="weather-card-icon h-4 w-4" />
       </div>
-      <div className="flex items-center justify-between space-x-3">
+      <div className="flex flex-col space-y-2">
         {/* Today's rainfall */}
-        <div className="text-center">
+        <div className="text-right">
           <div className="text-lg font-bold text-cyan-400">
             {formatRain(todayRain)}"
           </div>
           <div className="text-xs text-muted-foreground">Today</div>
         </div>
         
-        {/* Divider */}
-        <div className="w-px h-8 bg-border"></div>
-        
         {/* Yesterday's rainfall */}
-        <div className="text-center">
+        <div className="text-right">
           <div className="text-lg font-bold text-blue-300">
             {formatRain(yesterdayRain)}"
           </div>
