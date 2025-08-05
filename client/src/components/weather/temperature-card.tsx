@@ -5,16 +5,29 @@ interface TemperatureCardProps {
   feelsLike?: number;
   highTemp?: number;
   lowTemp?: number;
+  highTempTime?: Date;
+  lowTempTime?: Date;
 }
 
 export default function TemperatureCard({ 
   currentTemp, 
   feelsLike,
   highTemp, 
-  lowTemp 
+  lowTemp,
+  highTempTime,
+  lowTempTime
 }: TemperatureCardProps) {
   const formatTemp = (temp?: number) => {
     return temp !== undefined ? temp.toFixed(1) : "--";
+  };
+
+  const formatTime = (time?: Date) => {
+    if (!time) return "";
+    return time.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
   };
 
   return (
@@ -44,11 +57,21 @@ export default function TemperatureCard({
           <div className="flex flex-col text-sm space-y-0.5">
             <div className="flex items-center space-x-1 text-red-400 justify-end">
               <TrendingUp className="h-3 w-3" />
-              <span>{formatTemp(highTemp)}°F</span>
+              <div className="flex flex-col items-end">
+                <span>{formatTemp(highTemp)}°F</span>
+                {highTempTime && (
+                  <span className="text-xs text-muted-foreground">{formatTime(highTempTime)}</span>
+                )}
+              </div>
             </div>
             <div className="flex items-center space-x-1 text-blue-400 justify-end">
               <TrendingDown className="h-3 w-3" />
-              <span>{formatTemp(lowTemp)}°F</span>
+              <div className="flex flex-col items-end">
+                <span>{formatTemp(lowTemp)}°F</span>
+                {lowTempTime && (
+                  <span className="text-xs text-muted-foreground">{formatTime(lowTempTime)}</span>
+                )}
+              </div>
             </div>
           </div>
         </div>

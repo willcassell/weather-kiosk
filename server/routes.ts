@@ -105,21 +105,36 @@ async function fetchWeatherFlowData(): Promise<any> {
     const todayForecast = forecastData.forecast?.daily[0];
     const yesterdayForecast = forecastData.forecast?.daily[1];
 
-    // Calculate actual daily high and low from recorded station data
+    // Calculate actual daily high and low from recorded station data with timestamps
     const currentTemp = celsiusToFahrenheit(currentConditions.air_temperature);
+    const currentTime = new Date();
     let actualHigh = currentTemp;
     let actualLow = currentTemp;
+    let highTime = currentTime;
+    let lowTime = currentTime;
     
     if (todayHistory && todayHistory.length > 0) {
-      // Find the actual high and low from today's recorded temperatures
-      const temperatures = todayHistory.map(record => record.temperature).filter(temp => temp !== null && temp !== undefined);
+      // Find the actual high and low from today's recorded temperatures with their timestamps
+      const validRecords = todayHistory.filter(record => record.temperature !== null && record.temperature !== undefined);
       
-      if (temperatures.length > 0) {
-        // Include current temperature in the calculation
-        temperatures.push(currentTemp);
-        actualHigh = Math.max(...temperatures);
-        actualLow = Math.min(...temperatures);
-        console.log(`Calculated actual daily temps from ${temperatures.length} readings: High ${actualHigh.toFixed(1)}°F, Low ${actualLow.toFixed(1)}°F`);
+      if (validRecords.length > 0) {
+        // Add current reading to the mix
+        const allReadings = [...validRecords, { temperature: currentTemp, timestamp: currentTime }];
+        
+        // Find high and low with their times
+        const highRecord = allReadings.reduce((max, record) => 
+          (record.temperature ?? 0) > (max.temperature ?? 0) ? record : max
+        );
+        const lowRecord = allReadings.reduce((min, record) => 
+          (record.temperature ?? 0) < (min.temperature ?? 0) ? record : min
+        );
+        
+        actualHigh = highRecord.temperature ?? currentTemp;
+        actualLow = lowRecord.temperature ?? currentTemp;
+        highTime = highRecord.timestamp;
+        lowTime = lowRecord.timestamp;
+        
+        console.log(`Calculated actual daily temps from ${allReadings.length} readings: High ${actualHigh.toFixed(1)}°F at ${highTime.toLocaleTimeString()}, Low ${actualLow.toFixed(1)}°F at ${lowTime.toLocaleTimeString()}`);
       } else {
         console.log("No historical temperature data available, using current temperature for high/low");
       }
@@ -138,6 +153,8 @@ async function fetchWeatherFlowData(): Promise<any> {
       feelsLike: celsiusToFahrenheit(currentConditions.feels_like),
       temperatureHigh: actualHigh, // Use actual recorded high temperature
       temperatureLow: actualLow,   // Use actual recorded low temperature
+      temperatureHighTime: highTime, // Time when high temp was observed
+      temperatureLowTime: lowTime,   // Time when low temp was observed
       windSpeed: currentConditions.wind_avg * 2.237, // Convert m/s to mph
       windGust: currentConditions.wind_gust * 2.237, // Convert m/s to mph
       windDirection: currentConditions.wind_direction,

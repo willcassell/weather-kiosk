@@ -95,6 +95,8 @@ export default function WeatherDashboard() {
                 feelsLike={weatherData.feelsLike ?? 0}
                 highTemp={weatherData.temperatureHigh ?? 0}
                 lowTemp={weatherData.temperatureLow ?? 0}
+                highTempTime={weatherData.temperatureHighTime ? new Date(weatherData.temperatureHighTime) : undefined}
+                lowTempTime={weatherData.temperatureLowTime ? new Date(weatherData.temperatureLowTime) : undefined}
               />
               <WindCard 
                 windSpeed={weatherData.windSpeed ?? 0}

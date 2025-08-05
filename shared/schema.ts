@@ -11,6 +11,8 @@ export const weatherData = pgTable("weather_data", {
   feelsLike: real("feels_like"), // Feels-like temperature in Fahrenheit
   temperatureHigh: real("temperature_high"), // Daily high temperature
   temperatureLow: real("temperature_low"), // Daily low temperature
+  temperatureHighTime: timestamp("temperature_high_time"), // Time when high temp was observed
+  temperatureLowTime: timestamp("temperature_low_time"), // Time when low temp was observed
   windSpeed: real("wind_speed"), // Wind speed in mph
   windGust: real("wind_gust"), // Wind gust in mph
   windDirection: integer("wind_direction"), // Wind direction in degrees (0-360)
