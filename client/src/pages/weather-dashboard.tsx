@@ -76,13 +76,13 @@ export default function WeatherDashboard() {
       />
 
       {/* Main Content - 50/50 Split */}
-      <main className="flex">
+      <main className="flex h-[calc(100vh-3rem)]">
         {/* Left Half - Weather Data Cards */}
-        <section className="w-1/2 bg-background p-2 space-y-2 flex-shrink-0">
+        <section className="w-1/2 bg-background p-2 flex flex-col justify-between gap-2">
           {isLoading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="weather-card animate-pulse">
+            <div className="flex flex-col justify-between gap-2 h-full">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="weather-card animate-pulse flex-1">
                   <div className="h-3 bg-muted rounded mb-1"></div>
                   <div className="h-6 bg-muted rounded"></div>
                 </div>
@@ -142,7 +142,7 @@ export default function WeatherDashboard() {
 
         {/* Right Half - Radar Display */}
         <section className="w-1/2 bg-card overflow-hidden">
-          <div className="h-[420px]">
+          <div className="h-full">
             <RadarDisplay />
           </div>
         </section>
