@@ -127,42 +127,44 @@ export default function ThermostatCard({ thermostats, isLoading, error }: Thermo
         </div>
       </div>
       
-      <div className="flex items-center justify-between space-x-6">
+      <div className="flex items-stretch justify-between space-x-6 flex-1">
         {thermostats.map((thermostat, index) => {
           const tempColor = getTemperatureColor(thermostat.temperature, thermostat.targetTemp, thermostat.mode);
           const active = isHvacActive(thermostat.mode, thermostat.temperature, thermostat.targetTemp);
           
           return (
-            <div key={thermostat.id} className="flex-1 relative">
-              <div className="flex items-center justify-between">
+            <div key={thermostat.id} className="flex-1 relative flex flex-col justify-center">
+              <div className="flex items-center justify-between space-y-2">
                 {/* Left - Location Name & HVAC Status */}
-                <div className="text-left">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="text-lg font-semibold text-foreground">
+                <div className="text-left flex flex-col justify-center space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xl font-semibold text-foreground">
                       {thermostat.name}
                     </span>
                   </div>
-                  {getHvacStatusIndicator(thermostat.mode, thermostat.temperature, thermostat.targetTemp)}
+                  <div className="mt-1">
+                    {getHvacStatusIndicator(thermostat.mode, thermostat.temperature, thermostat.targetTemp)}
+                  </div>
                 </div>
                 
                 {/* Center - Current Temperature with Activity Indicator */}
-                <div className="text-center">
-                  <div className={`text-3xl font-bold ${tempColor} ${active ? 'animate-pulse' : ''}`}>
+                <div className="text-center flex flex-col justify-center">
+                  <div className={`text-4xl font-bold ${tempColor} ${active ? 'animate-pulse' : ''}`}>
                     {thermostat.temperature.toFixed(1)}°
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-sm text-muted-foreground mt-1">
                     Current
                   </div>
                 </div>
                 
                 {/* Right - Target & Humidity */}
-                <div className="text-right">
-                  <div className="text-lg font-medium text-cyan-400">
+                <div className="text-right flex flex-col justify-center space-y-2">
+                  <div className="text-xl font-medium text-cyan-400">
                     → {thermostat.targetTemp}°
                   </div>
-                  <div className="text-xs text-muted-foreground">Target</div>
+                  <div className="text-sm text-muted-foreground">Target</div>
                   {thermostat.humidity && (
-                    <div className="text-xs text-blue-300 mt-1">
+                    <div className="text-sm text-blue-300 mt-1">
                       {thermostat.humidity}% RH
                     </div>
                   )}
@@ -171,7 +173,7 @@ export default function ThermostatCard({ thermostats, isLoading, error }: Thermo
               
               {/* Add divider between thermostats */}
               {index < thermostats.length - 1 && (
-                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-16 bg-border"></div>
+                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-20 bg-border"></div>
               )}
             </div>
           );

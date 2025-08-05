@@ -78,7 +78,7 @@ export default function WeatherDashboard() {
       {/* Main Content - 50/50 Split */}
       <main className="flex h-[calc(100vh-3rem)]">
         {/* Left Half - Weather Data Cards */}
-        <section className="w-1/2 bg-background p-2 flex flex-col justify-between gap-2">
+        <section className="w-1/2 bg-background p-2 flex flex-col gap-2">
           {isLoading ? (
             <div className="flex flex-col justify-between gap-2 h-full">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -90,16 +90,20 @@ export default function WeatherDashboard() {
             </div>
           ) : weatherData ? (
             <>
-              <TemperatureCard 
-                currentTemp={weatherData.temperature ?? 0}
-                feelsLike={weatherData.feelsLike ?? 0}
-                highTemp={weatherData.temperatureHigh ?? 0}
-                lowTemp={weatherData.temperatureLow ?? 0}
-                highTempTime={weatherData.temperatureHighTime ? new Date(weatherData.temperatureHighTime) : undefined}
-                lowTempTime={weatherData.temperatureLowTime ? new Date(weatherData.temperatureLowTime) : undefined}
-              />
+              {/* Temperature Card - Medium size for main reading + high/low with times */}
+              <div className="flex-[1.5]">
+                <TemperatureCard 
+                  currentTemp={weatherData.temperature ?? 0}
+                  feelsLike={weatherData.feelsLike ?? 0}
+                  highTemp={weatherData.temperatureHigh ?? 0}
+                  lowTemp={weatherData.temperatureLow ?? 0}
+                  highTempTime={weatherData.temperatureHighTime ? new Date(weatherData.temperatureHighTime) : undefined}
+                  lowTempTime={weatherData.temperatureLowTime ? new Date(weatherData.temperatureLowTime) : undefined}
+                />
+              </div>
+              
               {/* Wind and Rain on the same row - Wind takes 2/3, Rain takes 1/3 */}
-              <div className="flex gap-2 flex-1">
+              <div className="flex gap-2 flex-[1.2]">
                 <div className="w-2/3 flex">
                   <WindCard 
                     windSpeed={weatherData.windSpeed ?? 0}
@@ -115,27 +119,39 @@ export default function WeatherDashboard() {
                   />
                 </div>
               </div>
-              <PressureCard 
-                pressure={weatherData.pressure ?? 0}
-                trend={weatherData.pressureTrend ?? "Steady"}
-              />
-              <AdditionalDataCard 
-                humidity={weatherData.humidity ?? 0}
-                uvIndex={weatherData.uvIndex ?? 0}
-                visibility={weatherData.visibility ?? 0}
-                dewPoint={weatherData.dewPoint ?? 0}
-              />
-              <ThermostatCard 
-                thermostats={thermostatData?.map(t => ({
-                  ...t,
-                  temperature: t.temperature ?? 0,
-                  targetTemp: t.targetTemp ?? 0,
-                  humidity: t.humidity ?? undefined,
-                  mode: (t.mode as 'heat' | 'cool' | 'auto' | 'off') ?? 'off'
-                }))}
-                isLoading={thermostatLoading}
-                error={thermostatError instanceof Error ? thermostatError.message : undefined}
-              />
+              
+              {/* Pressure Card - Standard size for pressure + trend */}
+              <div className="flex-1">
+                <PressureCard 
+                  pressure={weatherData.pressure ?? 0}
+                  trend={weatherData.pressureTrend ?? "Steady"}
+                />
+              </div>
+              
+              {/* Additional Data Card - Smaller since it's just 4 compact values in a row */}
+              <div className="flex-[0.7]">
+                <AdditionalDataCard 
+                  humidity={weatherData.humidity ?? 0}
+                  uvIndex={weatherData.uvIndex ?? 0}
+                  visibility={weatherData.visibility ?? 0}
+                  dewPoint={weatherData.dewPoint ?? 0}
+                />
+              </div>
+              
+              {/* Thermostat Card - Largest since it has 2 thermostats with detailed status */}
+              <div className="flex-[2]">
+                <ThermostatCard 
+                  thermostats={thermostatData?.map(t => ({
+                    ...t,
+                    temperature: t.temperature ?? 0,
+                    targetTemp: t.targetTemp ?? 0,
+                    humidity: t.humidity ?? undefined,
+                    mode: (t.mode as 'heat' | 'cool' | 'auto' | 'off') ?? 'off'
+                  }))}
+                  isLoading={thermostatLoading}
+                  error={thermostatError instanceof Error ? thermostatError.message : undefined}
+                />
+              </div>
             </>
           ) : (
             <div className="weather-card">
