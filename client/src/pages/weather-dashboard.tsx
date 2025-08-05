@@ -140,7 +140,7 @@ export default function WeatherDashboard() {
 
         {/* Right Half - Radar Display */}
         <section className="w-1/2 bg-card overflow-hidden">
-          <div className="h-[480px]">
+          <div className="h-[420px]">
             <RadarDisplay />
           </div>
         </section>
