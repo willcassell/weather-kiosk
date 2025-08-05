@@ -97,6 +97,8 @@ async function fetchWeatherFlowData(): Promise<any> {
 
     const forecastData: WeatherFlowForecast = await forecastResponse.json();
     
+    const currentConditions = forecastData.current_conditions as any;
+    
 
     
 
@@ -109,7 +111,6 @@ async function fetchWeatherFlowData(): Promise<any> {
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
     const todayHistory = await storage.getWeatherHistorySince(STATION_ID, todayStart);
     
-    const currentConditions = forecastData.current_conditions;
     const todayForecast = forecastData.forecast?.daily[0];
     const yesterdayForecast = forecastData.forecast?.daily[1];
 
@@ -179,8 +180,8 @@ async function fetchWeatherFlowData(): Promise<any> {
       uvIndex: currentConditions.uv,
       visibility: 10.0, // WeatherFlow doesn't provide visibility, using default
       dewPoint: celsiusToFahrenheit(currentConditions.dew_point),
-      rainToday: currentConditions.precip_accum_local_day || 0,
-      rainYesterday: currentConditions.precip_accum_local_yesterday || 0
+      rainToday: Math.round(millimetersToInches(currentConditions.precip_accum_local_day || 0) * 100) / 100,
+      rainYesterday: Math.round(millimetersToInches(currentConditions.precip_accum_local_yesterday || 0) * 100) / 100
     };
 
     return weatherData;
