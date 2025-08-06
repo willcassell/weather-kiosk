@@ -249,6 +249,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`${reason} - Fetching fresh weather data from WeatherFlow API...`);
         const freshData = await fetchWeatherFlowData();
         const savedData = await storage.saveWeatherData(freshData);
+        
+        // Also refresh thermostat data when weather data is refreshed
+        try {
+          if (process.env.BEESTAT_API_KEY) {
+            console.log("Refreshing thermostat data from Beestat API");
+            await fetchBeestatThermostats();
+          }
+        } catch (thermostatError) {
+          console.warn("Failed to refresh thermostat data:", thermostatError);
+        }
+        
         res.json(savedData);
       } else {
         console.log(`Using cached data from ${currentData.lastUpdated}`);

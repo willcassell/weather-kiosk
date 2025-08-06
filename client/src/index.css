@@ -63,7 +63,8 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    overflow-x: hidden;
+    overflow: hidden; /* Remove all scrollbars for true kiosk mode */
+    height: 100vh; /* Ensure full viewport height */
   }
 }
 

@@ -114,6 +114,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (August 6, 2025)
 
+### Synchronized Data Updates and Scrollbar Removal (August 6, 2025)
+- **Synchronized Updates**: Thermostat data now refreshes automatically whenever weather data is updated (every 3 minutes)
+- **UI Spacing Fixes**: Fixed thermostat card center divider positioning with proper buffer space from target temperature and humidity data
+- **Pressure Gauge Enhancement**: Shortened pressure gauge bar to 4/5 width and repositioned higher with better spacing from legend labels
+- **Scrollbar Removal**: Completely removed scrollbars for true kiosk mode - page now auto-scales to fit any screen size without scrolling
+- **Layout Optimization**: Updated main layout to use full viewport height with proper flex containers for perfect screen fitting
+- **Real Data Integration**: Both Home (Downstairs) and Lake (809 Sailors Cove) thermostats now display actual temperature readings from Beestat API
+
+## Recent Changes (August 6, 2025)
+
 ### Orientation-Based Responsive Layout (August 6, 2025)
 - **Orientation Detection**: Replaced screen-width breakpoints with CSS orientation media queries
 - **Landscape Layout**: Cards display side-by-side when screen is wider than tall (landscape orientation)

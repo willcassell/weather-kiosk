@@ -32,10 +32,11 @@ export default function WeatherDashboard() {
     retryDelay: 5000,
   });
 
-  // Set up auto-refresh
+  // Set up auto-refresh for both weather and thermostat data
   useEffect(() => {
     const interval = setInterval(() => {
       queryClient.invalidateQueries({ queryKey: ['/api/weather/current'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/thermostats/current'] });
     }, REFRESH_INTERVAL);
 
     return () => clearInterval(interval);
@@ -66,7 +67,7 @@ export default function WeatherDashboard() {
   }
 
   return (
-    <div className="bg-background text-foreground min-h-screen">
+    <div className="bg-background text-foreground h-screen flex flex-col">
       {/* Top Banner */}
       <TopBanner 
         stationId="38335" 
@@ -76,9 +77,9 @@ export default function WeatherDashboard() {
       />
 
       {/* Main Content - Orientation-based Layout */}
-      <main className="flex flex-col orientation-landscape:flex-row orientation-landscape:h-[calc(100vh-3rem)]">
+      <main className="flex flex-col orientation-landscape:flex-row flex-1 overflow-hidden">
         {/* Weather Data Cards - Full width on portrait, left half on landscape */}
-        <section className="w-full orientation-landscape:w-1/2 bg-background p-2 flex flex-col gap-2 orientation-landscape:overflow-y-auto">
+        <section className="w-full orientation-landscape:w-1/2 bg-background p-2 flex flex-col gap-2 flex-1 overflow-hidden">
           {isLoading ? (
             <div className="flex flex-col justify-between gap-2 h-full">
               {Array.from({ length: 6 }).map((_, i) => (
