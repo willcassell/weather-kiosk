@@ -6,6 +6,15 @@ This project is a modern weather monitoring application that displays real-time 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (August 2025)
+- **GitHub Documentation Preparation**: Completed comprehensive documentation overhaul for public sharing
+- **Environment Variable Parameterization**: All personal data (API keys, station IDs, coordinates) moved to environment variables
+- **Lightning Card Enhancement**: Replaced visibility with lightning strike detection and timing
+- **Humidity/Dew Point Card**: Split bottom row to show both lightning activity and essential atmospheric data
+- **Setup Guides**: Created detailed SETUP.md, DEPLOYMENT.md, and CONTRIBUTING.md for community use
+- **Data Accuracy**: Switched to WeatherFlow observations API for exact temperature matching with Tempest app
+- **Production Ready**: All hardcoded personal data removed, ready for GitHub sharing
+
 ## System Architecture
 
 ### Frontend
