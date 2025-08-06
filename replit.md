@@ -133,7 +133,7 @@ Preferred communication style: Simple, everyday language.
 - **Data Conversion**: Automatic conversion from Beestat decidegrees to Fahrenheit display format
 - **HVAC State Detection**: Intelligent detection of heating/cooling activity from thermostat state
 - **Graceful Fallback**: Falls back to HomeKit simulation if Beestat API unavailable
-- **Multi-Thermostat Support**: Handles multiple thermostats with proper location naming
+- **Multi-Thermostat Support**: Handles multiple thermostats with proper location naming (Downstairs → Home, 809 Sailors Cove → Lake)
 
 ## Recent Changes (August 5, 2025)
 

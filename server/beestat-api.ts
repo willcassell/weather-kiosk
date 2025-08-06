@@ -81,8 +81,8 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
     // Convert Beestat data to our thermostat format
     const thermostats: ThermostatData[] = [];
     
-    // Filter for specific thermostats: Downstairs (for Home) and SML809 (for Lake)
-    const targetThermostats = ['Downstairs', 'SML809'];
+    // Filter for specific thermostats: Downstairs (for Home) and 809 Sailors Cove (for Lake)
+    const targetThermostats = ['Downstairs', '809 Sailors Cove'];
     
     for (const [id, thermostat] of Object.entries(data.data || {})) {
       // Check if this thermostat matches our target list
@@ -118,7 +118,7 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
 
       // Determine location based on thermostat name
       let location = 'Home';
-      if (thermostatName.toLowerCase().includes('sml809')) {
+      if (thermostatName.toLowerCase().includes('809 sailors cove')) {
         location = 'Lake';
       } else if (thermostatName.toLowerCase().includes('downstairs')) {
         location = 'Home';
