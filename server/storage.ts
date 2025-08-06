@@ -1,4 +1,4 @@
-import { weatherData, type WeatherData, type InsertWeatherData, type WeatherFlowStation, type WeatherFlowObservation, type WeatherFlowForecast } from "@shared/schema";
+import { weatherData, thermostatData, type WeatherData, type ThermostatData, type InsertWeatherData, type InsertThermostatData, type WeatherFlowStation, type WeatherFlowObservation, type WeatherFlowForecast } from "@shared/schema";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { desc, eq, and, gte } from "drizzle-orm";
@@ -8,17 +8,23 @@ export interface IStorage {
   saveWeatherData(data: InsertWeatherData): Promise<WeatherData>;
   getWeatherHistory(stationId: string, hours: number): Promise<WeatherData[]>;
   getWeatherHistorySince(stationId: string, since: Date): Promise<WeatherData[]>;
+  getLatestThermostatData(): Promise<ThermostatData[]>;
+  saveThermostatData(data: InsertThermostatData): Promise<ThermostatData>;
 }
 
 export class MemStorage implements IStorage {
   private weatherData: Map<string, WeatherData>;
   private weatherHistory: Map<string, WeatherData[]>;
+  private thermostatData: ThermostatData[];
   currentId: number;
+  currentThermostatId: number;
 
   constructor() {
     this.weatherData = new Map();
     this.weatherHistory = new Map();
+    this.thermostatData = [];
     this.currentId = 1;
+    this.currentThermostatId = 1;
   }
 
   async getLatestWeatherData(stationId: string): Promise<WeatherData | undefined> {
@@ -76,6 +82,28 @@ export class MemStorage implements IStorage {
   async getWeatherHistorySince(stationId: string, since: Date): Promise<WeatherData[]> {
     const history = this.weatherHistory.get(stationId) || [];
     return history.filter(record => record.timestamp && record.timestamp.getTime() >= since.getTime());
+  }
+
+  async getLatestThermostatData(): Promise<ThermostatData[]> {
+    return [...this.thermostatData];
+  }
+
+  async saveThermostatData(insertData: InsertThermostatData): Promise<ThermostatData> {
+    const id = this.currentThermostatId++;
+    const thermostatRecord: ThermostatData = {
+      ...insertData,
+      id,
+      timestamp: new Date(),
+      lastUpdated: new Date(),
+    };
+
+    // Remove existing data for this thermostat
+    this.thermostatData = this.thermostatData.filter(t => t.thermostatId !== insertData.thermostatId);
+    
+    // Add new data
+    this.thermostatData.push(thermostatRecord);
+    
+    return thermostatRecord;
   }
 }
 
@@ -173,6 +201,38 @@ export class PostgreSQLStorage implements IStorage {
     } catch (error) {
       console.error("Error getting weather history since date:", error);
       throw new Error("Failed to retrieve weather history from database");
+    }
+  }
+
+  async getLatestThermostatData(): Promise<ThermostatData[]> {
+    try {
+      const result = await this.db
+        .select()
+        .from(thermostatData)
+        .orderBy(desc(thermostatData.lastUpdated));
+      
+      return result;
+    } catch (error) {
+      console.error("Error getting latest thermostat data:", error);
+      throw new Error("Failed to retrieve thermostat data from database");
+    }
+  }
+
+  async saveThermostatData(insertData: InsertThermostatData): Promise<ThermostatData> {
+    try {
+      const result = await this.db
+        .insert(thermostatData)
+        .values(insertData)
+        .returning();
+      
+      if (!result[0]) {
+        throw new Error("Failed to save thermostat data to database");
+      }
+      
+      return result[0];
+    } catch (error) {
+      console.error("Error saving thermostat data:", error);
+      throw new Error("Failed to save thermostat data to database");
     }
   }
 }
