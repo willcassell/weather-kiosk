@@ -75,10 +75,10 @@ export default function WeatherDashboard() {
         isLoading={isLoading}
       />
 
-      {/* Main Content - Responsive Layout */}
-      <main className="flex flex-col lg:flex-row lg:h-[calc(100vh-3rem)]">
-        {/* Weather Data Cards - Full width on mobile, left half on large screens */}
-        <section className="w-full lg:w-1/2 bg-background p-2 flex flex-col gap-2 lg:overflow-y-auto">
+      {/* Main Content - Orientation-based Layout */}
+      <main className="flex flex-col orientation-landscape:flex-row orientation-landscape:h-[calc(100vh-3rem)]">
+        {/* Weather Data Cards - Full width on portrait, left half on landscape */}
+        <section className="w-full orientation-landscape:w-1/2 bg-background p-2 flex flex-col gap-2 orientation-landscape:overflow-y-auto">
           {isLoading ? (
             <div className="flex flex-col justify-between gap-2 h-full">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -163,8 +163,8 @@ export default function WeatherDashboard() {
           )}
         </section>
 
-        {/* Radar Display - Full width on mobile, right half on large screens */}
-        <section className="w-full lg:w-1/2 bg-card overflow-hidden min-h-[50vh] lg:min-h-0">
+        {/* Radar Display - Full width on portrait, right half on landscape */}
+        <section className="w-full orientation-landscape:w-1/2 bg-card overflow-hidden min-h-[50vh] orientation-landscape:min-h-0">
           <div className="h-full">
             <RadarDisplay />
           </div>

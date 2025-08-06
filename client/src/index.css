@@ -143,8 +143,8 @@
     @apply text-4xl;
   }
   
-  /* Scale up for larger screens only */
-  @screen lg {
+  /* Scale up for landscape orientation */
+  @media (orientation: landscape) {
     .text-responsive-sm {
       @apply text-sm;
     }
@@ -170,7 +170,8 @@
     }
   }
   
-  @screen xl {
+  /* Scale up further for large landscape screens */
+  @media (orientation: landscape) and (min-width: 1024px) {
     .text-responsive-sm {
       @apply text-base;
     }
@@ -196,7 +197,8 @@
     }
   }
   
-  @screen 2xl {
+  /* Scale up for extra large landscape screens */
+  @media (orientation: landscape) and (min-width: 1280px) {
     .text-responsive-sm {
       @apply text-lg;
     }
