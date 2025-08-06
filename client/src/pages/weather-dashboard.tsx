@@ -6,7 +6,7 @@ import TemperatureCard from "@/components/weather/temperature-card";
 import WindCard from "@/components/weather/wind-card";
 import PressureCard from "@/components/weather/pressure-card";
 import RainfallCard from "@/components/weather/rainfall-card";
-import AdditionalDataCard from "@/components/weather/additional-data-card";
+import LightningCard from "@/components/weather/lightning-card";
 import ThermostatCard from "@/components/weather/thermostat-card";
 import RadarDisplay from "@/components/weather/radar-display";
 import { Card, CardContent } from "@/components/ui/card";
@@ -129,13 +129,11 @@ export default function WeatherDashboard() {
                 />
               </div>
               
-              {/* Additional Data Card - More space with horizontal rain layout freed up */}
+              {/* Lightning Card - Shows recent lightning strike data */}
               <div className="flex-[0.8]">
-                <AdditionalDataCard 
-                  humidity={weatherData.humidity ?? 0}
-                  uvIndex={weatherData.uvIndex ?? 0}
-                  visibility={weatherData.visibility ?? 0}
-                  dewPoint={weatherData.dewPoint ?? 0}
+                <LightningCard 
+                  strikeDistance={weatherData.lightningStrikeDistance}
+                  strikeTime={weatherData.lightningStrikeTime ? new Date(weatherData.lightningStrikeTime) : null}
                 />
               </div>
               

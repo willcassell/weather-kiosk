@@ -109,6 +109,7 @@ async function fetchWeatherFlowData(): Promise<any> {
         // Use the most recent observation for temperature
         const latestObs = observationsData.obs[0];
         console.log(`Using latest observation data (timestamp: ${new Date(latestObs.timestamp * 1000).toISOString()})`);
+        console.log(`Lightning data: strikes=${latestObs.lightning_strike_count}, avg_distance=${latestObs.lightning_strike_avg_distance}`);
         currentConditions = {
           ...currentConditions,
           air_temperature: latestObs.air_temperature,
@@ -119,7 +120,9 @@ async function fetchWeatherFlowData(): Promise<any> {
           relative_humidity: latestObs.relative_humidity,
           uv: latestObs.uv,
           brightness: latestObs.brightness,
-          dew_point: latestObs.dew_point
+          dew_point: latestObs.dew_point,
+          lightning_strike_count: latestObs.lightning_strike_count,
+          lightning_strike_avg_distance: latestObs.lightning_strike_avg_distance
         };
       }
     } else {
@@ -210,7 +213,9 @@ async function fetchWeatherFlowData(): Promise<any> {
       pressureTrend: currentConditions.pressure_trend || determinePressureTrend(millibarsToInchesHg(currentConditions.sea_level_pressure), historicalData),
       humidity: currentConditions.relative_humidity,
       uvIndex: currentConditions.uv,
-      visibility: 10.0, // WeatherFlow doesn't provide visibility, using default
+      lightningStrikeDistance: currentConditions.lightning_strike_avg_distance ? 
+        Math.round(currentConditions.lightning_strike_avg_distance * 0.621371 * 10) / 10 : null, // Convert km to miles with 1 decimal
+      lightningStrikeTime: currentConditions.lightning_strike_count > 0 ? new Date() : null, // Use current time if strikes detected
       dewPoint: celsiusToFahrenheit(currentConditions.dew_point),
       rainToday: Math.round(millimetersToInches(currentConditions.precip_accum_local_day || 0) * 100) / 100,
       rainYesterday: Math.round(millimetersToInches(currentConditions.precip_accum_local_yesterday || 0) * 100) / 100

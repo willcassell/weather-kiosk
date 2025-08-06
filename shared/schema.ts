@@ -21,7 +21,8 @@ export const weatherData = pgTable("weather_data", {
   pressureTrend: text("pressure_trend"), // Trend: "Rising", "Falling", "Steady"
   humidity: real("humidity"), // Humidity percentage
   uvIndex: real("uv_index"), // UV index
-  visibility: real("visibility"), // Visibility in miles
+  lightningStrikeDistance: real("lightning_strike_distance"), // Distance to last lightning strike in miles
+  lightningStrikeTime: timestamp("lightning_strike_time"), // Time of last lightning strike
   dewPoint: real("dew_point"), // Dew point temperature in Fahrenheit
   rainToday: real("rain_today"), // Rain accumulation today in inches
   rainYesterday: real("rain_yesterday"), // Rain accumulation yesterday in inches
