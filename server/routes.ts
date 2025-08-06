@@ -88,18 +88,43 @@ async function fetchWeatherFlowData(): Promise<any> {
   }
 
   try {
-    // Fetch current conditions and forecast
-    const forecastResponse = await fetch(
-      `${WEATHERFLOW_API_BASE}/better_forecast?station_id=${STATION_ID}&token=${token}`
-    );
+    // Fetch both recent observations and forecast for most current data
+    const [observationsResponse, forecastResponse] = await Promise.all([
+      fetch(`${WEATHERFLOW_API_BASE}/observations/station/${STATION_ID}?token=${token}`),
+      fetch(`${WEATHERFLOW_API_BASE}/better_forecast?station_id=${STATION_ID}&token=${token}`)
+    ]);
 
     if (!forecastResponse.ok) {
-      throw new Error(`WeatherFlow API error: ${forecastResponse.status} ${forecastResponse.statusText}`);
+      throw new Error(`WeatherFlow forecast API error: ${forecastResponse.status} ${forecastResponse.statusText}`);
     }
 
     const forecastData: WeatherFlowForecast = await forecastResponse.json();
     
-    const currentConditions = forecastData.current_conditions as any;
+    // Use most recent observation if available, otherwise fall back to forecast current conditions
+    let currentConditions = forecastData.current_conditions as any;
+    
+    if (observationsResponse.ok) {
+      const observationsData = await observationsResponse.json();
+      if (observationsData.obs && observationsData.obs.length > 0) {
+        // Use the most recent observation for temperature
+        const latestObs = observationsData.obs[0];
+        console.log(`Using latest observation data (timestamp: ${new Date(latestObs.timestamp * 1000).toISOString()})`);
+        currentConditions = {
+          ...currentConditions,
+          air_temperature: latestObs.air_temperature,
+          feels_like: latestObs.feels_like,
+          wind_avg: latestObs.wind_avg,
+          wind_direction: latestObs.wind_direction,
+          station_pressure: latestObs.station_pressure,
+          relative_humidity: latestObs.relative_humidity,
+          uv: latestObs.uv,
+          brightness: latestObs.brightness,
+          dew_point: latestObs.dew_point
+        };
+      }
+    } else {
+      console.log("Observations API not available, using forecast current conditions");
+    }
     
 
     
@@ -119,7 +144,9 @@ async function fetchWeatherFlowData(): Promise<any> {
     const yesterdayForecast = forecastData.forecast?.daily[1];
 
     // Calculate actual daily high and low from recorded station data with timestamps (only from today)
-    const currentTemp = celsiusToFahrenheit(currentConditions.air_temperature);
+    const rawTempC = currentConditions.air_temperature;
+    const currentTemp = Math.round(celsiusToFahrenheit(rawTempC) * 10) / 10; // Round to 1 decimal place
+    console.log(`Raw temperature from WeatherFlow: ${rawTempC}°C = ${celsiusToFahrenheit(rawTempC)}°F, rounded to: ${currentTemp}°F`);
     const currentTime = new Date();
     let actualHigh = currentTemp;
     let actualLow = currentTemp;
