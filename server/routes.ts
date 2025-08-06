@@ -8,7 +8,7 @@ import { fetchBeestatThermostats } from './beestat-api';
 import { z } from "zod";
 
 const WEATHERFLOW_API_BASE = "https://swd.weatherflow.com/swd/rest";
-const STATION_ID = "38335";
+const STATION_ID = process.env.WEATHERFLOW_STATION_ID || "38335";
 
 // Get API token from environment variables
 const getApiToken = () => {

@@ -81,8 +81,9 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
     // Convert Beestat data to our thermostat format
     const thermostats: ThermostatData[] = [];
     
-    // Filter for specific thermostats: Downstairs (for Home) and 809 Sailors Cove (for Lake)
-    const targetThermostats = ['Downstairs', '809 Sailors Cove'];
+    // Get target thermostat names from environment variable
+    const targetNamesEnv = process.env.TARGET_THERMOSTAT_NAMES || 'Downstairs,809 Sailors Cove';
+    const targetThermostats = targetNamesEnv.split(',').map(name => name.trim());
     
     for (const [id, thermostat] of Object.entries(data.data || {})) {
       // Check if this thermostat matches our target list

@@ -40,7 +40,14 @@ Preferred communication style: Simple, everyday language.
 - **Kiosk Mode**: Designed for kiosk displays with compact layouts, optimized space utilization, and consistent scaling of icons. Includes dynamic height adjustment for cards and radar.
 - **Error Handling**: Graceful fallback for API failures and comprehensive server-side error handling.
 
-## External Dependencies
+## External Dependencies & APIs
+
+### Weather Data
+- **WeatherFlow Tempest API**: Real-time weather observations and lightning data
+- **Windy.com Embed**: Interactive weather radar display
+
+### Thermostat Integration  
+- **Beestat API**: Access to Ecobee thermostat data with multi-device support
 
 ### Core Libraries
 - **@neondatabase/serverless**: Neon PostgreSQL driver
@@ -60,3 +67,15 @@ Preferred communication style: Simple, everyday language.
 - **typescript**: Type safety
 - **tsx**: TypeScript execution
 - **esbuild**: Fast bundling for production
+
+## Configuration Parameters
+
+### Environment Variables (Production Ready)
+All personal data is parameterized through environment variables:
+- `WEATHERFLOW_API_TOKEN`: Personal access token for WeatherFlow API
+- `WEATHERFLOW_STATION_ID`: Specific weather station identifier  
+- `BEESTAT_API_KEY`: API key for thermostat data access
+- `TARGET_THERMOSTAT_NAMES`: Comma-separated list of thermostat names to display
+- `VITE_RADAR_CENTER_LAT/LON`: Geographic coordinates for radar centering
+- `VITE_RADAR_ZOOM_LEVEL`: Radar map zoom level
+- `DATABASE_URL`: PostgreSQL connection string (optional, uses in-memory if not provided)

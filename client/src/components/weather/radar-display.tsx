@@ -1,7 +1,12 @@
 import { Activity } from "lucide-react";
 
 export default function RadarDisplay() {
-  const radarUrl = "https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=default&metricWind=default&zoom=7.25&overlay=radar&product=radar&level=surface&lat=37.000&lon=-78.415&pressure=true&message=true&timeline=true";
+  // Get radar configuration from environment variables (with fallback defaults)
+  const radarLat = import.meta.env.VITE_RADAR_CENTER_LAT || "37.000";
+  const radarLon = import.meta.env.VITE_RADAR_CENTER_LON || "-78.415"; 
+  const radarZoom = import.meta.env.VITE_RADAR_ZOOM_LEVEL || "7.25";
+  
+  const radarUrl = `https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=default&metricWind=default&zoom=${radarZoom}&overlay=radar&product=radar&level=surface&lat=${radarLat}&lon=${radarLon}&pressure=true&message=true&timeline=true`;
 
   return (
     <div className="h-full relative">

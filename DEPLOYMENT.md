@@ -1,181 +1,300 @@
-# Weather Kiosk Deployment Guide
+# Deployment Guide
 
-## Overview
+This guide covers deploying the WeatherFlow Tempest Weather Dashboard to various platforms.
 
-This guide provides comprehensive deployment instructions for the Weather Kiosk application, including all the necessary environment variables, database setup, and deployment configurations required for successful production deployment.
+## Environment Variables for Production
 
-## Applied Deployment Fixes
+Ensure all production environment variables are set:
 
-The following deployment issues have been resolved:
-
-### ✅ Environment Variables Configuration
-- **DATABASE_URL**: Properly handled with fallback to in-memory storage
-- **SESSION_SECRET**: Configured with secure defaults and production warnings
-- **PORT**: Set to listen on 0.0.0.0 with proper port binding for Cloud Run
-- **NODE_ENV**: Environment detection for production vs development features
-
-### ✅ Database Connection Handling
-- Added PostgreSQL storage implementation with Neon serverless support
-- Implemented connection error handling with graceful fallback to memory storage
-- Created database initialization script with table creation
-- Added session table setup for connect-pg-simple
-
-### ✅ Server Configuration Improvements
-- Enhanced server startup with comprehensive error handling
-- Added proper host binding (0.0.0.0) for container deployment
-- Implemented graceful shutdown handling (SIGTERM/SIGINT)
-- Added detailed logging for deployment troubleshooting
-
-### ✅ Health Check Endpoint
-- Added `/health` endpoint for deployment monitoring
-- Includes database connection status, uptime, and system metrics
-- Provides deployment verification and troubleshooting information
-
-### ✅ Session Management
-- Configures PostgreSQL session store for production
-- Falls back to memory store for development
-- Handles session store initialization errors gracefully
-
-## Required Environment Variables
-
-### Production Deployment
 ```bash
-DATABASE_URL=postgresql://user:pass@host:port/dbname
-SESSION_SECRET=your-secure-random-session-secret
-PORT=5000
+# Required - WeatherFlow API
+WEATHERFLOW_API_TOKEN=your_production_token
+WEATHERFLOW_STATION_ID=your_station_id
+
+# Required - Geographic Configuration
+VITE_RADAR_CENTER_LAT=your_latitude
+VITE_RADAR_CENTER_LON=your_longitude
+VITE_RADAR_ZOOM_LEVEL=7.25
+
+# Optional - Thermostat Integration  
+BEESTAT_API_KEY=your_beestat_key
+TARGET_THERMOSTAT_NAMES=thermostat1,thermostat2
+
+# Production Database (recommended)
+DATABASE_URL=postgresql://user:pass@host:port/db
+
+# Production Settings
 NODE_ENV=production
+PORT=5000
 ```
 
-### Optional API Configuration
+## Replit Deployment
+
+### Using Replit Deployments
+1. Ensure all environment variables are configured in Replit Secrets
+2. Click "Deploy" in your Repl
+3. Choose "Autoscale" for production workloads
+4. Configure custom domain if desired
+
+### Environment Setup in Replit
+1. Go to your Repl's "Secrets" tab
+2. Add each environment variable from `.env.example`
+3. Use the actual values for your setup
+
+## Railway Deployment
+
+### Setup
 ```bash
-WEATHERFLOW_API_TOKEN=your-weatherflow-api-token
-ECOBEE_API_KEY=your-ecobee-api-key
+npm install -g @railway/cli
+railway login
+railway init
 ```
 
-## Database Setup
-
-### Automatic Migration
-The application will automatically create necessary database tables on startup:
-- `weather_data`: Weather station data storage
-- `thermostat_data`: Thermostat readings
-- `session`: Session storage for user authentication
-
-### Manual Migration
-To run migrations manually:
+### Configuration
 ```bash
-tsx scripts/migrate.js
+# Set environment variables
+railway variables set WEATHERFLOW_API_TOKEN=your_token
+railway variables set WEATHERFLOW_STATION_ID=your_id
+railway variables set VITE_RADAR_CENTER_LAT=your_lat
+railway variables set VITE_RADAR_CENTER_LON=your_lon
+railway variables set BEESTAT_API_KEY=your_key
+railway variables set TARGET_THERMOSTAT_NAMES="thermostat1,thermostat2"
+
+# Deploy
+railway up
 ```
 
-## Deployment Process
+## Vercel Deployment
 
-### 1. Build Application
+### Setup
 ```bash
-npm run build
+npm install -g vercel
+vercel login
 ```
 
-### 2. Environment Setup
-Set all required environment variables in your deployment platform.
-
-### 3. Database Configuration
-Ensure your PostgreSQL database is accessible and the DATABASE_URL is correct.
-
-### 4. Start Application
-```bash
-npm start
-```
-
-### 5. Health Check
-Verify deployment with:
-```bash
-curl http://your-domain/api/health
-```
-
-## Platform-Specific Instructions
-
-### Replit Deployments
-1. Set environment variables in the Deployments pane (not just Secrets)
-2. Ensure DATABASE_URL points to your Neon database
-3. Add SESSION_SECRET with a secure random value
-4. The application will automatically handle port binding
-
-### Cloud Run / Container Platforms
-- The application listens on 0.0.0.0:${PORT}
-- Handles SIGTERM for graceful shutdown
-- Includes health check endpoint for load balancer probes
-
-### Traditional VPS/Server
-- Set NODE_ENV=production
-- Configure reverse proxy (nginx/apache) if needed
-- Ensure database connectivity
-
-## Troubleshooting
-
-### Database Connection Issues
-1. Check DATABASE_URL format and accessibility
-2. Verify database exists and credentials are correct
-3. Application will fall back to memory storage if database fails
-
-### Session Store Issues
-- Application continues without sessions if store initialization fails
-- Check PostgreSQL connectivity for session persistence
-
-### Port Binding Issues
-- Ensure PORT environment variable is set correctly
-- Application defaults to port 5000
-- Verify firewall settings allow traffic on the specified port
-
-## Health Check Response
-The `/api/health` endpoint provides:
+### Configuration
+1. Create `vercel.json`:
 ```json
 {
-  "status": "healthy",
-  "timestamp": "2025-08-05T00:54:00.000Z",
-  "uptime": 123.456,
-  "environment": "production",
-  "database": true,
-  "memory": {...},
-  "version": "v20.x.x",
-  "port": "5000",
-  "lastWeatherUpdate": "2025-08-05T00:53:00.000Z"
+  "version": 2,
+  "builds": [
+    {
+      "src": "server/index.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "client/**/*",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "server/index.ts"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "client/$1"
+    }
+  ]
 }
 ```
 
+2. Deploy:
+```bash
+vercel --prod
+```
+
+3. Set environment variables in Vercel dashboard
+
+## Digital Ocean App Platform
+
+### app.yaml Configuration
+```yaml
+name: weather-dashboard
+services:
+- name: api
+  source_dir: /
+  github:
+    repo: your-username/weather-dashboard
+    branch: main
+  run_command: npm start
+  environment_slug: node-js
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  envs:
+  - key: WEATHERFLOW_API_TOKEN
+    value: your_token
+  - key: WEATHERFLOW_STATION_ID
+    value: your_id
+  - key: VITE_RADAR_CENTER_LAT
+    value: your_lat
+  - key: VITE_RADAR_CENTER_LON  
+    value: your_lon
+  - key: BEESTAT_API_KEY
+    value: your_key
+  - key: TARGET_THERMOSTAT_NAMES
+    value: thermostat1,thermostat2
+  - key: NODE_ENV
+    value: production
+```
+
+## Docker Deployment
+
+### Dockerfile
+```dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+COPY . .
+RUN npm run build
+
+EXPOSE 5000
+
+CMD ["npm", "start"]
+```
+
+### Docker Compose
+```yaml
+version: '3.8'
+services:
+  weather-dashboard:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - WEATHERFLOW_API_TOKEN=${WEATHERFLOW_API_TOKEN}
+      - WEATHERFLOW_STATION_ID=${WEATHERFLOW_STATION_ID}
+      - VITE_RADAR_CENTER_LAT=${VITE_RADAR_CENTER_LAT}
+      - VITE_RADAR_CENTER_LON=${VITE_RADAR_CENTER_LON}
+      - BEESTAT_API_KEY=${BEESTAT_API_KEY}
+      - TARGET_THERMOSTAT_NAMES=${TARGET_THERMOSTAT_NAMES}
+      - DATABASE_URL=${DATABASE_URL}
+      - NODE_ENV=production
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=weather
+      - POSTGRES_USER=weather
+      - POSTGRES_PASSWORD=your_secure_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+```
+
+## Home/Local Network Deployment
+
+### Raspberry Pi Setup
+1. Install Node.js 18+
+2. Clone repository
+3. Create `.env` file with your settings
+4. Install dependencies: `npm install`
+5. Build application: `npm run build` 
+6. Start with PM2: `pm2 start npm --name weather-dashboard -- start`
+
+### Systemd Service (Linux)
+Create `/etc/systemd/system/weather-dashboard.service`:
+```ini
+[Unit]
+Description=Weather Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=your-user
+WorkingDirectory=/path/to/weather-dashboard
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+```bash
+sudo systemctl enable weather-dashboard
+sudo systemctl start weather-dashboard
+```
+
+## Database Setup (Production)
+
+### PostgreSQL (Recommended)
+1. Create database and user
+2. Set `DATABASE_URL` environment variable
+3. Application will auto-create tables
+
+### Neon (Serverless PostgreSQL)
+1. Create account at [neon.tech](https://neon.tech)
+2. Create new project
+3. Copy connection string to `DATABASE_URL`
+
+## Monitoring and Maintenance
+
+### Health Checks
+The application provides a health endpoint:
+- `GET /api/health` - Returns application status
+
+### Log Monitoring
+Monitor these key log messages:
+- "Data is stale - Fetching fresh weather data"
+- "Using cached thermostat data" vs "Refreshing thermostat data"
+- API error messages
+
+### Performance
+- Weather data refreshes every 3 minutes
+- Thermostat data refreshes every 3 minutes
+- Database queries are optimized for recent data
+
 ## Security Considerations
 
-### Production Checklist
-- [ ] SESSION_SECRET is set to a secure random value
-- [ ] DATABASE_URL uses SSL connection
-- [ ] NODE_ENV is set to "production"
-- [ ] API tokens are stored securely
-- [ ] HTTPS is configured (handled by deployment platform)
+### API Key Security
+- Never commit `.env` files to version control
+- Use environment variables in production
+- Rotate API keys periodically
 
-### Development vs Production
-- Development: Uses memory storage and session store
-- Production: Uses PostgreSQL for data and session persistence
-- Secure cookies enabled automatically in production mode
+### Network Security
+- Use HTTPS in production
+- Consider IP whitelisting for internal deployments
+- Enable CORS only for your domain
 
-## Performance Optimization
+### Database Security
+- Use strong passwords
+- Enable SSL connections
+- Regular backups for production databases
 
-### Database
-- Indexes created automatically for weather_data queries
-- Session cleanup handled by connect-pg-simple
-- Weather data limited to 48-hour retention
+## Scaling Considerations
 
-### Caching
-- Weather data cached for 3 minutes
-- Database connection pooling via Neon serverless
-- Static assets served with appropriate cache headers
+### Single Instance
+- Suitable for personal/family use
+- Handles 10-50 concurrent users
+- 512MB RAM recommended
 
-## Monitoring
+### Multiple Instances
+- Use load balancer for high availability
+- Shared database across instances
+- Consider Redis for session storage
 
-### Key Metrics
-- Health check endpoint status
-- Database connection health
-- Weather data freshness
-- Memory usage and uptime
+## Backup and Recovery
 
-### Logging
-- Structured logging for API requests
-- Database connection status
-- Weather data refresh cycles
-- Error handling with detailed context
+### Configuration Backup
+- Backup `.env` file securely
+- Document all custom settings
+- Version control all code changes
+
+### Data Backup
+- Weather data: 48-hour retention (automatic)
+- Thermostat data: Consider longer retention
+- Database backups if using persistent storage

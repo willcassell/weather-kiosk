@@ -1,27 +1,29 @@
 # WeatherFlow Tempest Weather Station Dashboard
 
-A modern, kiosk-friendly weather monitoring application that displays real-time data from a WeatherFlow Tempest weather station with integrated Ecobee thermostat support.
+A modern, kiosk-friendly weather monitoring application that displays real-time data from your WeatherFlow Tempest weather station with optional Ecobee thermostat integration. Built with React, TypeScript, and designed for continuous display on various screen sizes.
 
 ## Features
 
-### Weather Monitoring
-- **Live Weather Data**: Real-time updates from WeatherFlow Tempest station (ID: 38335)
-- **Comprehensive Metrics**: Temperature, wind speed/direction, barometric pressure, rainfall, humidity, UV index
-- **Visual Indicators**: Animated wind compass with directional colors and speed-based effects
-- **Weather Radar**: Embedded live radar from Windy.com
+### Weather Monitoring  
+- **Live Weather Data**: Real-time observations from your WeatherFlow Tempest station (not forecasts)
+- **Comprehensive Metrics**: Temperature, wind speed/direction, barometric pressure, rainfall, humidity, UV index, lightning detection
+- **Visual Indicators**: Animated wind compass with directional colors and speed-based effects  
+- **Weather Radar**: Embedded live radar from Windy.com centered on your location
+- **Lightning Detection**: Real-time lightning strike distance and timing alerts
 - **Unit Conversions**: Automatic conversion from metric to imperial units
 
-### Indoor Climate Control
-- **Dual Location Support**: Monitor thermostats at "Home" and "Lake" locations
+### Indoor Climate Control (Optional)
+- **Multi-Location Support**: Monitor multiple Ecobee thermostats via Beestat API
 - **HVAC Activity Indicators**: Visual indicators show when heating/cooling is active vs idle
 - **Smart Temperature Display**: Color-coded temperatures with pulsing animation during HVAC operation
-- **HomeKit Integration**: Designed for HomeKit thermostat integration (Ecobee API suspended March 2024)
+- **Configurable Thermostats**: Target specific thermostats by name from your Ecobee system
 
 ### Kiosk Optimization
-- **50/50 Layout**: Weather cards on left, live radar on right for optimal screen utilization
+- **Adaptive Layout**: Weather cards on left, live radar on right in landscape; stacked vertically in portrait
 - **No User Interaction**: Designed for hands-off kiosk display
-- **Auto-refresh**: Updates every 3 minutes automatically
-- **Dark Theme**: Optimized for continuous display
+- **Auto-refresh**: Synchronized 3-minute updates for all data sources
+- **Dark Theme**: Optimized for continuous display with minimal eye strain
+- **Responsive Design**: Works from mobile phones to large displays
 
 ## Technology Stack
 
@@ -35,67 +37,63 @@ A modern, kiosk-friendly weather monitoring application that displays real-time 
 
 ### Backend
 - **Node.js** with Express.js
-- **TypeScript** with ESM modules
-- **Drizzle ORM** with PostgreSQL
-- **WeatherFlow API** integration
-- **Ecobee API** with OAuth 2.0
+- **TypeScript** with ESM modules  
+- **Drizzle ORM** with PostgreSQL (optional, uses in-memory storage by default)
+- **WeatherFlow API** integration with observations endpoint
+- **Beestat API** for Ecobee thermostat data
 
 ### Database
-- **PostgreSQL** via Neon serverless
+- **In-memory storage** by default (no setup required)
+- **PostgreSQL** support via Neon or self-hosted (optional)
 - **48-hour data retention** for weather history
+- **Automatic table creation** and data management
 - **Session-based authentication storage**
 
-## Setup Instructions
+## Quick Start
 
 ### Prerequisites
-- Node.js 18+ installed
-- PostgreSQL database (Neon recommended)
-- WeatherFlow API token
-- Ecobee developer account with API key
+- **WeatherFlow Tempest Station** with active data
+- **WeatherFlow Developer Account** for API access
+- **Node.js 18+**  
+- **Beestat Account** (optional, for thermostat integration)
 
-### Environment Variables
-Create a `.env` file in the root directory:
+### Setup Steps
 
-```bash
-# Database
-DATABASE_URL=postgresql://username:password@host/database
+1. **Get Your WeatherFlow API Token**
+   - Visit [WeatherFlow Tempest Settings](https://tempestwx.com/settings/tokens)
+   - Create a personal access token
+   - Note your station ID from the Tempest app
 
-# WeatherFlow API (use any one of these variable names)
-WEATHERFLOW_API_TOKEN=your_weatherflow_token
-WEATHERFLOW_TOKEN=your_weatherflow_token
-WF_TOKEN=your_weatherflow_token
-
-# Thermostat Integration (Optional - currently using HomeKit simulation)
-ECOBEE_API_KEY=your_ecobee_api_key  # Only if you have existing API access
-```
-
-### Installation
-
-1. **Clone the repository**
+2. **Clone and Configure**
    ```bash
-   git clone <repository-url>
-   cd weatherflow-dashboard
+   git clone https://github.com/yourusername/weather-dashboard.git
+   cd weather-dashboard
+   cp .env.example .env
+   # Edit .env with your API token, station ID, and location coordinates
    ```
 
-2. **Install dependencies**
+3. **Install and Run**
    ```bash
    npm install
-   ```
-
-3. **Set up the database**
-   ```bash
-   npm run db:push
-   ```
-
-4. **Start the development server**
-   ```bash
    npm run dev
    ```
 
-5. **Configure Ecobee thermostats**
-   - Visit `/thermostat-auth` in your browser
-   - Follow the PIN-based authentication process
-   - Enter the PIN on ecobee.com when prompted
+4. **Access Dashboard**  
+   Open `http://localhost:5000`
+
+For detailed setup instructions including thermostat integration and deployment, see [SETUP.md](./SETUP.md).
+
+## Configuration
+
+All personal data is configured via environment variables for easy sharing and deployment:
+
+- **WEATHERFLOW_API_TOKEN** - Your WeatherFlow personal access token
+- **WEATHERFLOW_STATION_ID** - Your specific weather station ID  
+- **VITE_RADAR_CENTER_LAT/LON** - Coordinates to center the radar display
+- **BEESTAT_API_KEY** - API key for thermostat integration (optional)
+- **TARGET_THERMOSTAT_NAMES** - Comma-separated list of thermostats to display
+
+See `.env.example` for complete configuration options.
 
 ## API Endpoints
 
@@ -104,35 +102,31 @@ ECOBEE_API_KEY=your_ecobee_api_key  # Only if you have existing API access
 - `GET /api/weather/history` - Historical weather data (48 hours)
 
 ### Thermostat Control
-- `GET /api/thermostats/current` - Current thermostat readings
-- `GET /api/thermostats/auth/status` - Authentication status
-- `POST /api/thermostats/auth/start` - Initiate PIN-based auth
-- `POST /api/thermostats/auth/complete` - Complete authentication
+- `GET /api/thermostats/current` - Current thermostat readings from Beestat API
 
 ## Data Sources
 
 ### WeatherFlow Tempest Station
-- **Station ID**: 38335
-- **Location**: Cornville, AZ
-- **API**: WeatherFlow Better Forecast API
-- **Update Frequency**: Every 3 minutes
+- **Personalized Configuration**: Configure your specific station ID in environment variables
+- **API**: WeatherFlow Observations API for real-time data (not forecasts)
+- **Update Frequency**: Every 3 minutes synchronized refresh
 
-### Ecobee Thermostats
-- **Living Room Thermostat**: Primary climate zone
-- **Bedroom Thermostat**: Secondary climate zone
-- **API**: Ecobee API v1 with OAuth 2.0
-- **Features**: Temperature, humidity, HVAC mode, target temperature
+### Ecobee Thermostats (Optional)
+- **Multi-Thermostat Support**: Configure which thermostats to display by name
+- **API**: Beestat API for reliable Ecobee data access
+- **Features**: Temperature, humidity, HVAC mode, target temperature with visual indicators
 
 ## Weather Card Components
 
 1. **Top Banner**: Station information and last update timestamp
-2. **Temperature Card**: Current, high, and low temperatures with trends
+2. **Temperature Card**: Current, high, and low temperatures with daily trends
 3. **Wind Card**: Speed, direction with animated compass and color-coded indicators
-4. **Pressure Card**: Barometric pressure with trend arrows
+4. **Pressure Card**: Barometric pressure with trend analysis
 5. **Rainfall Card**: Today's and yesterday's precipitation totals
-6. **Additional Data**: Humidity, UV index, visibility, and dew point
-7. **Thermostat Card**: Indoor temperatures from both locations
-8. **Live Radar**: Embedded weather radar display
+6. **Lightning Card**: Real-time lightning strike detection with distance and timing
+7. **Humidity & Dew Point Card**: Essential atmospheric moisture data
+8. **Thermostat Card**: Multi-location indoor climate control with HVAC status
+9. **Live Radar**: Embedded weather radar centered on your location
 
 ## Visual Features
 
@@ -152,82 +146,34 @@ ECOBEE_API_KEY=your_ecobee_api_key  # Only if you have existing API access
 - **Trend arrows**: Rising, falling, or steady pressure
 - **Millibars to inches**: Automatic unit conversion
 
-## Deployment
+## Documentation
 
-### Build for Production
-```bash
-npm run build
-```
+- **[SETUP.md](./SETUP.md)** - Detailed setup instructions for all configuration options
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide for various platforms
+- **[.env.example](./.env.example)** - Template for environment variables configuration
 
-### Environment Setup
-- Set `NODE_ENV=production`
-- Configure database connection
-- Ensure API keys are properly set
-- Enable HTTPS for OAuth callbacks
+## License
 
-### Kiosk Configuration
-- Set display to full-screen mode
-- Disable screen saver and power management
-- Configure auto-start on boot
-- Use landscape orientation for optimal layout
-
-## Development
-
-### Project Structure
-```
-├── client/src/           # React frontend
-│   ├── components/       # Reusable UI components
-│   ├── pages/           # Route components
-│   └── lib/             # Utility functions
-├── server/              # Express backend
-│   ├── routes.ts        # API routes
-│   ├── ecobee-api.ts    # Ecobee integration
-│   └── storage.ts       # Database interface
-├── shared/              # Shared TypeScript schemas
-└── docs/                # Documentation
-```
-
-### Key Commands
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run db:push` - Apply database schema changes
-- `npm run db:studio` - Open database admin interface
-
-## Weather Data Processing
-
-### Unit Conversions
-- **Temperature**: Celsius → Fahrenheit (°C × 9/5 + 32)
-- **Wind Speed**: m/s → mph (m/s × 2.237)
-- **Pressure**: millibars → inches of mercury (mb × 0.02953)
-
-### Data Retention
-- Weather readings stored for 48 hours
-- Automatic cleanup of old records
-- Efficient querying with indexed timestamps
-
-## Authentication Flow
-
-### Ecobee OAuth 2.0 Process
-1. Request authorization with PIN generation
-2. User enters PIN on ecobee.com
-3. Exchange authorization code for access tokens
-4. Automatic token refresh before expiration
-5. Secure storage of credentials in database
-
-## Troubleshooting
-
-### Common Issues
-- **No weather data**: Check WeatherFlow API token
-- **Thermostat errors**: Verify Ecobee API key and authentication
-- **Database connection**: Confirm DATABASE_URL is correct
-- **Build failures**: Ensure Node.js 18+ is installed
-
-### Debug Endpoints
-- Visit `/thermostat-auth` for authentication status
-- Check browser console for client-side errors
-- Review server logs for API failures
+MIT License - see [LICENSE](./LICENSE) for details.
 
 ## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Configure your personal environment variables (copy `.env.example` to `.env`)
+4. Make your changes
+5. Test with your own weather station and API keys
+6. Commit your changes (`git commit -m 'Add some amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
+
+### Development Guidelines
+
+- All personal data must be parameterized via environment variables
+- Never commit API keys, station IDs, or location data
+- Test with real weather station data, not mock data
+- Follow the existing TypeScript and React patterns
+- Update documentation for any new configuration options
 
 1. Fork the repository
 2. Create a feature branch
