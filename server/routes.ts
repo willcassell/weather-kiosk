@@ -371,7 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             return res.json(thermostatData);
           } catch (beestatError) {
-            console.error("Beestat API failed, falling back to cached or HomeKit data:", beestatError);
+            console.error("Beestat API failed, falling back to cached data:", beestatError);
             // If we have cached data, use it
             if (currentThermostatData && currentThermostatData.length > 0) {
               console.log("Using cached thermostat data due to API failure");
@@ -383,60 +383,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.json(currentThermostatData || []);
         }
       } else {
-        console.log("BEESTAT_API_KEY not found, using HomeKit simulation");
+        console.log("BEESTAT_API_KEY not found, no thermostat data available");
       }
       
-      // Fallback to HomeKit simulation
-      console.log("Using HomeKit simulation for thermostat data");
+      // No thermostat data available
+      console.log("No thermostat data available - Beestat API key required");
+      return res.json([]);
       
-      const { HomeKitDiscovery } = await import('./homekit-discovery.js');
-      const discovery = new HomeKitDiscovery();
-      const thermostatData = discovery.generateRealisticThermostatData();
-      
-      // Convert to our expected format
-      const formattedData = thermostatData.map((t, index) => ({
-        id: index + 1,
-        thermostatId: t.id,
-        name: t.name,
-        temperature: t.temperature,
-        targetTemp: t.targetTemp,
-        humidity: t.humidity,
-        mode: t.mode,
-        timestamp: t.timestamp,
-        lastUpdated: t.timestamp
-      }));
-      
-      return res.json(formattedData);
-      
-      // TODO: Uncomment below when you have working Ecobee API or real HomeKit integration
-      /*
-      const apiKey = getEcobeeApiKey();
-      
-      if (!apiKey) {
-        // Fallback to HomeKit simulation
-        return res.json(formattedData);
-      }
 
-      const ecobeeApi = new EcobeeAPI(apiKey);
-      
-      try {
-        const thermostatList = await ecobeeApi.getThermostats();
-        const convertedData = thermostatList.map((thermostat, index) => 
-          convertEcobeeToThermostatData(thermostat, index)
-        );
-        
-        if (convertedData.length === 0) {
-          console.warn("No thermostats found in Ecobee account");
-          return res.json(formattedData); // Fallback to HomeKit
-        }
-
-        res.json(convertedData);
-      } catch (authError) {
-        console.error("Ecobee authentication error:", authError);
-        // Fallback to HomeKit simulation
-        return res.json(formattedData);
-      }
-      */
     } catch (error) {
       console.error("Error getting thermostat data:", error);
       res.status(500).json({ 

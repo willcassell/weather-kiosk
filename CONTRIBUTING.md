@@ -8,7 +8,7 @@ Thank you for your interest in contributing to this weather dashboard project! T
 - Node.js 18 or higher
 - Your own WeatherFlow Tempest weather station
 - WeatherFlow API access token
-- (Optional) Beestat account for thermostat integration
+- (Optional) Beestat account for Ecobee thermostat integration
 
 ### Development Setup
 1. Fork the repository

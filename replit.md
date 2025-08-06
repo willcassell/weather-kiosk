@@ -36,7 +36,7 @@ Preferred communication style: Simple, everyday language.
 - **Development Server**: Custom Vite integration for seamless full-stack development.
 - **API Polling**: Server polls WeatherFlow API every 3 minutes, transforming and storing data.
 - **Client Updates**: Frontend polls for updates every 3 minutes to display real-time data.
-- **Thermostat Integration**: Integration with Beestat API for Ecobee thermostat readings, with secure API key authentication, data conversion, HVAC state detection, and multi-thermostat support. Includes a framework for HomeKit device integration.
+- **Thermostat Integration**: Integration with Beestat API for Ecobee thermostat readings, with secure API key authentication, data conversion, HVAC state detection, and multi-thermostat support.
 
 ### Data Storage
 - **Primary Database**: PostgreSQL via Neon serverless database

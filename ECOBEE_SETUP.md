@@ -1,98 +1,101 @@
-# Ecobee Thermostat Integration Setup Guide
+# Ecobee Thermostat Integration via Beestat
 
-## Current Status
-✅ **Thermostat card added to dashboard**  
-✅ **API framework ready**  
-⏳ **Mock data currently displayed** (Living Room: 72.5°F, Bedroom: 70.8°F)  
-⚠️ **Real API integration needed**
+The weather dashboard integrates with Ecobee thermostats through the **Beestat API**, which provides reliable access to thermostat data without requiring direct Ecobee API registration.
 
-## Authentication Options
+## Why Beestat?
 
-### ❌ **Option 1: Direct Ecobee API (UNAVAILABLE)**
-**Ecobee closed new developer registrations in March 2024** - still closed as of July 2025.
-- Cannot create new developer accounts
-- Cannot get new API keys
-- Only existing developers can continue using their keys
+- **No Ecobee API needed**: Ecobee suspended new developer registrations in March 2024
+- **Reliable data access**: Beestat maintains its own Ecobee integration
+- **Simple setup**: Just connect your Ecobee account to Beestat and get an API key
+- **Multi-thermostat support**: Handle multiple thermostats with custom naming
 
-### ✅ **Option 2: Seam API (RECOMMENDED)**
-Seam provides Ecobee integration without requiring direct API keys.
+## Setup Steps
 
-**Steps:**
-1. Sign up at [seam.co](https://seam.co)
-2. Create a new project in Seam dashboard
-3. Get your Seam API key from dashboard
-4. Connect your Ecobee account through Seam's interface
-5. Use Seam's API to access thermostat data
+### 1. Create Beestat Account
+1. Visit [Beestat.io](https://beestat.io)
+2. Create an account and connect your Ecobee account
+3. Wait 24-48 hours for initial data synchronization
+4. Verify your thermostats appear in the Beestat dashboard
 
-**Environment Variables Needed:**
-```env
-SEAM_API_KEY=your_seam_api_key_here
+### 2. Get API Access
+1. Go to [Beestat Account Settings](https://beestat.io/account)
+2. Generate an API key
+3. Copy the key for your environment configuration
+
+### 3. Configure Environment Variables
+Add these variables to your `.env` file:
+
+```bash
+# Beestat API Configuration
+BEESTAT_API_KEY=your_beestat_api_key_here
+TARGET_THERMOSTAT_NAMES=Downstairs,Upstairs,Main Floor
 ```
 
-### ✅ **Option 3: Existing Ecobee Developer Account**
-If you already have an Ecobee developer account from before March 2024:
+### 4. Configure Thermostat Names
+The `TARGET_THERMOSTAT_NAMES` should match the exact names of your thermostats as they appear in your Ecobee app:
 
-**Environment Variables Needed:**
-```env
-ECOBEE_API_KEY=your_ecobee_api_key
-ECOBEE_ACCESS_TOKEN=your_access_token
-ECOBEE_REFRESH_TOKEN=your_refresh_token
+- Check your Ecobee app for the exact thermostat names
+- Use comma-separated list with no spaces after commas
+- Names are case-sensitive and must match exactly
+
+**Examples:**
+```bash
+# Single thermostat
+TARGET_THERMOSTAT_NAMES=Home
+
+# Multiple thermostats
+TARGET_THERMOSTAT_NAMES=Downstairs,Upstairs
+TARGET_THERMOSTAT_NAMES=Living Room,Bedroom,Guest Room
 ```
 
-### ✅ **Option 4: Home Assistant Integration**
-If you use Home Assistant with Ecobee integration:
+## Features
 
-**Steps:**
-1. Set up Home Assistant with Ecobee integration
-2. Enable Home Assistant API
-3. Use Home Assistant's REST API to access thermostat data
+### Thermostat Data Display
+- **Current temperature** for each configured thermostat
+- **Target temperature** with HVAC mode indicators
+- **HVAC status**: Visual indicators for heating/cooling/idle
+- **Multi-location support**: Display multiple thermostats simultaneously
 
-**Environment Variables Needed:**
-```env
-HOME_ASSISTANT_URL=http://your-ha-instance:8123
-HOME_ASSISTANT_TOKEN=your_long_lived_access_token
-```
+### HVAC Mode Indicators
+- 🔥 **Heat**: Red indicator when heating is active
+- ❄️ **Cool**: Blue indicator when cooling is active  
+- 🎯 **Auto**: Green indicator for automatic mode
+- ⏸️ **Off**: Gray indicator when HVAC is off
 
-## Implementation Status
+## Troubleshooting
 
-### Currently Built:
-- ✅ Thermostat card UI component
-- ✅ Database schema for thermostat data
-- ✅ API endpoints (`/api/thermostats/current`)
-- ✅ Mock data for testing
-- ✅ Dashboard integration
+### No Thermostat Data
+- **Check API Key**: Verify `BEESTAT_API_KEY` is correct
+- **Wait for sync**: Initial Beestat sync can take 24-48 hours
+- **Verify connection**: Ensure your Ecobee account is connected to Beestat
 
-### Next Steps:
-1. **Choose your authentication method** from options above
-2. **Provide API credentials** using the secrets tool
-3. **Replace mock API with real integration**
-4. **Test with live thermostat data**
+### Wrong Thermostats Shown
+- **Check names**: Verify `TARGET_THERMOSTAT_NAMES` spelling matches Ecobee app exactly
+- **Case sensitive**: Names must match case exactly as shown in Ecobee
+- **No extra spaces**: Use format `Name1,Name2` without spaces after commas
 
-## Thermostat Card Features
+### Incorrect Readings
+- **Data delay**: Beestat updates may have 15-30 minute delay
+- **Recent changes**: New thermostat settings may take time to appear
+- **Sync issues**: Check Beestat dashboard for any sync errors
 
-The thermostat card shows:
-- **Current temperature** for each thermostat location
-- **Target temperature** with HVAC mode (heat/cool/auto/off)
-- **Temperature difference** from target
-- **Humidity levels** (when available)
-- **Color-coded modes**: Heat=🔥, Cool=❄️, Auto=🎯, Off=⏸️
+## Data Flow
 
-## Technical Integration
+1. **Ecobee** → Your thermostats report to Ecobee cloud
+2. **Beestat** → Syncs data from Ecobee every 15-30 minutes  
+3. **Weather Dashboard** → Requests thermostat data from Beestat API every 3 minutes
+4. **Display** → Shows current readings with visual HVAC status
 
-The thermostat integration is designed to be easily switchable between providers. Currently displays:
+## API Endpoints
 
-**Living Room Thermostat:**
-- Current: 72.5°F
-- Target: 72.0°F  
-- Mode: Cool
-- Humidity: 45%
+The dashboard provides thermostat data via:
+- `GET /api/thermostats/current` - Current readings from all configured thermostats
 
-**Bedroom Thermostat:**
-- Current: 70.8°F
-- Target: 69.0°F
-- Mode: Cool  
-- Humidity: 42%
+This endpoint returns temperature, humidity, HVAC mode, and status for each thermostat in your `TARGET_THERMOSTAT_NAMES` list.
 
-## Ready for Real Data
+## Support
 
-The framework is complete and ready to connect to real thermostats. Choose your preferred authentication method and provide the necessary API keys to replace the mock data with live thermostat readings.
+For issues with:
+- **Beestat API**: Visit [Beestat Community](https://community.beestat.io)  
+- **Ecobee connection**: Check your Ecobee account at [ecobee.com](https://ecobee.com)
+- **Dashboard integration**: Verify environment variables and check application logs
