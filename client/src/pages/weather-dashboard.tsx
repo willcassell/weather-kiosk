@@ -7,6 +7,7 @@ import WindCard from "@/components/weather/wind-card";
 import PressureCard from "@/components/weather/pressure-card";
 import RainfallCard from "@/components/weather/rainfall-card";
 import LightningCard from "@/components/weather/lightning-card";
+import HumidityDewPointCard from "@/components/weather/humidity-dewpoint-card";
 import ThermostatCard from "@/components/weather/thermostat-card";
 import RadarDisplay from "@/components/weather/radar-display";
 import { Card, CardContent } from "@/components/ui/card";
@@ -129,12 +130,20 @@ export default function WeatherDashboard() {
                 />
               </div>
               
-              {/* Lightning Card - Shows recent lightning strike data */}
-              <div className="flex-[0.8]">
-                <LightningCard 
-                  strikeDistance={weatherData.lightningStrikeDistance}
-                  strikeTime={weatherData.lightningStrikeTime ? new Date(weatherData.lightningStrikeTime) : null}
-                />
+              {/* Lightning and Humidity/Dew Point row - Split 50/50 */}
+              <div className="flex gap-2 flex-[0.8]">
+                <div className="w-1/2">
+                  <LightningCard 
+                    strikeDistance={weatherData.lightningStrikeDistance}
+                    strikeTime={weatherData.lightningStrikeTime ? new Date(weatherData.lightningStrikeTime) : null}
+                  />
+                </div>
+                <div className="w-1/2">
+                  <HumidityDewPointCard 
+                    humidity={weatherData.humidity ?? undefined}
+                    dewPoint={weatherData.dewPoint ?? undefined}
+                  />
+                </div>
               </div>
               
               {/* Thermostat Card - More space for detailed thermostat information */}
