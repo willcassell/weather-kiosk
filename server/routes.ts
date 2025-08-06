@@ -313,35 +313,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Allow force refresh with query parameter
       const forceRefresh = req.query.force === 'true';
-      const shouldRefresh = forceRefresh || !currentThermostatData || 
+      const shouldRefresh = forceRefresh || !currentThermostatData || currentThermostatData.length === 0 ||
         (currentThermostatData.length > 0 && currentThermostatData[0].lastUpdated && 
          Date.now() - currentThermostatData[0].lastUpdated.getTime() > 3 * 60 * 1000);
       
-      // Try Beestat API first
-      if (process.env.BEESTAT_API_KEY && shouldRefresh) {
-        try {
-          const reason = forceRefresh ? "Force refresh requested" : "Thermostat data is stale";
-          console.log(`${reason} - Fetching thermostat data from Beestat API`);
-          const thermostatData = await fetchBeestatThermostats();
-          
-          // Save to storage for caching
-          for (const thermostat of thermostatData) {
-            await storage.saveThermostatData(thermostat);
+      // Try Beestat API first  
+      if (process.env.BEESTAT_API_KEY) {
+        if (shouldRefresh) {
+          try {
+            const reason = forceRefresh ? "Force refresh requested" : "Thermostat data is stale";
+            console.log(`${reason} - Fetching thermostat data from Beestat API`);
+            const thermostatData = await fetchBeestatThermostats();
+            
+            // Save to storage for caching
+            for (const thermostat of thermostatData) {
+              await storage.saveThermostatData({
+                thermostatId: thermostat.thermostatId,
+                name: thermostat.name,
+                temperature: thermostat.temperature,
+                targetTemp: thermostat.targetTemp,
+                humidity: thermostat.humidity,
+                mode: thermostat.mode
+              });
+            }
+            
+            return res.json(thermostatData);
+          } catch (beestatError) {
+            console.error("Beestat API failed, falling back to cached or HomeKit data:", beestatError);
+            // If we have cached data, use it
+            if (currentThermostatData && currentThermostatData.length > 0) {
+              console.log("Using cached thermostat data due to API failure");
+              return res.json(currentThermostatData);
+            }
           }
-          
-          return res.json(thermostatData);
-        } catch (beestatError) {
-          console.error("Beestat API failed, falling back to cached or HomeKit data:", beestatError);
-          // If we have cached data, use it
-          if (currentThermostatData && currentThermostatData.length > 0) {
-            console.log("Using cached thermostat data due to API failure");
-            return res.json(currentThermostatData);
-          }
+        } else {
+          console.log(`Using cached thermostat data from ${currentThermostatData?.[0]?.lastUpdated}`);
+          return res.json(currentThermostatData || []);
         }
-      } else if (process.env.BEESTAT_API_KEY && !shouldRefresh) {
-        console.log(`Using cached thermostat data from ${currentThermostatData?.[0]?.lastUpdated}`);
-        return res.json(currentThermostatData || []);
-      } else if (!process.env.BEESTAT_API_KEY) {
+      } else {
         console.log("BEESTAT_API_KEY not found, using HomeKit simulation");
       }
       

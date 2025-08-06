@@ -95,6 +95,7 @@ export class MemStorage implements IStorage {
       id,
       timestamp: new Date(),
       lastUpdated: new Date(),
+      humidity: insertData.humidity ?? null, // Fix undefined to null conversion
     };
 
     // Remove existing data for this thermostat
