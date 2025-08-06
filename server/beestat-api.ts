@@ -97,22 +97,23 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
       }
 
       console.log(`Processing thermostat: ${thermostatName}`);
+      console.log(`Raw temperature data: ${thermostat.temperature}, setpoint_heat: ${thermostat.temperature_setpoint_heat}, setpoint_cool: ${thermostat.temperature_setpoint_cool}`);
       
       // Determine target temperature based on HVAC mode
       let targetTemp = 72; // default
       if (thermostat.hvac_mode === 'heat') {
-        targetTemp = Math.round(thermostat.temperature_setpoint_heat / 10); // Beestat uses decidegrees
+        targetTemp = thermostat.temperature_setpoint_heat; // Try without conversion first
       } else if (thermostat.hvac_mode === 'cool') {
-        targetTemp = Math.round(thermostat.temperature_setpoint_cool / 10);
+        targetTemp = thermostat.temperature_setpoint_cool;
       } else if (thermostat.hvac_mode === 'auto') {
         // For auto mode, use the appropriate setpoint based on current state
         if (thermostat.hvac_state?.includes('heat')) {
-          targetTemp = Math.round(thermostat.temperature_setpoint_heat / 10);
+          targetTemp = thermostat.temperature_setpoint_heat;
         } else if (thermostat.hvac_state?.includes('cool')) {
-          targetTemp = Math.round(thermostat.temperature_setpoint_cool / 10);
+          targetTemp = thermostat.temperature_setpoint_cool;
         } else {
           // Use average of both setpoints when idle in auto mode
-          targetTemp = Math.round((thermostat.temperature_setpoint_heat + thermostat.temperature_setpoint_cool) / 20);
+          targetTemp = Math.round((thermostat.temperature_setpoint_heat + thermostat.temperature_setpoint_cool) / 2);
         }
       }
 
@@ -128,7 +129,7 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
         id: parseInt(id),
         thermostatId: `beestat-${thermostat.ecobee_thermostat_id}`,
         name: location, // Use simplified location name
-        temperature: Math.round(thermostat.temperature / 10), // Convert decidegrees to Fahrenheit
+        temperature: thermostat.temperature, // Temperature should already be in Fahrenheit
         targetTemp: targetTemp,
         humidity: thermostat.humidity || null,
         mode: mapBeestatMode(thermostat.hvac_mode),
