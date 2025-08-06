@@ -170,9 +170,9 @@ export default function ThermostatCard({ thermostats, isLoading, error }: Thermo
                   </div>
                 </div>
                 
-                {/* Add divider between thermostats */}
+                {/* Add divider between thermostats with buffer space */}
                 {index < thermostats.length - 1 && (
-                  <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-px h-8 lg:h-12 xl:h-16 2xl:h-20 bg-border"></div>
+                  <div className="absolute -right-3 top-1/2 transform -translate-y-1/2 w-px h-8 lg:h-12 xl:h-16 2xl:h-20 bg-border"></div>
                 )}
               </div>
             );
