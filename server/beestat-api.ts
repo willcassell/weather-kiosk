@@ -48,7 +48,23 @@ export async function fetchBeestatThermostats(): Promise<ThermostatData[]> {
     // Convert Beestat data to our thermostat format
     const thermostats: ThermostatData[] = [];
     
+    // Filter for specific thermostats: Downstairs (for Home) and SML809 (for Lake)
+    const targetThermostats = ['Downstairs', 'SML809'];
+    
     for (const [id, thermostat] of Object.entries(data.data)) {
+      // Check if this thermostat matches our target list
+      const thermostatName = thermostat.name || thermostat.identifier || '';
+      const isTargetThermostat = targetThermostats.some(target => 
+        thermostatName.toLowerCase().includes(target.toLowerCase())
+      );
+      
+      if (!isTargetThermostat) {
+        console.log(`Skipping thermostat: ${thermostatName} (not in target list: ${targetThermostats.join(', ')})`);
+        continue;
+      }
+
+      console.log(`Processing thermostat: ${thermostatName}`);
+      
       // Determine target temperature based on HVAC mode
       let targetTemp = 72; // default
       if (thermostat.hvac_mode === 'heat') {
@@ -67,15 +83,18 @@ export async function fetchBeestatThermostats(): Promise<ThermostatData[]> {
         }
       }
 
-      // Determine if HVAC is actively running
-      const isActive = thermostat.hvac_state && 
-                      (thermostat.hvac_state.includes('heat') || 
-                       thermostat.hvac_state.includes('cool'));
+      // Determine location based on thermostat name
+      let location = 'Home';
+      if (thermostatName.toLowerCase().includes('sml809')) {
+        location = 'Lake';
+      } else if (thermostatName.toLowerCase().includes('downstairs')) {
+        location = 'Home';
+      }
 
       thermostats.push({
         id: parseInt(id),
         thermostatId: `beestat-${thermostat.ecobee_thermostat_id}`,
-        name: thermostat.name || thermostat.identifier || 'Thermostat',
+        name: location, // Use simplified location name
         temperature: Math.round(thermostat.temperature / 10), // Convert decidegrees to Fahrenheit
         targetTemp: targetTemp,
         humidity: thermostat.humidity || null,
@@ -84,6 +103,8 @@ export async function fetchBeestatThermostats(): Promise<ThermostatData[]> {
         lastUpdated: new Date()
       });
     }
+
+    console.log(`Found ${thermostats.length} target thermostats from ${Object.keys(data.data).length} total thermostats`);
 
     return thermostats;
   } catch (error) {
