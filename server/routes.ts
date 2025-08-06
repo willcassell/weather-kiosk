@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertWeatherDataSchema, insertThermostatDataSchema, type WeatherFlowStation, type WeatherFlowObservation, type WeatherFlowForecast, type ThermostatData, type WeatherData } from "@shared/schema";
 import { EcobeeAPI, convertEcobeeToThermostatData } from "./ecobee-api";
+
+import { fetchBeestatThermostats } from './beestat-api';
 import { z } from "zod";
 
 const WEATHERFLOW_API_BASE = "https://swd.weatherflow.com/swd/rest";
@@ -107,8 +109,10 @@ async function fetchWeatherFlowData(): Promise<any> {
     const historicalData = await storage.getWeatherHistory(STATION_ID, 6);
     
     // Get today's recorded data for actual high/low calculations (only from today, not past 24 hours)
+    // Use local timezone for proper midnight calculation
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0); // Set to midnight in local timezone
     const todayHistory = await storage.getWeatherHistorySince(STATION_ID, todayStart);
     
     const todayForecast = forecastData.forecast?.daily[0];
@@ -127,7 +131,8 @@ async function fetchWeatherFlowData(): Promise<any> {
       const todayValidRecords = todayHistory.filter((record: WeatherData) => {
         if (!record.temperature || !record.timestamp) return false;
         const recordDate = new Date(record.timestamp);
-        return recordDate >= todayStart; // Only records from today
+        const recordDateLocal = new Date(recordDate.getTime() - recordDate.getTimezoneOffset() * 60000);
+        return recordDateLocal >= todayStart; // Only records from today in local timezone
       });
       
       if (todayValidRecords.length > 0) {
@@ -292,7 +297,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Thermostat API endpoints
   app.get("/api/thermostats/current", async (req, res) => {
     try {
-      // Always use HomeKit simulation for now since Ecobee suspended new developer registrations
+      // Try Beestat API first
+      if (process.env.BEESTAT_API_KEY) {
+        try {
+          console.log("Fetching thermostat data from Beestat API");
+          const thermostatData = await fetchBeestatThermostats();
+          return res.json(thermostatData);
+        } catch (beestatError) {
+          console.error("Beestat API failed, falling back to HomeKit simulation:", beestatError);
+        }
+      } else {
+        console.log("BEESTAT_API_KEY not found, using HomeKit simulation");
+      }
+      
+      // Fallback to HomeKit simulation
       console.log("Using HomeKit simulation for thermostat data");
       
       const { HomeKitDiscovery } = await import('./homekit-discovery.js');

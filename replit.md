@@ -112,6 +112,29 @@ Preferred communication style: Simple, everyday language.
 - **Replit Integration**: Banner and cartographer for Replit environment
 - **Live Reloading**: Automatic server restart on changes
 
+## Recent Changes (August 6, 2025)
+
+### Orientation-Based Responsive Layout (August 6, 2025)
+- **Orientation Detection**: Replaced screen-width breakpoints with CSS orientation media queries
+- **Landscape Layout**: Cards display side-by-side when screen is wider than tall (landscape orientation)
+- **Portrait Layout**: Cards stack vertically when screen is taller than wide (portrait orientation)  
+- **Dynamic Adaptation**: Layout automatically adjusts when device is rotated or window resized
+- **Font Scaling Enhancement**: Typography now scales based on both orientation and screen size for optimal readability
+- **Cross-Device Compatibility**: Works seamlessly from rotated phones to ultrawide monitors
+
+### Temperature Reset Fix (August 6, 2025)
+- **Midnight Reset Issue**: Fixed temperature high/low not resetting at midnight due to timezone handling
+- **Local Timezone Support**: Updated date calculations to use local timezone instead of UTC for proper daily reset
+- **Enhanced Filtering**: Improved logic to ensure only today's temperatures are considered for high/low calculations
+
+### Beestat API Integration (August 6, 2025)
+- **Real Thermostat Data**: Integrated with Beestat API to fetch actual Ecobee thermostat readings
+- **API Key Authentication**: Added secure BEESTAT_API_KEY environment variable for authentication
+- **Data Conversion**: Automatic conversion from Beestat decidegrees to Fahrenheit display format
+- **HVAC State Detection**: Intelligent detection of heating/cooling activity from thermostat state
+- **Graceful Fallback**: Falls back to HomeKit simulation if Beestat API unavailable
+- **Multi-Thermostat Support**: Handles multiple thermostats with proper location naming
+
 ## Recent Changes (August 5, 2025)
 
 ### Responsive Layout and Vertical Centering (August 5, 2025)
