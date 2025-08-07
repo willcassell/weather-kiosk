@@ -285,9 +285,17 @@ export class PostgreSQLStorage implements IStorage {
 
   async getLatestThermostatData(): Promise<ThermostatData[]> {
     try {
+      // Get only the most recent record for each thermostat_id using a window function
       const result = await this.db
         .select()
         .from(thermostatData)
+        .where(
+          sql`id IN (
+            SELECT DISTINCT ON (thermostat_id) id 
+            FROM thermostat_data 
+            ORDER BY thermostat_id, last_updated DESC
+          )`
+        )
         .orderBy(desc(thermostatData.lastUpdated));
       
       return result;
