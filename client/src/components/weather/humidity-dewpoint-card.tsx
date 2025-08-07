@@ -28,7 +28,7 @@ export default function HumidityDewPointCard({
           {/* Left - Humidity */}
           <div className="text-left">
             <div className="text-responsive-lg font-bold text-blue-400">
-              {formatValue(humidity, "%")}
+              {formatValue(humidity)}<span className="text-xs">%</span>
             </div>
             <div className="text-responsive-sm text-muted-foreground">Humidity</div>
           </div>

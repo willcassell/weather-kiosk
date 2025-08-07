@@ -72,11 +72,11 @@ export default function PressureCard({ pressure, trend, preferences }: PressureC
               />
             </div>
             
-            {/* Zone labels with more spacing */}
-            <div className="relative w-4/5 mt-3">
-              <div className="absolute left-0 text-responsive-sm text-red-400 font-medium">LOW</div>
-              <div className="absolute left-1/2 transform -translate-x-1/2 text-responsive-sm text-yellow-400 font-medium">NORMAL</div>
-              <div className="absolute right-0 text-responsive-sm text-green-400 font-medium">HIGH</div>
+            {/* Zone labels with reduced spacing and smaller text */}
+            <div className="relative w-4/5 mt-1">
+              <div className="absolute left-0 text-xs lg:text-sm text-red-400 font-medium">LOW</div>
+              <div className="absolute left-1/2 transform -translate-x-1/2 text-xs lg:text-sm text-yellow-400 font-medium">NORMAL</div>
+              <div className="absolute right-0 text-xs lg:text-sm text-green-400 font-medium">HIGH</div>
             </div>
           </div>
           

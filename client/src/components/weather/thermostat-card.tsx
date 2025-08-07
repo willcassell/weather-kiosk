@@ -128,7 +128,7 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
 
   const getTemperatureColor = (current: number, target: number, mode: string) => {
     const diff = current - target;
-    const active = isHvacActive(mode, current, target);
+    const active = Math.abs(current - target) > 1.0;
     
     if (active) {
       // HVAC is actively working

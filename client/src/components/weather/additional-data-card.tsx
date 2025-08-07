@@ -41,14 +41,14 @@ export default function AdditionalDataCard({
           <div className="w-px h-8 lg:h-10 xl:h-12 2xl:h-16 bg-border"></div>
           <div className="text-center flex-1">
             <div className="text-responsive-md font-bold text-green-400">
-              {formatValue(visibility)}mi
+              {formatValue(visibility)}<span className="text-xs">mi</span>
             </div>
             <div className="text-responsive-sm text-muted-foreground">Visibility</div>
           </div>
           <div className="w-px h-8 lg:h-10 xl:h-12 2xl:h-16 bg-border"></div>
           <div className="text-center flex-1">
             <div className="text-responsive-md font-bold text-cyan-400">
-              {formatValue(dewPoint, 1)}°F
+              {formatValue(dewPoint, 1)}<span className="text-xs">°F</span>
             </div>
             <div className="text-responsive-sm text-muted-foreground">Dew Point</div>
           </div>

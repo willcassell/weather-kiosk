@@ -65,12 +65,12 @@ export default function WindCard({
           {/* Center - Responsive Compass Display */}
           <div className="flex-shrink-0">
             <div className="relative w-16 h-16 lg:w-20 lg:h-20 xl:w-24 xl:h-24 2xl:w-28 2xl:h-28 rounded-full border-2 border-primary/30 bg-primary/10">
-              {/* Cardinal direction markers */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 text-responsive-sm font-bold text-muted-foreground">N</div>
-                <div className="absolute -right-1 top-1/2 transform -translate-y-1/2 text-responsive-sm font-bold text-muted-foreground">E</div>
-                <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-responsive-sm font-bold text-muted-foreground">S</div>
-                <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 text-responsive-sm font-bold text-muted-foreground">W</div>
+              {/* Cardinal direction markers - positioned safely inside */}
+              <div className="absolute inset-2 flex items-center justify-center">
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 text-xs lg:text-sm font-bold text-muted-foreground">N</div>
+                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 text-xs lg:text-sm font-bold text-muted-foreground">E</div>
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-xs lg:text-sm font-bold text-muted-foreground">S</div>
+                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 text-xs lg:text-sm font-bold text-muted-foreground">W</div>
               </div>
               {/* Wind direction arrow */}
               <Navigation 

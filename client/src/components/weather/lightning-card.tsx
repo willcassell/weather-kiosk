@@ -56,7 +56,7 @@ export default function LightningCard({
           <div className="text-center">
             <div className={`text-responsive-3xl font-bold ${hasRecentLightning ? 'text-foreground' : 'text-muted-foreground'}`}>
               {formatDistance(strikeDistance)}
-              {hasRecentLightning && <span className="text-responsive-lg"> mi</span>}
+              {hasRecentLightning && <span className="text-sm lg:text-base"> mi</span>}
             </div>
           </div>
           
