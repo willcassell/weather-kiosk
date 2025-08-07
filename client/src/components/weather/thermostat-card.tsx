@@ -131,45 +131,44 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
       </div>
       
       <div className="weather-card-content">
-        <div className="flex items-stretch justify-between space-x-6 w-full">
+        <div className="flex items-stretch justify-between space-x-4 w-full">
           {thermostats.map((thermostat, index) => {
             const tempColor = getTemperatureColor(thermostat.temperature, thermostat.targetTemp, thermostat.mode);
             const active = isHvacActive(thermostat.mode, thermostat.temperature, thermostat.targetTemp);
             
             return (
-              <div key={thermostat.id} className="flex-1 relative flex flex-col justify-center">
+              <div key={thermostat.id} className="flex-1 relative flex flex-col justify-center space-y-2">
+                {/* Top Row - Location Name with HVAC Status */}
                 <div className="flex items-center justify-between">
-                  {/* Left - Location Name & HVAC Status */}
-                  <div className="text-left flex flex-col justify-center space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-responsive-md font-semibold text-foreground">
-                        {thermostat.name}
-                      </span>
-                    </div>
-                    {getHvacStatusIndicator(thermostat.mode, thermostat.temperature, thermostat.targetTemp)}
-                  </div>
-                  
-                  {/* Center - Current Temperature with Activity Indicator */}
-                  <div className="text-center flex flex-col justify-center">
-                    <div className={`text-responsive-xl font-bold ${tempColor} ${active ? 'animate-pulse' : ''}`}>
+                  <span className="text-responsive-sm font-semibold text-foreground">
+                    {thermostat.name}
+                  </span>
+                  {getHvacStatusIndicator(thermostat.mode, thermostat.temperature, thermostat.targetTemp)}
+                </div>
+                
+                {/* Bottom Row - Temperature Info */}
+                <div className="flex items-center justify-between">
+                  {/* Current Temperature */}
+                  <div className="text-left">
+                    <div className={`text-responsive-lg font-bold ${tempColor} ${active ? 'animate-pulse' : ''}`}>
                       {preferences ? formatTemperature(thermostat.temperature, preferences, 1) : `${thermostat.temperature.toFixed(1)}°F`}
                     </div>
-                    <div className="text-responsive-sm text-muted-foreground">
-                      Current
-                    </div>
+                    <div className="text-responsive-xs text-muted-foreground">Current</div>
                   </div>
                   
-                  {/* Right - Target & Humidity */}
-                  <div className="text-right flex flex-col justify-center space-y-1">
+                  {/* Target Temperature & Humidity */}
+                  <div className="text-right">
                     <div className="text-responsive-md font-medium text-cyan-400">
                       → {preferences ? formatTemperature(thermostat.targetTemp, preferences, 0) : `${thermostat.targetTemp}°F`}
                     </div>
-                    <div className="text-responsive-sm text-muted-foreground">Target</div>
-                    {thermostat.humidity && (
-                      <div className="text-responsive-sm text-blue-300">
-                        {thermostat.humidity}% RH
-                      </div>
-                    )}
+                    <div className="flex items-center justify-end space-x-2">
+                      <div className="text-responsive-xs text-muted-foreground">Target</div>
+                      {thermostat.humidity && (
+                        <div className="text-responsive-xs text-blue-300">
+                          {thermostat.humidity}%
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
