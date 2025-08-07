@@ -1,5 +1,5 @@
 import { CloudRain, Droplets } from "lucide-react";
-import { formatPrecipitation } from "@/utils/format-values";
+import { convertPrecipitation, getUnitSymbol } from "@shared/units";
 import type { UnitPreferences } from "@shared/units";
 
 interface RainfallCardProps {
@@ -9,8 +9,15 @@ interface RainfallCardProps {
 }
 
 export default function RainfallCard({ todayRain, yesterdayRain, preferences }: RainfallCardProps) {
-  const formatRain = (amount?: number) => {
-    return amount !== undefined ? formatPrecipitation(amount, preferences, 2) : "--";
+  const formatRainParts = (amount?: number) => {
+    if (amount === undefined) return { value: "--", unit: "" };
+    
+    const converted = convertPrecipitation(amount, 'inches', preferences.precipitation);
+    const symbol = getUnitSymbol(preferences.precipitation);
+    return {
+      value: converted.toFixed(2),
+      unit: symbol
+    };
   };
 
   return (
@@ -24,7 +31,10 @@ export default function RainfallCard({ todayRain, yesterdayRain, preferences }: 
           {/* Today's rainfall */}
           <div className="text-center flex-1">
             <div className="text-responsive-xl font-bold text-cyan-400">
-              {formatRain(todayRain)}
+              {formatRainParts(todayRain).value}
+              <span className="text-responsive-sm text-muted-foreground ml-1">
+                {formatRainParts(todayRain).unit}
+              </span>
             </div>
             <div className="text-responsive-sm text-muted-foreground">Today</div>
           </div>
@@ -34,7 +44,10 @@ export default function RainfallCard({ todayRain, yesterdayRain, preferences }: 
           {/* Yesterday's rainfall */}
           <div className="text-center flex-1">
             <div className="text-responsive-xl font-bold text-blue-300">
-              {formatRain(yesterdayRain)}
+              {formatRainParts(yesterdayRain).value}
+              <span className="text-responsive-sm text-muted-foreground ml-1">
+                {formatRainParts(yesterdayRain).unit}
+              </span>
             </div>
             <div className="text-responsive-sm text-muted-foreground">Yesterday</div>
           </div>
