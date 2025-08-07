@@ -15,10 +15,11 @@ A modern, kiosk-friendly weather monitoring application that displays real-time 
 - **Unit Conversions**: Automatic conversion from metric to imperial units
 
 ### Indoor Climate Control (Optional)
-- **Multi-Location Support**: Monitor multiple Ecobee thermostats via Beestat API
-- **HVAC Activity Indicators**: Visual indicators show when heating/cooling is active vs idle
+- **Multi-Location Support**: Monitor multiple Ecobee thermostats via Beestat API with reliable database storage
+- **Accurate HVAC Status**: Real-time equipment state detection showing actual heating/cooling/idle status from thermostat API
 - **Smart Temperature Display**: Color-coded temperatures with pulsing animation during HVAC operation
 - **Configurable Thermostats**: Target specific thermostats by name from your Ecobee system
+- **Data Consistency**: PostgreSQL storage ensures reliable thermostat data without duplicates
 
 ### Kiosk Optimization
 - **Adaptive Layout**: Weather cards on left, live radar on right in landscape; stacked vertically in portrait
@@ -47,6 +48,7 @@ A modern, kiosk-friendly weather monitoring application that displays real-time 
 ### Database
 - **PostgreSQL Database** for accurate weather observations and temperature calculations
 - **Weather Observations Storage**: Every individual weather reading stored with timestamps for precise daily calculations
+- **Thermostat Data Integrity**: Reliable storage with automatic duplicate prevention and latest record retrieval
 - **Automatic Schema Management**: Tables created automatically on startup
 - **Data Retention**: 7 days of detailed observations, 48 hours of processed weather history  
 - **Fallback Storage**: In-memory storage if database unavailable
