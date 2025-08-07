@@ -2,6 +2,27 @@ import { pgTable, text, serial, real, timestamp, integer } from "drizzle-orm/pg-
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Individual weather observations from API calls
+export const weatherObservations = pgTable("weather_observations", {
+  id: serial("id").primaryKey(),
+  stationId: text("station_id").notNull(),
+  timestamp: timestamp("timestamp").notNull(), // Observation timestamp from API
+  temperature: real("temperature").notNull(), // Temperature in Fahrenheit
+  feelsLike: real("feels_like"),
+  windSpeed: real("wind_speed"),
+  windGust: real("wind_gust"),
+  windDirection: integer("wind_direction"),
+  pressure: real("pressure"), // Barometric pressure in inHg
+  humidity: real("humidity"),
+  uvIndex: real("uv_index"),
+  dewPoint: real("dew_point"),
+  rainAccumulation: real("rain_accumulation"), // Rain since last reading
+  lightningStrikeCount: integer("lightning_strike_count"),
+  lightningStrikeDistance: real("lightning_strike_distance"),
+  createdAt: timestamp("created_at").defaultNow().notNull(), // When we stored this reading
+});
+
+// Current processed weather data (summary/calculated values)
 export const weatherData = pgTable("weather_data", {
   id: serial("id").primaryKey(),
   stationId: text("station_id").notNull(),
@@ -29,12 +50,19 @@ export const weatherData = pgTable("weather_data", {
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
 });
 
+export const insertWeatherObservationSchema = createInsertSchema(weatherObservations).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertWeatherDataSchema = createInsertSchema(weatherData).omit({
   id: true,
   timestamp: true,
   lastUpdated: true,
 });
 
+export type InsertWeatherObservation = z.infer<typeof insertWeatherObservationSchema>;
+export type WeatherObservation = typeof weatherObservations.$inferSelect;
 export type InsertWeatherData = z.infer<typeof insertWeatherDataSchema>;
 export type WeatherData = typeof weatherData.$inferSelect;
 

@@ -7,6 +7,9 @@ This project is a modern weather monitoring application that displays real-time 
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (August 2025)
+- **Weather Observations Database**: Implemented PostgreSQL storage for individual weather readings with accurate daily temperature calculations from observed data only
+- **Temperature Accuracy Enhancement**: Fixed daily high/low temperature timing by storing every API observation and calculating extremes from database queries instead of forecast data
+- **Database Schema Updates**: Added weather_observations table to store all individual readings with timestamps, replacing forecast-dependent temperature calculations
 - **UI Layout Optimization**: Balanced wind/rain card proportions (60/40 split), reduced wind font sizes for better space utilization
 - **Thermostat Card Redesign**: Three-column layout separating current temperature, humidity, and target temperature for clarity
 - **HVAC Status Accuracy**: Fixed thermostat status detection to use actual equipment state from Beestat API instead of temperature differences

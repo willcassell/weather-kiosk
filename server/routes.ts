@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertWeatherDataSchema, insertThermostatDataSchema, type WeatherFlowStation, type WeatherFlowObservation, type WeatherFlowForecast, type ThermostatData, type WeatherData } from "@shared/schema";
+import { insertWeatherDataSchema, insertWeatherObservationSchema, insertThermostatDataSchema, type WeatherFlowStation, type WeatherFlowObservation, type WeatherFlowForecast, type ThermostatData, type WeatherData } from "@shared/schema";
 import { EcobeeAPI, convertEcobeeToThermostatData } from "./ecobee-api";
 
 import { fetchBeestatThermostats } from './beestat-api';
@@ -100,22 +100,48 @@ async function fetchWeatherFlowData(): Promise<any> {
 
     const forecastData: WeatherFlowForecast = await forecastResponse.json();
     
-    // Log precipitation data for debugging
-    const apiRainToday = millimetersToInches(forecastData.current_conditions.precip_accum_local_day || 0);
-    const apiRainYesterday = millimetersToInches(forecastData.current_conditions.precip_accum_local_yesterday || 0);
+    // Get precipitation data from forecast if available
+    const apiRainToday = forecastData.current_conditions ? millimetersToInches((forecastData.current_conditions as any).precip_accum_local_day || 0) : 0;
+    const apiRainYesterday = forecastData.current_conditions ? millimetersToInches((forecastData.current_conditions as any).precip_accum_local_yesterday || 0) : 0;
     
     console.log(`API Precipitation: Today ${apiRainToday.toFixed(2)}", Yesterday ${apiRainYesterday.toFixed(2)}" (from WeatherFlow processed data)`);
     
     // Use most recent observation if available, otherwise fall back to forecast current conditions
     let currentConditions = forecastData.current_conditions as any;
+    let latestObs = null;
     
     if (observationsResponse.ok) {
       const observationsData = await observationsResponse.json();
       if (observationsData.obs && observationsData.obs.length > 0) {
         // Use the most recent observation for temperature
-        const latestObs = observationsData.obs[0];
+        latestObs = observationsData.obs[0];
         console.log(`Using latest observation data (timestamp: ${new Date(latestObs.timestamp * 1000).toISOString()})`);
         console.log(`Lightning data: strikes=${latestObs.lightning_strike_count}, avg_distance=${latestObs.lightning_strike_avg_distance}`);
+        
+        // Store this observation in our database
+        try {
+          await storage.saveWeatherObservation({
+            stationId: STATION_ID,
+            timestamp: new Date(latestObs.timestamp * 1000),
+            temperature: celsiusToFahrenheit(latestObs.air_temperature),
+            feelsLike: latestObs.feels_like ? celsiusToFahrenheit(latestObs.feels_like) : null,
+            windSpeed: latestObs.wind_avg ? latestObs.wind_avg * 2.237 : null, // Convert m/s to mph
+            windGust: latestObs.wind_gust ? latestObs.wind_gust * 2.237 : null,
+            windDirection: latestObs.wind_direction || null,
+            pressure: latestObs.station_pressure ? millibarsToInchesHg(latestObs.station_pressure) : null,
+            humidity: latestObs.relative_humidity || null,
+            uvIndex: latestObs.uv || null,
+            dewPoint: latestObs.dew_point ? celsiusToFahrenheit(latestObs.dew_point) : null,
+            rainAccumulation: latestObs.rain_accumulation ? millimetersToInches(latestObs.rain_accumulation) : null,
+            lightningStrikeCount: latestObs.lightning_strike_count || null,
+            lightningStrikeDistance: latestObs.lightning_strike_avg_distance ? 
+              latestObs.lightning_strike_avg_distance * 0.621371 : null // Convert km to miles
+          });
+          console.log("Stored weather observation in database");
+        } catch (obsError) {
+          console.warn("Failed to store weather observation:", obsError);
+        }
+        
         currentConditions = {
           ...currentConditions,
           air_temperature: latestObs.air_temperature,
@@ -142,71 +168,29 @@ async function fetchWeatherFlowData(): Promise<any> {
     // Get historical data for pressure trend calculation
     const historicalData = await storage.getWeatherHistory(STATION_ID, 6);
     
-    // Get past 24 hours of data for more accurate daily high/low calculations
-    // This ensures we capture the actual daily extremes even if system restarted
-    const now = new Date();
-    const past24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
-    const todayHistory = await storage.getWeatherHistorySince(STATION_ID, past24Hours);
-    console.log(`Fetching weather history since ${past24Hours.toISOString()} (24 hours ago)`);
-    
-    const todayForecast = forecastData.forecast?.daily[0];
-    const yesterdayForecast = forecastData.forecast?.daily[1];
-
-    // Get forecast high/low for today as baseline (more accurate than limited historical data)
-    let forecastHigh = todayForecast?.air_temp_high ? celsiusToFahrenheit(todayForecast.air_temp_high) : null;
-    let forecastLow = todayForecast?.air_temp_low ? celsiusToFahrenheit(todayForecast.air_temp_low) : null;
-
-    // Calculate actual daily high and low from recorded station data with timestamps
+    // Calculate daily high/low from our stored observations (observed data only)
     const rawTempC = currentConditions.air_temperature;
     const currentTemp = Math.round(celsiusToFahrenheit(rawTempC) * 10) / 10; // Round to 1 decimal place
     console.log(`Raw temperature from WeatherFlow: ${rawTempC}°C = ${celsiusToFahrenheit(rawTempC)}°F, rounded to: ${currentTemp}°F`);
-    const currentTime = new Date();
+    
+    const today = new Date();
+    const todayExtremes = await storage.getDailyTemperatureExtremes(STATION_ID, today);
+    
     let actualHigh = currentTemp;
     let actualLow = currentTemp;
-    let highTime = currentTime;
-    let lowTime = currentTime;
+    let highTime = new Date();
+    let lowTime = new Date();
     
-    if (todayHistory && todayHistory.length > 0) {
-      // Use all available records from past 24 hours
-      const validRecords = todayHistory.filter((record: WeatherData) => {
-        return record.temperature !== null && record.temperature !== undefined && record.timestamp;
-      });
+    if (todayExtremes) {
+      // Use database-calculated extremes
+      actualHigh = Math.max(todayExtremes.high, currentTemp);
+      actualLow = Math.min(todayExtremes.low, currentTemp);
+      highTime = todayExtremes.high >= currentTemp ? todayExtremes.highTime : new Date();
+      lowTime = todayExtremes.low <= currentTemp ? todayExtremes.lowTime : new Date();
       
-      if (validRecords.length > 0) {
-        // Add current reading to the mix
-        const allReadings = [...validRecords, { temperature: currentTemp, timestamp: currentTime }];
-        
-        // Find high and low with their times
-        const highRecord = allReadings.reduce((max, record) => 
-          (record.temperature ?? 0) > (max.temperature ?? 0) ? record : max
-        );
-        const lowRecord = allReadings.reduce((min, record) => 
-          (record.temperature ?? 0) < (min.temperature ?? 0) ? record : min
-        );
-        
-        actualHigh = highRecord.temperature ?? currentTemp;
-        actualLow = lowRecord.temperature ?? currentTemp;
-        highTime = highRecord.timestamp instanceof Date ? highRecord.timestamp : new Date(highRecord.timestamp);
-        lowTime = lowRecord.timestamp instanceof Date ? lowRecord.timestamp : new Date(lowRecord.timestamp);
-        
-        console.log(`Calculated daily temps from ${allReadings.length} readings over past 24h: High ${actualHigh.toFixed(1)}°F at ${new Date(highTime).toLocaleString()}, Low ${actualLow.toFixed(1)}°F at ${new Date(lowTime).toLocaleString()}`);
-      } else {
-        console.log("No valid temperature data in past 24 hours, using current temperature for high/low");
-      }
+      console.log(`Daily temps from observations database: High ${actualHigh.toFixed(1)}°F at ${highTime.toLocaleString()}, Low ${actualLow.toFixed(1)}°F at ${lowTime.toLocaleString()}`);
     } else {
-      console.log("No historical data available, using current temperature for high/low");
-    }
-
-    // Use forecast data as baseline if we don't have enough historical data
-    if (forecastHigh !== null && forecastLow !== null && todayHistory.length < 6) {
-      // Less than 6 hours of our own data - use forecast as more accurate
-      console.log(`Using WeatherFlow forecast high/low: High ${forecastHigh.toFixed(1)}°F, Low ${forecastLow.toFixed(1)}°F (limited historical data: ${todayHistory.length} records)`);
-      actualHigh = Math.round(forecastHigh * 10) / 10;
-      actualLow = Math.round(forecastLow * 10) / 10;
-      // For timing, use reasonable defaults (2 PM for high, 6 AM for low)
-      const today = new Date();
-      highTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 14, 0, 0); // 2 PM
-      lowTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 6, 0, 0); // 6 AM
+      console.log("No observations found for today, using current temperature as baseline");
     }
 
     // Get station name

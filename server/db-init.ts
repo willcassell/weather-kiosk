@@ -1,6 +1,6 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { weatherData, thermostatData } from "@shared/schema";
+import { weatherData, weatherObservations, thermostatData } from "@shared/schema";
 
 export async function initializeDatabase(): Promise<boolean> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -41,11 +41,34 @@ export async function initializeDatabase(): Promise<boolean> {
           pressure_trend TEXT,
           humidity REAL,
           uv_index REAL,
-          visibility REAL,
+          lightning_strike_distance REAL,
+          lightning_strike_time TIMESTAMP,
           dew_point REAL,
           rain_today REAL,
           rain_yesterday REAL,
           last_updated TIMESTAMP DEFAULT NOW() NOT NULL
+        )
+      `;
+      
+      // Create weather observations table
+      await sql`
+        CREATE TABLE IF NOT EXISTS weather_observations (
+          id SERIAL PRIMARY KEY,
+          station_id TEXT NOT NULL,
+          timestamp TIMESTAMP NOT NULL,
+          temperature REAL NOT NULL,
+          feels_like REAL,
+          wind_speed REAL,
+          wind_gust REAL,
+          wind_direction INTEGER,
+          pressure REAL,
+          humidity REAL,
+          uv_index REAL,
+          dew_point REAL,
+          rain_accumulation REAL,
+          lightning_strike_count INTEGER,
+          lightning_strike_distance REAL,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
         )
       `;
 
@@ -58,6 +81,7 @@ export async function initializeDatabase(): Promise<boolean> {
           target_temp REAL NOT NULL,
           humidity REAL,
           mode TEXT NOT NULL,
+          hvac_state TEXT,
           timestamp TIMESTAMP DEFAULT NOW() NOT NULL,
           last_updated TIMESTAMP DEFAULT NOW() NOT NULL
         )
@@ -72,9 +96,13 @@ export async function initializeDatabase(): Promise<boolean> {
         )
       `;
 
-      await sql`
-        ALTER TABLE session ADD CONSTRAINT IF NOT EXISTS session_pkey PRIMARY KEY (sid) NOT DEFERRABLE INITIALLY IMMEDIATE
-      `;
+      // Add primary key constraint if it doesn't exist (PostgreSQL compatible syntax)
+      try {
+        await sql`ALTER TABLE session ADD CONSTRAINT session_pkey PRIMARY KEY (sid)`;
+      } catch (constraintError) {
+        // Constraint probably already exists, which is fine
+        console.log("Session table constraint already exists or not needed");
+      }
 
       await sql`
         CREATE INDEX IF NOT EXISTS IDX_session_expire ON session (expire)

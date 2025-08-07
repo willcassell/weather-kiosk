@@ -1,13 +1,20 @@
-import { weatherData, thermostatData, type WeatherData, type ThermostatData, type InsertWeatherData, type InsertThermostatData, type WeatherFlowStation, type WeatherFlowObservation, type WeatherFlowForecast } from "@shared/schema";
+import { weatherData, weatherObservations, thermostatData, type WeatherData, type WeatherObservation, type ThermostatData, type InsertWeatherData, type InsertWeatherObservation, type InsertThermostatData, type WeatherFlowStation, type WeatherFlowObservation, type WeatherFlowForecast } from "@shared/schema";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { desc, eq, and, gte } from "drizzle-orm";
+import { desc, eq, and, gte, sql } from "drizzle-orm";
 
 export interface IStorage {
   getLatestWeatherData(stationId: string): Promise<WeatherData | undefined>;
   saveWeatherData(data: InsertWeatherData): Promise<WeatherData>;
   getWeatherHistory(stationId: string, hours: number): Promise<WeatherData[]>;
   getWeatherHistorySince(stationId: string, since: Date): Promise<WeatherData[]>;
+  
+  // Weather observations methods
+  saveWeatherObservation(data: InsertWeatherObservation): Promise<WeatherObservation>;
+  getWeatherObservations(stationId: string, hours: number): Promise<WeatherObservation[]>;
+  getWeatherObservationsSince(stationId: string, since: Date): Promise<WeatherObservation[]>;
+  getDailyTemperatureExtremes(stationId: string, date: Date): Promise<{ high: number; low: number; highTime: Date; lowTime: Date } | null>;
+  
   getLatestThermostatData(): Promise<ThermostatData[]>;
   saveThermostatData(data: InsertThermostatData): Promise<ThermostatData>;
 }
@@ -15,15 +22,19 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private weatherData: Map<string, WeatherData>;
   private weatherHistory: Map<string, WeatherData[]>;
+  private weatherObservations: Map<string, WeatherObservation[]>;
   private thermostatData: ThermostatData[];
   currentId: number;
+  currentObservationId: number;
   currentThermostatId: number;
 
   constructor() {
     this.weatherData = new Map();
     this.weatherHistory = new Map();
+    this.weatherObservations = new Map();
     this.thermostatData = [];
     this.currentId = 1;
+    this.currentObservationId = 1;
     this.currentThermostatId = 1;
   }
 
@@ -53,11 +64,12 @@ export class MemStorage implements IStorage {
       pressureTrend: insertData.pressureTrend ?? null,
       humidity: insertData.humidity ?? null,
       uvIndex: insertData.uvIndex ?? null,
-      visibility: insertData.visibility ?? null,
       dewPoint: insertData.dewPoint ?? null,
       rainToday: insertData.rainToday ?? null,
       rainYesterday: insertData.rainYesterday ?? null,
       stationName: insertData.stationName ?? null,
+      lightningStrikeDistance: insertData.lightningStrikeDistance ?? null,
+      lightningStrikeTime: insertData.lightningStrikeTime ?? null,
     };
     
     this.weatherData.set(insertData.stationId, weatherDataRecord);
@@ -96,6 +108,7 @@ export class MemStorage implements IStorage {
       timestamp: new Date(),
       lastUpdated: new Date(),
       humidity: insertData.humidity ?? null, // Fix undefined to null conversion
+      hvacState: insertData.hvacState ?? null, // Fix undefined to null conversion
     };
 
     // Remove existing data for this thermostat
@@ -105,6 +118,71 @@ export class MemStorage implements IStorage {
     this.thermostatData.push(thermostatRecord);
     
     return thermostatRecord;
+  }
+
+  // Weather observations methods for MemStorage
+  async saveWeatherObservation(data: InsertWeatherObservation): Promise<WeatherObservation> {
+    const id = this.currentObservationId++;
+    const observation: WeatherObservation = {
+      ...data,
+      id,
+      createdAt: new Date(),
+      // Ensure all optional fields have proper null values instead of undefined
+      feelsLike: data.feelsLike ?? null,
+      windSpeed: data.windSpeed ?? null,
+      windGust: data.windGust ?? null,
+      windDirection: data.windDirection ?? null,
+      pressure: data.pressure ?? null,
+      humidity: data.humidity ?? null,
+      uvIndex: data.uvIndex ?? null,
+      dewPoint: data.dewPoint ?? null,
+      rainAccumulation: data.rainAccumulation ?? null,
+      lightningStrikeCount: data.lightningStrikeCount ?? null,
+      lightningStrikeDistance: data.lightningStrikeDistance ?? null,
+    };
+    
+    const observations = this.weatherObservations.get(data.stationId) || [];
+    observations.push(observation);
+    
+    // Keep only last 7 days of observations
+    const cutoffTime = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    const filteredObservations = observations.filter(obs => obs.timestamp.getTime() > cutoffTime);
+    this.weatherObservations.set(data.stationId, filteredObservations);
+    
+    return observation;
+  }
+
+  async getWeatherObservations(stationId: string, hours: number): Promise<WeatherObservation[]> {
+    const observations = this.weatherObservations.get(stationId) || [];
+    const cutoffTime = Date.now() - (hours * 60 * 60 * 1000);
+    return observations.filter(obs => obs.timestamp.getTime() > cutoffTime);
+  }
+
+  async getWeatherObservationsSince(stationId: string, since: Date): Promise<WeatherObservation[]> {
+    const observations = this.weatherObservations.get(stationId) || [];
+    return observations.filter(obs => obs.timestamp.getTime() >= since.getTime());
+  }
+
+  async getDailyTemperatureExtremes(stationId: string, date: Date): Promise<{ high: number; low: number; highTime: Date; lowTime: Date } | null> {
+    const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+    
+    const observations = this.weatherObservations.get(stationId) || [];
+    const dayObservations = observations.filter(obs => 
+      obs.timestamp.getTime() >= startOfDay.getTime() && obs.timestamp.getTime() < endOfDay.getTime()
+    );
+    
+    if (dayObservations.length === 0) return null;
+    
+    const highRecord = dayObservations.reduce((max, obs) => obs.temperature > max.temperature ? obs : max);
+    const lowRecord = dayObservations.reduce((min, obs) => obs.temperature < min.temperature ? obs : min);
+    
+    return {
+      high: highRecord.temperature,
+      low: lowRecord.temperature,
+      highTime: highRecord.timestamp,
+      lowTime: lowRecord.timestamp
+    };
   }
 }
 
@@ -234,6 +312,130 @@ export class PostgreSQLStorage implements IStorage {
     } catch (error) {
       console.error("Error saving thermostat data:", error);
       throw new Error("Failed to save thermostat data to database");
+    }
+  }
+
+  // Weather observations methods for PostgreSQL
+  async saveWeatherObservation(data: InsertWeatherObservation): Promise<WeatherObservation> {
+    try {
+      const result = await this.db
+        .insert(weatherObservations)
+        .values(data)
+        .returning();
+      
+      if (!result[0]) {
+        throw new Error("Failed to save weather observation to database");
+      }
+      
+      return result[0];
+    } catch (error) {
+      console.error("Error saving weather observation:", error);
+      throw new Error("Failed to save weather observation to database");
+    }
+  }
+
+  async getWeatherObservations(stationId: string, hours: number): Promise<WeatherObservation[]> {
+    try {
+      const cutoffTime = new Date(Date.now() - (hours * 60 * 60 * 1000));
+      
+      const result = await this.db
+        .select()
+        .from(weatherObservations)
+        .where(
+          and(
+            eq(weatherObservations.stationId, stationId),
+            gte(weatherObservations.timestamp, cutoffTime)
+          )
+        )
+        .orderBy(desc(weatherObservations.timestamp));
+      
+      return result;
+    } catch (error) {
+      console.error("Error getting weather observations:", error);
+      throw new Error("Failed to retrieve weather observations from database");
+    }
+  }
+
+  async getWeatherObservationsSince(stationId: string, since: Date): Promise<WeatherObservation[]> {
+    try {
+      const result = await this.db
+        .select()
+        .from(weatherObservations)
+        .where(
+          and(
+            eq(weatherObservations.stationId, stationId),
+            gte(weatherObservations.timestamp, since)
+          )
+        )
+        .orderBy(desc(weatherObservations.timestamp));
+      
+      return result;
+    } catch (error) {
+      console.error("Error getting weather observations since date:", error);
+      throw new Error("Failed to retrieve weather observations from database");
+    }
+  }
+
+  async getDailyTemperatureExtremes(stationId: string, date: Date): Promise<{ high: number; low: number; highTime: Date; lowTime: Date } | null> {
+    try {
+      const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+      
+      const result = await this.db
+        .select({
+          maxTemp: sql<number>`MAX(temperature)`.as('maxTemp'),
+          minTemp: sql<number>`MIN(temperature)`.as('minTemp'),
+        })
+        .from(weatherObservations)
+        .where(
+          and(
+            eq(weatherObservations.stationId, stationId),
+            gte(weatherObservations.timestamp, startOfDay),
+            sql`${weatherObservations.timestamp} < ${endOfDay}`
+          )
+        );
+      
+      if (!result[0] || result[0].maxTemp === null || result[0].minTemp === null) {
+        return null;
+      }
+      
+      // Get the actual records for the high and low temperatures to get timestamps
+      const [highRecord, lowRecord] = await Promise.all([
+        this.db
+          .select()
+          .from(weatherObservations)
+          .where(
+            and(
+              eq(weatherObservations.stationId, stationId),
+              eq(weatherObservations.temperature, result[0].maxTemp),
+              gte(weatherObservations.timestamp, startOfDay),
+              sql`${weatherObservations.timestamp} < ${endOfDay}`
+            )
+          )
+          .limit(1),
+        this.db
+          .select()
+          .from(weatherObservations)
+          .where(
+            and(
+              eq(weatherObservations.stationId, stationId),
+              eq(weatherObservations.temperature, result[0].minTemp),
+              gte(weatherObservations.timestamp, startOfDay),
+              sql`${weatherObservations.timestamp} < ${endOfDay}`
+            )
+          )
+          .limit(1)
+      ]);
+      
+      return {
+        high: result[0].maxTemp,
+        low: result[0].minTemp,
+        highTime: highRecord[0]?.timestamp || startOfDay,
+        lowTime: lowRecord[0]?.timestamp || startOfDay
+      };
+    } catch (error) {
+      console.error("Error getting daily temperature extremes:", error);
+      throw new Error("Failed to retrieve daily temperature extremes from database");
     }
   }
 }
