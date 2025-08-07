@@ -142,7 +142,7 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
                   {/* Left - Location Name & HVAC Status */}
                   <div className="text-left flex flex-col justify-center space-y-1">
                     <div className="flex items-center space-x-2">
-                      <span className="text-responsive-lg font-semibold text-foreground">
+                      <span className="text-responsive-md font-semibold text-foreground">
                         {thermostat.name}
                       </span>
                     </div>
@@ -151,7 +151,7 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
                   
                   {/* Center - Current Temperature with Activity Indicator */}
                   <div className="text-center flex flex-col justify-center">
-                    <div className={`text-responsive-2xl font-bold ${tempColor} ${active ? 'animate-pulse' : ''}`}>
+                    <div className={`text-responsive-xl font-bold ${tempColor} ${active ? 'animate-pulse' : ''}`}>
                       {preferences ? formatTemperature(thermostat.temperature, preferences, 1) : `${thermostat.temperature.toFixed(1)}°F`}
                     </div>
                     <div className="text-responsive-sm text-muted-foreground">
@@ -161,7 +161,7 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
                   
                   {/* Right - Target & Humidity */}
                   <div className="text-right flex flex-col justify-center space-y-1">
-                    <div className="text-responsive-lg font-medium text-cyan-400">
+                    <div className="text-responsive-md font-medium text-cyan-400">
                       → {preferences ? formatTemperature(thermostat.targetTemp, preferences, 0) : `${thermostat.targetTemp}°F`}
                     </div>
                     <div className="text-responsive-sm text-muted-foreground">Target</div>
