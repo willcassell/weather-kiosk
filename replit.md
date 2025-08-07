@@ -14,6 +14,7 @@ Preferred communication style: Simple, everyday language.
 - **Visual Improvements**: Rain card units now display as small superscripts, humidity values reduced in size as secondary information
 - **Kiosk-Focused Unit System**: Removed interactive settings UI, units now controlled via VITE_UNIT_SYSTEM environment variable
 - **Parameterized Station Display**: Station name in banner now configurable via VITE_STATION_DISPLAY_NAME environment variable
+- **Simplified Banner Display**: Removed station ID from banner, showing only the custom station name
 - **Comprehensive Unit System**: Implemented complete imperial/metric conversion system with user preferences
 - **Unit Preferences UI**: Added settings modal with quick presets (Imperial/Metric) and individual unit controls
 - **Real-time Conversion**: All weather components now support dynamic unit conversion (temperature, wind, pressure, precipitation)

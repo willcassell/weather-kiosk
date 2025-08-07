@@ -23,7 +23,7 @@ export default function TopBanner({ stationId, stationName, lastUpdated, isLoadi
         <div className="flex items-center space-x-2">
           <Radio className="text-primary h-4 w-4 lg:h-5 lg:w-5 xl:h-6 xl:w-6" />
           <h1 className="text-responsive-md font-semibold">
-            {displayName} - Station {stationId}
+            {displayName}
           </h1>
         </div>
         <div className="flex items-center space-x-2 text-muted-foreground">
