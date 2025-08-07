@@ -32,9 +32,9 @@ export default function RainfallCard({ todayRain, yesterdayRain, preferences }: 
           <div className="text-center flex-1">
             <div className="text-responsive-xl font-bold text-cyan-400">
               {formatRainParts(todayRain).value}
-              <span className="text-responsive-sm text-muted-foreground ml-1">
+              <sup className="text-responsive-xs text-muted-foreground ml-1">
                 {formatRainParts(todayRain).unit}
-              </span>
+              </sup>
             </div>
             <div className="text-responsive-sm text-muted-foreground">Today</div>
           </div>
@@ -45,9 +45,9 @@ export default function RainfallCard({ todayRain, yesterdayRain, preferences }: 
           <div className="text-center flex-1">
             <div className="text-responsive-xl font-bold text-blue-300">
               {formatRainParts(yesterdayRain).value}
-              <span className="text-responsive-sm text-muted-foreground ml-1">
+              <sup className="text-responsive-xs text-muted-foreground ml-1">
                 {formatRainParts(yesterdayRain).unit}
-              </span>
+              </sup>
             </div>
             <div className="text-responsive-sm text-muted-foreground">Yesterday</div>
           </div>
