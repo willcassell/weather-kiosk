@@ -187,6 +187,7 @@ export default function WeatherDashboard() {
                   }))}
                   isLoading={thermostatLoading}
                   error={thermostatError instanceof Error ? thermostatError.message : undefined}
+                  preferences={preferences}
                 />
               </div>
             </>

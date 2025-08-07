@@ -1,4 +1,6 @@
 import { Thermometer, Home, Snowflake, Flame, Target, Pause, Activity } from "lucide-react";
+import { formatTemperature } from "@/utils/format-values";
+import type { UnitPreferences } from "@shared/units";
 
 interface ThermostatData {
   id: number;
@@ -16,9 +18,10 @@ interface ThermostatCardProps {
   thermostats?: ThermostatData[];
   isLoading?: boolean;
   error?: string;
+  preferences?: UnitPreferences;
 }
 
-export default function ThermostatCard({ thermostats, isLoading, error }: ThermostatCardProps) {
+export default function ThermostatCard({ thermostats, isLoading, error, preferences }: ThermostatCardProps) {
   if (isLoading) {
     return (
       <div className="weather-card col-span-2 minimal-padding">
@@ -149,7 +152,7 @@ export default function ThermostatCard({ thermostats, isLoading, error }: Thermo
                   {/* Center - Current Temperature with Activity Indicator */}
                   <div className="text-center flex flex-col justify-center">
                     <div className={`text-responsive-2xl font-bold ${tempColor} ${active ? 'animate-pulse' : ''}`}>
-                      {thermostat.temperature.toFixed(1)}°
+                      {preferences ? formatTemperature(thermostat.temperature, preferences, 1) : `${thermostat.temperature.toFixed(1)}°F`}
                     </div>
                     <div className="text-responsive-sm text-muted-foreground">
                       Current
@@ -159,7 +162,7 @@ export default function ThermostatCard({ thermostats, isLoading, error }: Thermo
                   {/* Right - Target & Humidity */}
                   <div className="text-right flex flex-col justify-center space-y-1">
                     <div className="text-responsive-lg font-medium text-cyan-400">
-                      → {thermostat.targetTemp}°
+                      → {preferences ? formatTemperature(thermostat.targetTemp, preferences, 0) : `${thermostat.targetTemp}°F`}
                     </div>
                     <div className="text-responsive-sm text-muted-foreground">Target</div>
                     {thermostat.humidity && (

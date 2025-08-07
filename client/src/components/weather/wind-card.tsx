@@ -55,12 +55,10 @@ export default function WindCard({
           <div className="flex flex-col space-y-1">
             <div className="flex items-baseline space-x-2">
               <span className="text-responsive-2xl font-bold text-cyan-400">{formatWindSpeed(windSpeed)}</span>
-              <span className="text-responsive-sm text-muted-foreground">mph</span>
             </div>
             <div className="flex items-baseline space-x-2">
               <span className="text-responsive-sm">Gust:</span>
               <span className="text-responsive-lg font-semibold text-blue-300">{formatWindSpeed(windGust)}</span>
-              <span className="text-responsive-sm text-muted-foreground">mph</span>
             </div>
           </div>
           
