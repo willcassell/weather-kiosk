@@ -12,6 +12,7 @@ Preferred communication style: Simple, everyday language.
 - **HVAC Status Accuracy**: Fixed thermostat status detection to use actual equipment state from Beestat API instead of temperature differences
 - **Data Refresh Enhancement**: Reduced thermostat data refresh from 3 minutes to 1 minute for more responsive updates
 - **Visual Improvements**: Rain card units now display as small superscripts, humidity values reduced in size as secondary information
+- **Kiosk-Focused Unit System**: Removed interactive settings UI, units now controlled via VITE_UNIT_SYSTEM environment variable
 - **Comprehensive Unit System**: Implemented complete imperial/metric conversion system with user preferences
 - **Unit Preferences UI**: Added settings modal with quick presets (Imperial/Metric) and individual unit controls
 - **Real-time Conversion**: All weather components now support dynamic unit conversion (temperature, wind, pressure, precipitation)
@@ -35,7 +36,7 @@ Preferred communication style: Simple, everyday language.
 - **Styling**: Tailwind CSS with custom weather-themed color variables, default dark theme optimized for weather monitoring, and custom animations.
 - **Build Tool**: Vite
 - **UI System**: Designed with "new-york" style configuration, mobile-first responsive design using CSS orientation media queries, and dynamic font scaling.
-- **Unit System**: Comprehensive imperial/metric conversion with user preferences stored in localStorage. Supports temperature (°F/°C), wind speed (mph/km/h/m/s/knots), pressure (inHg/hPa/mmHg/kPa), distance (mi/km), and precipitation (in/mm).
+- **Unit System**: Comprehensive imperial/metric conversion controlled by VITE_UNIT_SYSTEM environment variable. Supports temperature (°F/°C), wind speed (mph/km/h/m/s/knots), pressure (inHg/hPa/mmHg/kPa), distance (mi/km), and precipitation (in/mm). Designed for kiosk deployment without user interaction.
 - **Key Components**: TopBanner, TemperatureCard, WindCard, PressureCard, RainfallCard, AdditionalDataCard, RadarDisplay (embedded Windy.com), and UnitSettings modal.
 
 ### Backend
@@ -98,4 +99,5 @@ All personal data is parameterized through environment variables:
 - `TARGET_THERMOSTAT_NAMES`: Comma-separated list of thermostat names to display
 - `VITE_RADAR_CENTER_LAT/LON`: Geographic coordinates for radar centering
 - `VITE_RADAR_ZOOM_LEVEL`: Radar map zoom level
+- `VITE_UNIT_SYSTEM`: Set to 'metric' or 'imperial' to control all unit displays (default: imperial)
 - `DATABASE_URL`: PostgreSQL connection string (optional, uses in-memory if not provided)

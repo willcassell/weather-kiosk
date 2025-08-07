@@ -2,55 +2,44 @@ import { useState, useEffect } from 'react';
 import type { UnitPreferences } from '@shared/units';
 import { DEFAULT_UNITS, METRIC_UNITS } from '@shared/units';
 
-const STORAGE_KEY = 'weather-unit-preferences';
+
 
 export function useUnitPreferences() {
   const [preferences, setPreferences] = useState<UnitPreferences>(DEFAULT_UNITS);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load preferences from localStorage on mount
+  // Load preferences from environment variable on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setPreferences({ ...DEFAULT_UNITS, ...parsed });
-      }
-    } catch (error) {
-      console.error('Failed to load unit preferences:', error);
-    } finally {
-      setIsLoaded(true);
+    const unitSystem = import.meta.env.VITE_UNIT_SYSTEM?.toLowerCase();
+    
+    if (unitSystem === 'metric') {
+      setPreferences(METRIC_UNITS);
+    } else {
+      // Default to imperial if not specified or invalid
+      setPreferences(DEFAULT_UNITS);
     }
+    
+    setIsLoaded(true);
   }, []);
 
-  // Save preferences to localStorage when they change
-  useEffect(() => {
-    if (isLoaded) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
-      } catch (error) {
-        console.error('Failed to save unit preferences:', error);
-      }
-    }
-  }, [preferences, isLoaded]);
-
+  // These functions are kept for compatibility but don't persist changes
   const updatePreference = <K extends keyof UnitPreferences>(
     key: K,
     value: UnitPreferences[K]
   ) => {
-    setPreferences(prev => ({ ...prev, [key]: value }));
+    console.warn('Unit preferences are controlled by VITE_UNIT_SYSTEM environment variable');
   };
 
   const setImperial = () => {
-    setPreferences(DEFAULT_UNITS);
+    console.warn('Unit preferences are controlled by VITE_UNIT_SYSTEM environment variable');
   };
-
+  
   const setMetric = () => {
-    setPreferences(METRIC_UNITS);
+    console.warn('Unit preferences are controlled by VITE_UNIT_SYSTEM environment variable');
   };
-
+  
   const resetToDefaults = () => {
-    setPreferences(DEFAULT_UNITS);
+    console.warn('Unit preferences are controlled by VITE_UNIT_SYSTEM environment variable');
   };
 
   return {
