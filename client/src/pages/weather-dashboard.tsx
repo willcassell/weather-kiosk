@@ -77,7 +77,7 @@ export default function WeatherDashboard() {
   }
 
   return (
-    <div className="bg-background text-foreground h-screen flex flex-col">
+    <div className="bg-background text-foreground min-h-screen flex flex-col">
       {/* Top Banner */}
       <TopBanner 
         stationId={import.meta.env.VITE_WEATHERFLOW_STATION_ID || "Unknown"} 
@@ -86,16 +86,14 @@ export default function WeatherDashboard() {
         isLoading={isLoading}
       />
 
-
-
       {/* Main Content - Orientation-based Layout */}
-      <main className="flex flex-col orientation-landscape:flex-row flex-1 overflow-hidden">
+      <main className="flex flex-col orientation-landscape:flex-row orientation-landscape:h-[calc(100vh-4rem)] flex-1">
         {/* Weather Data Cards - Full width on portrait, left half on landscape */}
-        <section className="w-full orientation-landscape:w-1/2 bg-background p-2 flex flex-col gap-2 flex-1 overflow-hidden">
+        <section className="w-full orientation-landscape:w-1/2 bg-background p-2 flex flex-col gap-2 orientation-landscape:overflow-y-auto orientation-landscape:h-full">
           {isLoading ? (
-            <div className="flex flex-col justify-between gap-2 h-full">
+            <div className="flex flex-col gap-2">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="weather-card animate-pulse flex-1">
+                <div key={i} className="weather-card animate-pulse h-16 orientation-landscape:h-20">
                   <div className="h-3 bg-muted rounded mb-1"></div>
                   <div className="h-6 bg-muted rounded"></div>
                 </div>
@@ -104,7 +102,7 @@ export default function WeatherDashboard() {
           ) : weatherData ? (
             <>
               {/* Temperature Card - Medium size for main reading + high/low with times */}
-              <div className="flex-[1.5]">
+              <div className="min-h-[120px] orientation-landscape:flex-[1.5]">
                 <TemperatureCard 
                   currentTemp={weatherData.temperature ?? 0}
                   feelsLike={weatherData.feelsLike ?? 0}
@@ -117,7 +115,7 @@ export default function WeatherDashboard() {
               </div>
               
               {/* Wind and Rain on the same row - 60/40 split */}
-              <div className="flex gap-2 flex-[0.9]">
+              <div className="flex gap-2 min-h-[100px] orientation-landscape:flex-[0.9]">
                 <div className="w-3/5">
                   <WindCard 
                     windSpeed={weatherData.windSpeed ?? 0}
@@ -137,7 +135,7 @@ export default function WeatherDashboard() {
               </div>
               
               {/* Pressure Card - Standard size for pressure + trend */}
-              <div className="flex-1">
+              <div className="min-h-[90px] orientation-landscape:flex-1">
                 <PressureCard 
                   pressure={weatherData.pressure ?? 0}
                   trend={weatherData.pressureTrend ?? "Steady"}
@@ -146,7 +144,7 @@ export default function WeatherDashboard() {
               </div>
               
               {/* Lightning and Humidity/Dew Point row - Split 50/50 */}
-              <div className="flex gap-2 flex-[0.8]">
+              <div className="flex gap-2 min-h-[80px] orientation-landscape:flex-[0.8]">
                 <div className="w-1/2">
                   <LightningCard 
                     strikeDistance={weatherData.lightningStrikeDistance}
@@ -163,7 +161,7 @@ export default function WeatherDashboard() {
               </div>
               
               {/* Thermostat Card - More space for detailed thermostat information */}
-              <div className="flex-[2.3]">
+              <div className="min-h-[160px] orientation-landscape:flex-[2.3]">
                 <ThermostatCard 
                   thermostats={thermostatData?.map(t => ({
                     ...t,
@@ -189,8 +187,8 @@ export default function WeatherDashboard() {
         </section>
 
         {/* Radar Display - Full width on portrait, right half on landscape */}
-        <section className="w-full orientation-landscape:w-1/2 bg-card overflow-hidden min-h-[50vh] orientation-landscape:min-h-0">
-          <div className="h-full">
+        <section className="w-full orientation-landscape:w-1/2 bg-card min-h-[400px] orientation-landscape:min-h-0 orientation-landscape:h-full">
+          <div className="h-full min-h-[400px] orientation-landscape:min-h-0">
             <RadarDisplay />
           </div>
         </section>
