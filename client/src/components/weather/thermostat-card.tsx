@@ -53,25 +53,62 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
     );
   }
 
-  const isHvacActive = (mode: string, currentTemp: number, targetTemp: number) => {
-    // If mode is not set or is 'off', HVAC is not active
+  const isHvacActive = (thermostat: any) => {
+    // Use actual HVAC state if available, otherwise fall back to temperature logic
+    if (thermostat.hvacState) {
+      return thermostat.hvacState !== 'idle' && thermostat.hvacState !== 'off';
+    }
+    
+    // Fallback to temperature-based logic if no hvacState
+    const { mode, temperature: currentTemp, targetTemp } = thermostat;
     if (!mode || mode === 'off') return false;
     
     const diff = currentTemp - targetTemp;
-    if (mode === 'cool') return diff > 0.3; // Cooling when above target
-    if (mode === 'heat') return diff < -0.3; // Heating when below target
-    if (mode === 'auto') return Math.abs(diff) > 0.5; // Auto mode with wider tolerance
+    if (mode === 'cool') return diff > 1.0; // Cooling when significantly above target
+    if (mode === 'heat') return diff < -1.0; // Heating when significantly below target  
+    if (mode === 'auto') return Math.abs(diff) > 1.5; // Auto mode with much wider tolerance
     
-    // For any other mode (including undefined), consider inactive
     return false;
   };
 
-  const getHvacStatusIndicator = (mode: string, currentTemp: number, targetTemp: number) => {
-    const active = isHvacActive(mode, currentTemp, targetTemp);
-    const diff = currentTemp - targetTemp;
+  const getHvacStatusIndicator = (thermostat: any) => {
+    const active = isHvacActive(thermostat);
+    const { mode, temperature: currentTemp, targetTemp, hvacState } = thermostat;
     
-    // If no mode is set or mode is off, or HVAC is not active, show idle
-    if (!mode || mode === 'off' || !active) {
+    // Use actual HVAC state if available
+    if (hvacState) {
+      if (hvacState === 'idle' || hvacState === 'off') {
+        return (
+          <div className="flex items-center space-x-1 text-gray-400">
+            <Pause className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
+            <span className="text-responsive-sm">Idle</span>
+          </div>
+        );
+      }
+      
+      if (hvacState.includes('cool')) {
+        return (
+          <div className="flex items-center space-x-1 text-blue-400">
+            <Snowflake className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 animate-pulse" />
+            <Activity className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 animate-bounce" />
+            <span className="text-responsive-sm font-medium">Cooling</span>
+          </div>
+        );
+      }
+      
+      if (hvacState.includes('heat')) {
+        return (
+          <div className="flex items-center space-x-1 text-red-400">
+            <Flame className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 animate-pulse" />
+            <Activity className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 animate-bounce" />
+            <span className="text-responsive-sm font-medium">Heating</span>
+          </div>
+        );
+      }
+    }
+    
+    // Fallback to temperature-based logic only if no hvacState and actually active
+    if (!active) {
       return (
         <div className="flex items-center space-x-1 text-gray-400">
           <Pause className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
@@ -80,28 +117,7 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
       );
     }
 
-    // Only show active states when HVAC is actually running
-    if (active && (mode === 'cool' || (mode === 'auto' && diff > 0.3))) {
-      return (
-        <div className="flex items-center space-x-1 text-blue-400">
-          <Snowflake className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 animate-pulse" />
-          <Activity className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 animate-bounce" />
-          <span className="text-responsive-sm font-medium">Cooling</span>
-        </div>
-      );
-    }
-
-    if (active && (mode === 'heat' || (mode === 'auto' && diff < -0.3))) {
-      return (
-        <div className="flex items-center space-x-1 text-red-400">
-          <Flame className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 animate-pulse" />
-          <Activity className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 animate-bounce" />
-          <span className="text-responsive-sm font-medium">Heating</span>
-        </div>
-      );
-    }
-
-    // Default to idle if we reach here
+    // Default to idle
     return (
       <div className="flex items-center space-x-1 text-gray-400">
         <Pause className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
@@ -141,7 +157,7 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
         <div className="flex items-stretch justify-between space-x-4 w-full">
           {thermostats.map((thermostat, index) => {
             const tempColor = getTemperatureColor(thermostat.temperature, thermostat.targetTemp, thermostat.mode);
-            const active = isHvacActive(thermostat.mode, thermostat.temperature, thermostat.targetTemp);
+            const active = isHvacActive(thermostat);
             
             return (
               <div key={thermostat.id} className="flex-1 relative flex flex-col justify-center space-y-2">
@@ -150,7 +166,7 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
                   <span className="text-responsive-sm font-semibold text-foreground">
                     {thermostat.name}
                   </span>
-                  {getHvacStatusIndicator(thermostat.mode, thermostat.temperature, thermostat.targetTemp)}
+                  {getHvacStatusIndicator(thermostat)}
                 </div>
                 
                 {/* Bottom Row - Temperature and Humidity Info */}

@@ -365,7 +365,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 temperature: thermostat.temperature,
                 targetTemp: thermostat.targetTemp,
                 humidity: thermostat.humidity,
-                mode: thermostat.mode
+                mode: thermostat.mode,
+                hvacState: thermostat.hvacState
               });
             }
             

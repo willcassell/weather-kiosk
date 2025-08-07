@@ -234,10 +234,11 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
         id: parseInt(id),
         thermostatId: `beestat-${thermostat.ecobee_thermostat_id}`,
         name: location, // Use simplified location name
-        temperature: currentTemp || 72, // Convert from tenths of degrees
+        temperature: currentTemp ?? 72, // Convert from tenths of degrees
         targetTemp: targetTemp,
         humidity: thermostat.humidity || null,
         mode: mapBeestatMode(effectiveMode || 'off'),
+        hvacState: hvacState || null, // Add actual HVAC equipment state
         timestamp: new Date(),
         lastUpdated: new Date()
       });

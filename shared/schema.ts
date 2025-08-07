@@ -47,6 +47,7 @@ export const thermostatData = pgTable("thermostat_data", {
   targetTemp: real("target_temp").notNull(), // Target temperature in Fahrenheit
   humidity: real("humidity"), // Humidity percentage (optional)
   mode: text("mode").notNull(), // heat, cool, auto, off
+  hvacState: text("hvac_state"), // Actual HVAC equipment status: idle, heating, cooling, etc.
   timestamp: timestamp("timestamp").defaultNow().notNull(),
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
 });
