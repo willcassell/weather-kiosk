@@ -7,6 +7,11 @@ This project is a modern weather monitoring application that displays real-time 
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (August 2025)
+- **UI Layout Optimization**: Balanced wind/rain card proportions (60/40 split), reduced wind font sizes for better space utilization
+- **Thermostat Card Redesign**: Three-column layout separating current temperature, humidity, and target temperature for clarity
+- **HVAC Status Accuracy**: Fixed thermostat status detection to use actual equipment state from Beestat API instead of temperature differences
+- **Data Refresh Enhancement**: Reduced thermostat data refresh from 3 minutes to 1 minute for more responsive updates
+- **Visual Improvements**: Rain card units now display as small superscripts, humidity values reduced in size as secondary information
 - **Comprehensive Unit System**: Implemented complete imperial/metric conversion system with user preferences
 - **Unit Preferences UI**: Added settings modal with quick presets (Imperial/Metric) and individual unit controls
 - **Real-time Conversion**: All weather components now support dynamic unit conversion (temperature, wind, pressure, precipitation)
