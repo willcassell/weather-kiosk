@@ -347,7 +347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const forceRefresh = req.query.force === 'true';
       const shouldRefresh = forceRefresh || !currentThermostatData || currentThermostatData.length === 0 ||
         (currentThermostatData.length > 0 && currentThermostatData[0].lastUpdated && 
-         Date.now() - currentThermostatData[0].lastUpdated.getTime() > 1 * 60 * 1000);
+         Date.now() - currentThermostatData[0].lastUpdated.getTime() > 30 * 1000); // 30 seconds
       
       // Try Beestat API first  
       if (process.env.BEESTAT_API_KEY) {
@@ -538,6 +538,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Background polling for thermostat data 
+  if (process.env.BEESTAT_API_KEY) {
+    console.log("Starting background thermostat data polling (every 60 seconds)");
+    setInterval(async () => {
+      try {
+        console.log("Background: Fetching thermostat data from Beestat API");
+        const thermostatData = await fetchBeestatThermostats();
+        
+        // Save to storage for caching
+        for (const thermostat of thermostatData) {
+          await storage.saveThermostatData({
+            thermostatId: thermostat.thermostatId,
+            name: thermostat.name,
+            temperature: thermostat.temperature,
+            targetTemp: thermostat.targetTemp,
+            humidity: thermostat.humidity,
+            mode: thermostat.mode,
+            hvacState: thermostat.hvacState
+          });
+        }
+        
+        console.log(`Background: Updated ${thermostatData.length} thermostats`);
+      } catch (error) {
+        console.error("Background thermostat polling failed:", error);
+      }
+    }, 60 * 1000); // Every 60 seconds
+  }
 
   const httpServer = createServer(app);
   return httpServer;

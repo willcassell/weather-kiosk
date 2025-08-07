@@ -189,7 +189,7 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
           targetTemp = coolSetpoint;
         } else {
           // Use cool setpoint if temperature is closer to it, otherwise heat
-          targetTemp = Math.abs(currentTemp - coolSetpoint) <= Math.abs(currentTemp - heatSetpoint) ? coolSetpoint : heatSetpoint;
+          targetTemp = Math.abs((currentTemp ?? 72) - coolSetpoint) <= Math.abs((currentTemp ?? 72) - heatSetpoint) ? coolSetpoint : heatSetpoint;
         }
       } else if (!hvacMode && heatSetpoint && coolSetpoint) {
         // No explicit mode but both setpoints available - infer from current temperature and setpoints
@@ -197,17 +197,17 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
           // Same setpoint for both, use it directly
           targetTemp = coolSetpoint;
           effectiveMode = 'auto';
-        } else if (currentTemp < heatSetpoint - 1) {
+        } else if ((currentTemp ?? 72) < heatSetpoint - 1) {
           // Need heating
           targetTemp = heatSetpoint;
           effectiveMode = 'heat';
-        } else if (currentTemp > coolSetpoint + 1) {
+        } else if ((currentTemp ?? 72) > coolSetpoint + 1) {
           // Need cooling  
           targetTemp = coolSetpoint;
           effectiveMode = 'cool';
         } else {
           // In between, use the closer setpoint
-          targetTemp = Math.abs(currentTemp - coolSetpoint) <= Math.abs(currentTemp - heatSetpoint) ? coolSetpoint : heatSetpoint;
+          targetTemp = Math.abs((currentTemp ?? 72) - coolSetpoint) <= Math.abs((currentTemp ?? 72) - heatSetpoint) ? coolSetpoint : heatSetpoint;
           effectiveMode = 'auto';
         }
       } else if (!hvacMode && coolSetpoint) {

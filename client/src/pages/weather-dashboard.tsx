@@ -15,13 +15,13 @@ import { AlertCircle } from "lucide-react";
 import { useUnitPreferences } from "@/hooks/use-unit-preferences";
 import type { WeatherData, ThermostatData } from "@shared/schema";
 
-const REFRESH_INTERVAL = 3 * 60 * 1000; // 3 minutes
+const REFRESH_INTERVAL = 1 * 60 * 1000; // 1 minute for thermostats
 
 export default function WeatherDashboard() {
   const { preferences, isLoaded } = useUnitPreferences();
   const { data: weatherData, isLoading, error, isError } = useQuery<WeatherData>({
     queryKey: ['/api/weather/current'],
-    refetchInterval: REFRESH_INTERVAL,
+    refetchInterval: 3 * 60 * 1000, // 3 minutes for weather
     refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: 5000,
@@ -33,16 +33,23 @@ export default function WeatherDashboard() {
     refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: 5000,
+    staleTime: 30 * 1000, // Consider data stale after 30 seconds
   });
 
   // Set up auto-refresh for both weather and thermostat data
   useEffect(() => {
-    const interval = setInterval(() => {
+    const weatherInterval = setInterval(() => {
       queryClient.invalidateQueries({ queryKey: ['/api/weather/current'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/thermostats/current'] });
-    }, REFRESH_INTERVAL);
+    }, 3 * 60 * 1000); // 3 minutes for weather
 
-    return () => clearInterval(interval);
+    const thermostatInterval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['/api/thermostats/current'] });
+    }, REFRESH_INTERVAL); // 1 minute for thermostats
+
+    return () => {
+      clearInterval(weatherInterval);
+      clearInterval(thermostatInterval);
+    };
   }, []);
 
   if (isError) {
