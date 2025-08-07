@@ -129,9 +129,9 @@ export default function WeatherDashboard() {
                 />
               </div>
               
-              {/* Wind and Rain on the same row - More balanced sizing */}
+              {/* Wind and Rain on the same row - 60/40 split */}
               <div className="flex gap-2 flex-[0.9]">
-                <div className="w-1/2">
+                <div className="w-3/5">
                   <WindCard 
                     windSpeed={weatherData.windSpeed ?? 0}
                     windGust={weatherData.windGust ?? 0}
@@ -140,7 +140,7 @@ export default function WeatherDashboard() {
                     preferences={preferences}
                   />
                 </div>
-                <div className="w-1/2">
+                <div className="w-2/5">
                   <RainfallCard 
                     todayRain={weatherData.rainToday ?? 0}
                     yesterdayRain={weatherData.rainYesterday ?? 0}

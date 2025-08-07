@@ -51,14 +51,14 @@ export default function WindCard({
       </div>
       <div className="weather-card-content">
         <div className="flex items-center justify-between space-x-4 w-full">
-          {/* Left - Wind Speed and Gust with smaller text for more space */}
+          {/* Left - Wind Speed and Gust compact for one-line display */}
           <div className="flex flex-col space-y-1">
-            <div className="flex items-baseline space-x-2">
-              <span className="text-responsive-xl font-bold text-cyan-400">{formatWindSpeed(windSpeed)}</span>
+            <div className="flex items-baseline space-x-1">
+              <span className="text-responsive-lg font-bold text-cyan-400">{formatWindSpeed(windSpeed)}</span>
             </div>
-            <div className="flex items-baseline space-x-2">
-              <span className="text-responsive-sm">Gust:</span>
-              <span className="text-responsive-md font-semibold text-blue-300">{formatWindSpeed(windGust)}</span>
+            <div className="flex items-baseline space-x-1">
+              <span className="text-responsive-xs">Gust:</span>
+              <span className="text-responsive-sm font-semibold text-blue-300">{formatWindSpeed(windGust)}</span>
             </div>
           </div>
           
