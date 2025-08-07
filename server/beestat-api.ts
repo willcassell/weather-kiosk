@@ -160,9 +160,13 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
         hvacMode = thermostat.settings?.hvacMode || thermostat.hvac_mode;
         
         // Check running equipment for current state
-        hvacState = thermostat.running_equipment && thermostat.running_equipment.length > 0 
-          ? thermostat.running_equipment.join(',') 
-          : 'idle';
+        if (thermostat.running_equipment && thermostat.running_equipment.length > 0) {
+          hvacState = thermostat.running_equipment.join(',');
+          console.log(`Active equipment detected: ${hvacState}`);
+        } else {
+          hvacState = 'idle';
+          console.log(`No active equipment detected - HVAC is idle`);
+        }
       }
 
       

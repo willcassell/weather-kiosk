@@ -400,6 +400,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual thermostat refresh endpoint to bypass cache
+  app.post("/api/thermostats/refresh", async (req, res) => {
+    console.log("POST /api/thermostats/refresh - forcing fresh data");
+    try {
+      if (!process.env.BEESTAT_API_KEY) {
+        return res.status(400).json({ error: "BEESTAT_API_KEY not configured" });
+      }
+
+      console.log("Force refreshing thermostat data from Beestat API");
+      const thermostatData = await fetchBeestatThermostats();
+      
+      // Save fresh data to storage
+      for (const thermostat of thermostatData) {
+        await storage.saveThermostatData({
+          thermostatId: thermostat.thermostatId,
+          name: thermostat.name,
+          temperature: thermostat.temperature,
+          targetTemp: thermostat.targetTemp,
+          humidity: thermostat.humidity,
+          mode: thermostat.mode
+        });
+      }
+      
+      res.json({ success: true, message: "Thermostat data refreshed", thermostats: thermostatData });
+    } catch (error) {
+      console.error("Error refreshing thermostat data:", error);
+      res.status(500).json({ 
+        error: "Failed to refresh thermostat data",
+        message: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Ecobee authentication endpoints
   app.post("/api/thermostats/auth/start", async (req, res) => {
     try {
