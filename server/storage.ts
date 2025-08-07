@@ -299,6 +299,12 @@ export class PostgreSQLStorage implements IStorage {
 
   async saveThermostatData(insertData: InsertThermostatData): Promise<ThermostatData> {
     try {
+      // First, delete existing records for this thermostat to prevent duplicates
+      await this.db
+        .delete(thermostatData)
+        .where(eq(thermostatData.thermostatId, insertData.thermostatId));
+      
+      // Then insert the new record
       const result = await this.db
         .insert(thermostatData)
         .values(insertData)
