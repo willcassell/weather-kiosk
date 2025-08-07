@@ -136,17 +136,21 @@ async function fetchWeatherFlowData(): Promise<any> {
     // Get historical data for pressure trend calculation
     const historicalData = await storage.getWeatherHistory(STATION_ID, 6);
     
-    // Get today's recorded data for actual high/low calculations (only from today, not past 24 hours)
-    // Use local timezone for proper midnight calculation
+    // Get past 24 hours of data for more accurate daily high/low calculations
+    // This ensures we capture the actual daily extremes even if system restarted
     const now = new Date();
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0); // Set to midnight in local timezone
-    const todayHistory = await storage.getWeatherHistorySince(STATION_ID, todayStart);
+    const past24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
+    const todayHistory = await storage.getWeatherHistorySince(STATION_ID, past24Hours);
+    console.log(`Fetching weather history since ${past24Hours.toISOString()} (24 hours ago)`);
     
     const todayForecast = forecastData.forecast?.daily[0];
     const yesterdayForecast = forecastData.forecast?.daily[1];
 
-    // Calculate actual daily high and low from recorded station data with timestamps (only from today)
+    // Get forecast high/low for today as baseline (more accurate than limited historical data)
+    let forecastHigh = todayForecast?.air_temp_high ? celsiusToFahrenheit(todayForecast.air_temp_high) : null;
+    let forecastLow = todayForecast?.air_temp_low ? celsiusToFahrenheit(todayForecast.air_temp_low) : null;
+
+    // Calculate actual daily high and low from recorded station data with timestamps
     const rawTempC = currentConditions.air_temperature;
     const currentTemp = Math.round(celsiusToFahrenheit(rawTempC) * 10) / 10; // Round to 1 decimal place
     console.log(`Raw temperature from WeatherFlow: ${rawTempC}°C = ${celsiusToFahrenheit(rawTempC)}°F, rounded to: ${currentTemp}°F`);
@@ -157,17 +161,14 @@ async function fetchWeatherFlowData(): Promise<any> {
     let lowTime = currentTime;
     
     if (todayHistory && todayHistory.length > 0) {
-      // Filter records to only include those from today (since midnight)
-      const todayValidRecords = todayHistory.filter((record: WeatherData) => {
-        if (!record.temperature || !record.timestamp) return false;
-        const recordDate = new Date(record.timestamp);
-        const recordDateLocal = new Date(recordDate.getTime() - recordDate.getTimezoneOffset() * 60000);
-        return recordDateLocal >= todayStart; // Only records from today in local timezone
+      // Use all available records from past 24 hours
+      const validRecords = todayHistory.filter((record: WeatherData) => {
+        return record.temperature !== null && record.temperature !== undefined && record.timestamp;
       });
       
-      if (todayValidRecords.length > 0) {
+      if (validRecords.length > 0) {
         // Add current reading to the mix
-        const allReadings = [...todayValidRecords, { temperature: currentTemp, timestamp: currentTime }];
+        const allReadings = [...validRecords, { temperature: currentTemp, timestamp: currentTime }];
         
         // Find high and low with their times
         const highRecord = allReadings.reduce((max, record) => 
@@ -179,15 +180,27 @@ async function fetchWeatherFlowData(): Promise<any> {
         
         actualHigh = highRecord.temperature ?? currentTemp;
         actualLow = lowRecord.temperature ?? currentTemp;
-        highTime = highRecord.timestamp;
-        lowTime = lowRecord.timestamp;
+        highTime = highRecord.timestamp instanceof Date ? highRecord.timestamp : new Date(highRecord.timestamp);
+        lowTime = lowRecord.timestamp instanceof Date ? lowRecord.timestamp : new Date(lowRecord.timestamp);
         
-        console.log(`Calculated daily temps from ${allReadings.length} readings since midnight: High ${actualHigh.toFixed(1)}°F at ${new Date(highTime).toLocaleTimeString()}, Low ${actualLow.toFixed(1)}°F at ${new Date(lowTime).toLocaleTimeString()}`);
+        console.log(`Calculated daily temps from ${allReadings.length} readings over past 24h: High ${actualHigh.toFixed(1)}°F at ${new Date(highTime).toLocaleString()}, Low ${actualLow.toFixed(1)}°F at ${new Date(lowTime).toLocaleString()}`);
       } else {
-        console.log("No temperature data recorded since midnight, using current temperature for high/low");
+        console.log("No valid temperature data in past 24 hours, using current temperature for high/low");
       }
     } else {
-      console.log("No historical data available since midnight, using current temperature for high/low");
+      console.log("No historical data available, using current temperature for high/low");
+    }
+
+    // Use forecast data as baseline if we don't have enough historical data
+    if (forecastHigh !== null && forecastLow !== null && todayHistory.length < 6) {
+      // Less than 6 hours of our own data - use forecast as more accurate
+      console.log(`Using WeatherFlow forecast high/low: High ${forecastHigh.toFixed(1)}°F, Low ${forecastLow.toFixed(1)}°F (limited historical data: ${todayHistory.length} records)`);
+      actualHigh = Math.round(forecastHigh * 10) / 10;
+      actualLow = Math.round(forecastLow * 10) / 10;
+      // For timing, use reasonable defaults (2 PM for high, 6 AM for low)
+      const today = new Date();
+      highTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 14, 0, 0); // 2 PM
+      lowTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 6, 0, 0); // 6 AM
     }
 
     // Get station name
