@@ -1,20 +1,24 @@
 import { Wind, Navigation } from "lucide-react";
+import { formatSpeed } from "@/utils/format-values";
+import type { UnitPreferences } from "@shared/units";
 
 interface WindCardProps {
   windSpeed?: number;
   windGust?: number;
   windDirection?: number;
   windDirectionCardinal?: string;
+  preferences: UnitPreferences;
 }
 
 export default function WindCard({ 
   windSpeed, 
   windGust,
   windDirection, 
-  windDirectionCardinal 
+  windDirectionCardinal,
+  preferences
 }: WindCardProps) {
   const formatWindSpeed = (speed?: number) => {
-    return speed !== undefined ? speed.toFixed(1) : "--";
+    return speed !== undefined ? formatSpeed(speed, preferences, 1) : "--";
   };
 
   const formatDirection = (direction?: number) => {

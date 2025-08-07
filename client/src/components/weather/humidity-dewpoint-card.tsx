@@ -1,13 +1,17 @@
 import { Droplets, Thermometer } from "lucide-react";
+import { formatTemperature } from "@/utils/format-values";
+import type { UnitPreferences } from "@shared/units";
 
 interface HumidityDewPointCardProps {
   humidity?: number;
   dewPoint?: number;
+  preferences: UnitPreferences;
 }
 
 export default function HumidityDewPointCard({ 
   humidity, 
-  dewPoint 
+  dewPoint,
+  preferences
 }: HumidityDewPointCardProps) {
   const formatValue = (value?: number, unit: string = "") => {
     return value !== undefined ? `${value.toFixed(1)}${unit}` : "--";
@@ -35,7 +39,7 @@ export default function HumidityDewPointCard({
               <Thermometer className="h-4 w-4 text-cyan-400" />
               <div className="text-center">
                 <div className="text-responsive-lg font-bold text-cyan-400">
-                  {formatValue(dewPoint, "°F")}
+                  {dewPoint !== undefined ? formatTemperature(dewPoint, preferences, 1) : "--"}
                 </div>
                 <div className="text-responsive-sm text-muted-foreground">Dew Point</div>
               </div>

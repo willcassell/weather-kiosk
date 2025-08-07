@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { queryClient } from "@/lib/queryClient";
+import { Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import TopBanner from "@/components/weather/top-banner";
 import TemperatureCard from "@/components/weather/temperature-card";
 import WindCard from "@/components/weather/wind-card";
@@ -10,13 +12,17 @@ import LightningCard from "@/components/weather/lightning-card";
 import HumidityDewPointCard from "@/components/weather/humidity-dewpoint-card";
 import ThermostatCard from "@/components/weather/thermostat-card";
 import RadarDisplay from "@/components/weather/radar-display";
+import UnitSettings from "@/components/ui/unit-settings";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
+import { useUnitPreferences } from "@/hooks/use-unit-preferences";
 import type { WeatherData, ThermostatData } from "@shared/schema";
 
 const REFRESH_INTERVAL = 3 * 60 * 1000; // 3 minutes
 
 export default function WeatherDashboard() {
+  const [showUnitSettings, setShowUnitSettings] = useState(false);
+  const { preferences, isLoaded } = useUnitPreferences();
   const { data: weatherData, isLoading, error, isError } = useQuery<WeatherData>({
     queryKey: ['/api/weather/current'],
     refetchInterval: REFRESH_INTERVAL,
@@ -77,6 +83,24 @@ export default function WeatherDashboard() {
         isLoading={isLoading}
       />
 
+      {/* Settings Button - Fixed position */}
+      <div className="absolute top-4 right-4 z-50">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowUnitSettings(true)}
+          className="bg-background/80 backdrop-blur-sm border-border/50 hover:bg-background/90"
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Unit Settings Modal */}
+      <UnitSettings 
+        isOpen={showUnitSettings} 
+        onClose={() => setShowUnitSettings(false)} 
+      />
+
       {/* Main Content - Orientation-based Layout */}
       <main className="flex flex-col orientation-landscape:flex-row flex-1 overflow-hidden">
         {/* Weather Data Cards - Full width on portrait, left half on landscape */}
@@ -101,6 +125,7 @@ export default function WeatherDashboard() {
                   lowTemp={weatherData.temperatureLow ?? 0}
                   highTempTime={weatherData.temperatureHighTime ? new Date(weatherData.temperatureHighTime) : undefined}
                   lowTempTime={weatherData.temperatureLowTime ? new Date(weatherData.temperatureLowTime) : undefined}
+                  preferences={preferences}
                 />
               </div>
               
@@ -112,12 +137,14 @@ export default function WeatherDashboard() {
                     windGust={weatherData.windGust ?? 0}
                     windDirection={weatherData.windDirection ?? 0}
                     windDirectionCardinal={weatherData.windDirectionCardinal ?? "N"}
+                    preferences={preferences}
                   />
                 </div>
                 <div className="w-1/3">
                   <RainfallCard 
                     todayRain={weatherData.rainToday ?? 0}
                     yesterdayRain={weatherData.rainYesterday ?? 0}
+                    preferences={preferences}
                   />
                 </div>
               </div>
@@ -127,6 +154,7 @@ export default function WeatherDashboard() {
                 <PressureCard 
                   pressure={weatherData.pressure ?? 0}
                   trend={weatherData.pressureTrend ?? "Steady"}
+                  preferences={preferences}
                 />
               </div>
               
@@ -142,6 +170,7 @@ export default function WeatherDashboard() {
                   <HumidityDewPointCard 
                     humidity={weatherData.humidity ?? undefined}
                     dewPoint={weatherData.dewPoint ?? undefined}
+                    preferences={preferences}
                   />
                 </div>
               </div>

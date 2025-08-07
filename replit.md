@@ -7,6 +7,10 @@ This project is a modern weather monitoring application that displays real-time 
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (August 2025)
+- **Comprehensive Unit System**: Implemented complete imperial/metric conversion system with user preferences
+- **Unit Preferences UI**: Added settings modal with quick presets (Imperial/Metric) and individual unit controls
+- **Real-time Conversion**: All weather components now support dynamic unit conversion (temperature, wind, pressure, precipitation)
+- **Persistent Settings**: User unit preferences saved to localStorage with graceful fallbacks
 - **GitHub Documentation Preparation**: Completed comprehensive documentation overhaul for public sharing
 - **Environment Variable Parameterization**: All personal data (API keys, station IDs, coordinates) moved to environment variables
 - **Lightning Card Enhancement**: Replaced visibility with lightning strike detection and timing
@@ -26,7 +30,8 @@ Preferred communication style: Simple, everyday language.
 - **Styling**: Tailwind CSS with custom weather-themed color variables, default dark theme optimized for weather monitoring, and custom animations.
 - **Build Tool**: Vite
 - **UI System**: Designed with "new-york" style configuration, mobile-first responsive design using CSS orientation media queries, and dynamic font scaling.
-- **Key Components**: TopBanner, TemperatureCard, WindCard, PressureCard, RainfallCard, AdditionalDataCard, and RadarDisplay (embedded Windy.com).
+- **Unit System**: Comprehensive imperial/metric conversion with user preferences stored in localStorage. Supports temperature (°F/°C), wind speed (mph/km/h/m/s/knots), pressure (inHg/hPa/mmHg/kPa), distance (mi/km), and precipitation (in/mm).
+- **Key Components**: TopBanner, TemperatureCard, WindCard, PressureCard, RainfallCard, AdditionalDataCard, RadarDisplay (embedded Windy.com), and UnitSettings modal.
 
 ### Backend
 - **Runtime**: Node.js with Express.js

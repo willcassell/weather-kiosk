@@ -1,13 +1,16 @@
 import { Gauge, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { formatPressure } from "@/utils/format-values";
+import type { UnitPreferences } from "@shared/units";
 
 interface PressureCardProps {
   pressure?: number;
   trend?: string;
+  preferences: UnitPreferences;
 }
 
-export default function PressureCard({ pressure, trend }: PressureCardProps) {
-  const formatPressure = (value?: number) => {
-    return value !== undefined ? value.toFixed(2) : "--";
+export default function PressureCard({ pressure, trend, preferences }: PressureCardProps) {
+  const formatPressureValue = (value?: number) => {
+    return value !== undefined ? formatPressure(value, preferences, 2) : "--";
   };
 
   const getTrendIcon = (trendValue?: string) => {
@@ -80,9 +83,9 @@ export default function PressureCard({ pressure, trend }: PressureCardProps) {
           {/* Right side - Current pressure and trend */}
           <div className="text-right flex-shrink-0">
             <div className="text-responsive-xl font-bold text-foreground">
-              {formatPressure(pressure)}
+              {formatPressureValue(pressure)}
             </div>
-            <div className="text-responsive-sm text-muted-foreground">inHg</div>
+
             <div className={`flex items-center justify-end space-x-1 mt-1 ${getTrendColor(trend)}`}>
               {getTrendIcon(trend)}
               <span className="capitalize text-responsive-sm">{trend || 'Steady'}</span>
