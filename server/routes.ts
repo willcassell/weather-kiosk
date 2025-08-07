@@ -100,6 +100,12 @@ async function fetchWeatherFlowData(): Promise<any> {
 
     const forecastData: WeatherFlowForecast = await forecastResponse.json();
     
+    // Log precipitation data for debugging
+    const apiRainToday = millimetersToInches(forecastData.current_conditions.precip_accum_local_day || 0);
+    const apiRainYesterday = millimetersToInches(forecastData.current_conditions.precip_accum_local_yesterday || 0);
+    
+    console.log(`API Precipitation: Today ${apiRainToday.toFixed(2)}", Yesterday ${apiRainYesterday.toFixed(2)}" (from WeatherFlow processed data)`);
+    
     // Use most recent observation if available, otherwise fall back to forecast current conditions
     let currentConditions = forecastData.current_conditions as any;
     
