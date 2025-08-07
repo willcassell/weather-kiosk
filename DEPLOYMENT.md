@@ -20,7 +20,7 @@ VITE_RADAR_ZOOM_LEVEL=7.25
 BEESTAT_API_KEY=your_beestat_key
 TARGET_THERMOSTAT_NAMES=thermostat1,thermostat2
 
-# Production Database (recommended)
+# Production Database (required for accurate temperature calculations)
 DATABASE_URL=postgresql://user:pass@host:port/db
 
 # Production Settings
@@ -255,8 +255,9 @@ Monitor these key log messages:
 
 ### Performance
 - Weather data refreshes every 3 minutes
+- Individual weather observations stored in database for accuracy
 - Thermostat data refreshes every 3 minutes
-- Database queries are optimized for recent data
+- Database queries optimized for recent data and daily calculations
 
 ## Security Considerations
 
@@ -295,6 +296,7 @@ Monitor these key log messages:
 - Version control all code changes
 
 ### Data Backup
-- Weather data: 48-hour retention (automatic)
+- Weather observations: 7-day retention for accurate calculations
+- Processed weather data: 48-hour retention (automatic)
 - Thermostat data: Consider longer retention
-- Database backups if using persistent storage
+- Database backups essential for preserving observation history

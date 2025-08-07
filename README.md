@@ -6,6 +6,8 @@ A modern, kiosk-friendly weather monitoring application that displays real-time 
 
 ### Weather Monitoring  
 - **Live Weather Data**: Real-time observations from your WeatherFlow Tempest station (not forecasts)
+- **Accurate Daily Temperatures**: Database-driven calculations using actual observed data for precise daily high/low temperatures with exact timestamps
+- **Weather Observations Database**: Stores every individual weather reading for historical accuracy and trend analysis
 - **Comprehensive Metrics**: Temperature, wind speed/direction, barometric pressure, rainfall, humidity, UV index, lightning detection
 - **Visual Indicators**: Animated wind compass with directional colors and speed-based effects  
 - **Weather Radar**: Embedded live radar from Windy.com centered on your location
@@ -43,11 +45,12 @@ A modern, kiosk-friendly weather monitoring application that displays real-time 
 - **Beestat API** for Ecobee thermostat data
 
 ### Database
-- **In-memory storage** by default (no setup required)
-- **PostgreSQL** support via Neon or self-hosted (optional)
-- **48-hour data retention** for weather history
-- **Automatic table creation** and data management
-- **Session-based authentication storage**
+- **PostgreSQL Database** for accurate weather observations and temperature calculations
+- **Weather Observations Storage**: Every individual weather reading stored with timestamps for precise daily calculations
+- **Automatic Schema Management**: Tables created automatically on startup
+- **Data Retention**: 7 days of detailed observations, 48 hours of processed weather history  
+- **Fallback Storage**: In-memory storage if database unavailable
+- **Session Management**: PostgreSQL-based session storage for authentication
 
 ## Quick Start
 
@@ -98,8 +101,9 @@ See `.env.example` for complete configuration options.
 ## API Endpoints
 
 ### Weather Data
-- `GET /api/weather/current` - Current weather conditions
+- `GET /api/weather/current` - Current weather conditions with database-calculated daily extremes
 - `GET /api/weather/history` - Historical weather data (48 hours)
+- `GET /api/weather/observations` - Individual weather observations for analysis
 
 ### Thermostat Control
 - `GET /api/thermostats/current` - Current thermostat readings from Beestat API
@@ -109,7 +113,9 @@ See `.env.example` for complete configuration options.
 ### WeatherFlow Tempest Station
 - **Personalized Configuration**: Configure your specific station ID in environment variables
 - **API**: WeatherFlow Observations API for real-time data (not forecasts)
-- **Update Frequency**: Every 3 minutes synchronized refresh
+- **Database Storage**: Every observation stored for accurate historical calculations
+- **Daily Temperature Accuracy**: High/low temperatures calculated from actual observed data with precise timing
+- **Update Frequency**: Every 3 minutes synchronized refresh with database persistence
 
 ### Ecobee Thermostats (Optional)
 - **Multi-Thermostat Support**: Configure which thermostats to display by name
@@ -187,5 +193,5 @@ This project is for personal use with WeatherFlow Tempest station ID 38335.
 
 ---
 
-**Last Updated**: July 23, 2025  
-**Version**: 2.0.0 with Ecobee Integration# weather-kiosk
+**Last Updated**: August 7, 2025  
+**Version**: 2.1.0 with Database-Driven Weather Observations

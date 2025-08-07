@@ -6,8 +6,9 @@ This guide will help you configure the weather dashboard for your specific Weath
 
 1. **WeatherFlow Tempest Weather Station** - You need an active Tempest station
 2. **WeatherFlow Developer Account** - For API access
-3. **Beestat Account** (Optional) - For Ecobee thermostat integration
-4. **Node.js 18+** - For running the application
+3. **PostgreSQL Database** - For accurate weather observations storage (Neon recommended)
+4. **Beestat Account** (Optional) - For Ecobee thermostat integration
+5. **Node.js 18+** - For running the application
 
 ## Step 1: WeatherFlow API Setup
 
@@ -68,7 +69,7 @@ VITE_RADAR_ZOOM_LEVEL=7.25
 BEESTAT_API_KEY=your_beestat_key_here
 TARGET_THERMOSTAT_NAMES=Downstairs,Upstairs,Main Floor
 
-# Database (optional - defaults to in-memory)
+# Database (strongly recommended for accurate temperature calculations)
 DATABASE_URL=postgresql://user:password@host:port/database
 
 # App Configuration
@@ -84,7 +85,7 @@ PORT=5000
 **VITE_RADAR_ZOOM_LEVEL**: Zoom level for radar (3-12, higher = more zoomed in)
 **BEESTAT_API_KEY**: Your Beestat API key (optional)
 **TARGET_THERMOSTAT_NAMES**: Comma-separated list of thermostat names to display
-**DATABASE_URL**: PostgreSQL connection string (optional, uses memory storage if not provided)
+**DATABASE_URL**: PostgreSQL connection string (strongly recommended for accurate daily temperature calculations)
 
 ## Step 5: Installation and Startup
 
@@ -110,8 +111,10 @@ npm start
 
 ### Check Weather Data
 - Verify temperature matches your Tempest app
-- Confirm wind, pressure, humidity readings are accurate
+- Confirm daily high/low temperatures show accurate timestamps
+- Confirm wind, pressure, humidity readings are accurate  
 - Check that lightning shows "None" when no activity
+- Verify database is storing weather observations (check server logs)
 
 ### Check Thermostat Data (if configured)
 - Verify thermostat names and temperatures appear correctly
