@@ -146,7 +146,7 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
                   {getHvacStatusIndicator(thermostat.mode, thermostat.temperature, thermostat.targetTemp)}
                 </div>
                 
-                {/* Bottom Row - Temperature Info */}
+                {/* Bottom Row - Temperature and Humidity Info */}
                 <div className="flex items-center justify-between">
                   {/* Current Temperature */}
                   <div className="text-left">
@@ -156,19 +156,24 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
                     <div className="text-responsive-xs text-muted-foreground">Current</div>
                   </div>
                   
-                  {/* Target Temperature & Humidity */}
+                  {/* Center - Humidity */}
+                  <div className="text-center">
+                    {thermostat.humidity && (
+                      <>
+                        <div className="text-responsive-md font-medium text-blue-300">
+                          {thermostat.humidity}%
+                        </div>
+                        <div className="text-responsive-xs text-muted-foreground">Humidity</div>
+                      </>
+                    )}
+                  </div>
+                  
+                  {/* Target Temperature */}
                   <div className="text-right">
                     <div className="text-responsive-md font-medium text-cyan-400">
                       → {preferences ? formatTemperature(thermostat.targetTemp, preferences, 0) : `${thermostat.targetTemp}°F`}
                     </div>
-                    <div className="flex items-center justify-end space-x-2">
-                      <div className="text-responsive-xs text-muted-foreground">Target</div>
-                      {thermostat.humidity && (
-                        <div className="text-responsive-xs text-blue-300">
-                          {thermostat.humidity}%
-                        </div>
-                      )}
-                    </div>
+                    <div className="text-responsive-xs text-muted-foreground">Target</div>
                   </div>
                 </div>
                 

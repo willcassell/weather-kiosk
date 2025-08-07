@@ -274,7 +274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Allow force refresh with query parameter
       const forceRefresh = req.query.force === 'true';
       const shouldRefresh = forceRefresh || !currentData || 
-        (currentData.lastUpdated && Date.now() - currentData.lastUpdated.getTime() > 3 * 60 * 1000);
+        (currentData.lastUpdated && Date.now() - currentData.lastUpdated.getTime() > 1 * 60 * 1000);
       
       if (shouldRefresh) {
         const reason = forceRefresh ? "Force refresh requested" : "Data is stale";
@@ -347,7 +347,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const forceRefresh = req.query.force === 'true';
       const shouldRefresh = forceRefresh || !currentThermostatData || currentThermostatData.length === 0 ||
         (currentThermostatData.length > 0 && currentThermostatData[0].lastUpdated && 
-         Date.now() - currentThermostatData[0].lastUpdated.getTime() > 3 * 60 * 1000);
+         Date.now() - currentThermostatData[0].lastUpdated.getTime() > 1 * 60 * 1000);
       
       // Try Beestat API first  
       if (process.env.BEESTAT_API_KEY) {
