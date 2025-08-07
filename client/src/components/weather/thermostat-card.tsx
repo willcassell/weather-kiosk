@@ -54,11 +54,15 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
   }
 
   const isHvacActive = (mode: string, currentTemp: number, targetTemp: number) => {
+    // If mode is not set or is 'off', HVAC is not active
+    if (!mode || mode === 'off') return false;
+    
     const diff = currentTemp - targetTemp;
-    if (mode === 'off') return false;
     if (mode === 'cool') return diff > 0.3; // Cooling when above target
     if (mode === 'heat') return diff < -0.3; // Heating when below target
     if (mode === 'auto') return Math.abs(diff) > 0.5; // Auto mode with wider tolerance
+    
+    // For any other mode (including undefined), consider inactive
     return false;
   };
 
@@ -66,7 +70,8 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
     const active = isHvacActive(mode, currentTemp, targetTemp);
     const diff = currentTemp - targetTemp;
     
-    if (!active || mode === 'off') {
+    // If no mode is set or mode is off, or HVAC is not active, show idle
+    if (!mode || mode === 'off' || !active) {
       return (
         <div className="flex items-center space-x-1 text-gray-400">
           <Pause className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
@@ -75,7 +80,8 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
       );
     }
 
-    if (mode === 'cool' || (mode === 'auto' && diff > 0)) {
+    // Only show active states when HVAC is actually running
+    if (active && (mode === 'cool' || (mode === 'auto' && diff > 0.3))) {
       return (
         <div className="flex items-center space-x-1 text-blue-400">
           <Snowflake className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 animate-pulse" />
@@ -85,7 +91,7 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
       );
     }
 
-    if (mode === 'heat' || (mode === 'auto' && diff < 0)) {
+    if (active && (mode === 'heat' || (mode === 'auto' && diff < -0.3))) {
       return (
         <div className="flex items-center space-x-1 text-red-400">
           <Flame className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5 animate-pulse" />
@@ -95,10 +101,11 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
       );
     }
 
+    // Default to idle if we reach here
     return (
-      <div className="flex items-center space-x-1 text-green-400">
-        <Target className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
-        <span className="text-responsive-sm">Auto</span>
+      <div className="flex items-center space-x-1 text-gray-400">
+        <Pause className="h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5" />
+        <span className="text-responsive-sm">Idle</span>
       </div>
     );
   };
@@ -156,14 +163,14 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
                     <div className="text-responsive-xs text-muted-foreground">Current</div>
                   </div>
                   
-                  {/* Center - Humidity */}
+                  {/* Center - Humidity (smaller as secondary info) */}
                   <div className="text-center">
                     {thermostat.humidity && (
                       <>
-                        <div className="text-responsive-md font-medium text-blue-300">
+                        <div className="text-responsive-sm font-normal text-blue-300">
                           {thermostat.humidity}%
                         </div>
-                        <div className="text-responsive-xs text-muted-foreground">Humidity</div>
+                        <div className="text-responsive-2xs text-muted-foreground opacity-70">Humidity</div>
                       </>
                     )}
                   </div>
