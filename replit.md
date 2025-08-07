@@ -13,6 +13,7 @@ Preferred communication style: Simple, everyday language.
 - **Data Refresh Enhancement**: Reduced thermostat data refresh from 3 minutes to 1 minute for more responsive updates
 - **Visual Improvements**: Rain card units now display as small superscripts, humidity values reduced in size as secondary information
 - **Kiosk-Focused Unit System**: Removed interactive settings UI, units now controlled via VITE_UNIT_SYSTEM environment variable
+- **Parameterized Station Display**: Station name in banner now configurable via VITE_STATION_DISPLAY_NAME environment variable
 - **Comprehensive Unit System**: Implemented complete imperial/metric conversion system with user preferences
 - **Unit Preferences UI**: Added settings modal with quick presets (Imperial/Metric) and individual unit controls
 - **Real-time Conversion**: All weather components now support dynamic unit conversion (temperature, wind, pressure, precipitation)
@@ -100,4 +101,6 @@ All personal data is parameterized through environment variables:
 - `VITE_RADAR_CENTER_LAT/LON`: Geographic coordinates for radar centering
 - `VITE_RADAR_ZOOM_LEVEL`: Radar map zoom level
 - `VITE_UNIT_SYSTEM`: Set to 'metric' or 'imperial' to control all unit displays (default: imperial)
+- `VITE_STATION_DISPLAY_NAME`: Custom name for your weather station (appears in top banner)
+- `VITE_WEATHERFLOW_STATION_ID`: Station ID for frontend display (copy of WEATHERFLOW_STATION_ID)
 - `DATABASE_URL`: PostgreSQL connection string (optional, uses in-memory if not provided)

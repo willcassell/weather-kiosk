@@ -58,6 +58,10 @@ For kiosk deployment, set these environment variables:
 # Required - Weather data
 WEATHERFLOW_API_TOKEN=your_token
 WEATHERFLOW_STATION_ID=your_station_id
+VITE_WEATHERFLOW_STATION_ID=your_station_id
+
+# Required - Station display
+VITE_STATION_DISPLAY_NAME=Your Weather Station Name
 
 # Required - Geographic location
 VITE_RADAR_CENTER_LAT=your_latitude

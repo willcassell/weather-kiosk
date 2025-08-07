@@ -73,7 +73,7 @@ export default function WeatherDashboard() {
     <div className="bg-background text-foreground h-screen flex flex-col">
       {/* Top Banner */}
       <TopBanner 
-        stationId="38335" 
+        stationId={import.meta.env.VITE_WEATHERFLOW_STATION_ID || "Unknown"} 
         stationName={weatherData?.stationName || undefined}
         lastUpdated={weatherData?.lastUpdated}
         isLoading={isLoading}

@@ -14,6 +14,11 @@ All code changes have been implemented and tested successfully:
 - **Data Refresh**: Reduced thermostat refresh interval from 3 minutes to 1 minute
 - **Visual Hierarchy**: Reduced humidity text size as secondary information
 
+### Kiosk Configuration Enhancements
+- **Environment-Controlled Units**: Removed settings UI, units controlled by VITE_UNIT_SYSTEM
+- **Parameterized Station Display**: Station name configurable via VITE_STATION_DISPLAY_NAME
+- **Complete Environment Setup**: All personal data moved to environment variables
+
 ### Technical Improvements
 - **Schema Update**: Added hvacState field for actual equipment status tracking
 - **Type Safety**: Fixed TypeScript errors for proper null handling
@@ -34,15 +39,17 @@ All documentation is current and comprehensive:
 All files are staged and ready for git commit with the following suggested commit message:
 
 ```
-UI refinements: balanced layout, improved thermostat display, superscript units
+Kiosk optimization: parameterized config, improved layout, environment-controlled units
 
+- Parameterized station display name via VITE_STATION_DISPLAY_NAME environment variable
+- Removed interactive settings UI for kiosk deployment, units controlled by VITE_UNIT_SYSTEM
 - Optimized wind/rain card proportions to 60/40 split for better space utilization
 - Redesigned thermostat card with three-column layout separating current temp, humidity, and target
-- Fixed HVAC status detection to use actual equipment state instead of temperature differences  
+- Fixed HVAC status detection to use actual equipment state instead of temperature differences
 - Enhanced data refresh frequency to 1-minute intervals for thermostat data
 - Added superscript formatting for rain card units with responsive sizing
-- Reduced humidity text size as secondary information
-- Improved visual hierarchy and readability across all weather cards
+- Created comprehensive kiosk deployment documentation (KIOSK_SETUP.md)
+- All personal data now parameterized for production deployment
 ```
 
 ## Application Status

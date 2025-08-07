@@ -14,13 +14,16 @@ export default function TopBanner({ stationId, stationName, lastUpdated, isLoadi
     return format(date, "MMM d, yyyy h:mm a");
   };
 
+  // Get display name from environment variable or use stationName as fallback
+  const displayName = import.meta.env.VITE_STATION_DISPLAY_NAME || stationName || "Weather Station";
+
   return (
     <header className="bg-slate-700 border-b border-slate-600 py-1.5 px-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-2">
           <Radio className="text-primary h-4 w-4 lg:h-5 lg:w-5 xl:h-6 xl:w-6" />
           <h1 className="text-responsive-md font-semibold">
-            {stationName || "Corner Rock Wx"} - Station {stationId}
+            {displayName} - Station {stationId}
           </h1>
         </div>
         <div className="flex items-center space-x-2 text-muted-foreground">
