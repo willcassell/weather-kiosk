@@ -3,15 +3,38 @@ import type { ThermostatData } from '../shared/schema.ts';
 const BEESTAT_API_BASE = 'https://beestat.io/api/';
 
 interface BeestatThermostat {
+  // Core thermostat identification
   ecobee_thermostat_id: number;
   identifier: string;
   name: string;
-  temperature: number;
-  temperature_setpoint_heat: number;
-  temperature_setpoint_cool: number;
-  humidity: number;
-  hvac_mode: string;
-  hvac_state: string;
+  
+  // Temperature data (from actual API response structure)
+  temperature: number;          // Current indoor temperature in Fahrenheit
+  setpoint_heat?: number;       // Heat setpoint in tenths of degrees
+  setpoint_cool?: number;       // Cool setpoint in tenths of degrees
+  humidity?: number;
+  hvac_mode?: string;
+  
+  // System settings
+  settings?: {
+    hvacMode?: string;
+    differential_cool?: number;
+    differential_heat?: number;
+  };
+  
+  // Current equipment status
+  running_equipment: string[];  // Array of currently running equipment
+  
+  // Ecobee program/schedule info (from the actual response structure we see)
+  program?: {
+    currentClimateRef?: string;
+    climates?: Array<{
+      name?: string;
+      climateRef?: string;
+      heatTemp?: number;     // Heat setpoint in tenths of degrees
+      coolTemp?: number;     // Cool setpoint in tenths of degrees
+    }>;
+  };
 }
 
 interface BeestatResponse {
@@ -98,25 +121,102 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
       }
 
       console.log(`Processing thermostat: ${thermostatName}`);
-      console.log(`Raw temperature data: ${thermostat.temperature}, setpoint_heat: ${thermostat.temperature_setpoint_heat}, setpoint_cool: ${thermostat.temperature_setpoint_cool}`);
+      console.log(`Full thermostat data:`, JSON.stringify(thermostat, null, 2));
+      console.log(`Available properties:`, Object.keys(thermostat));
+      console.log(`Settings properties:`, thermostat.settings ? Object.keys(thermostat.settings) : 'no settings');
       
-      // Determine target temperature based on HVAC mode
-      let targetTemp = 72; // default
-      if (thermostat.hvac_mode === 'heat') {
-        targetTemp = thermostat.temperature_setpoint_heat; // Try without conversion first
-      } else if (thermostat.hvac_mode === 'cool') {
-        targetTemp = thermostat.temperature_setpoint_cool;
-      } else if (thermostat.hvac_mode === 'auto') {
-        // For auto mode, use the appropriate setpoint based on current state
-        if (thermostat.hvac_state?.includes('heat')) {
-          targetTemp = thermostat.temperature_setpoint_heat;
-        } else if (thermostat.hvac_state?.includes('cool')) {
-          targetTemp = thermostat.temperature_setpoint_cool;
-        } else {
-          // Use average of both setpoints when idle in auto mode
-          targetTemp = Math.round((thermostat.temperature_setpoint_heat + thermostat.temperature_setpoint_cool) / 2);
+      // Handle different API response formats
+      let currentTemp: number | null = null;
+      let heatSetpoint: number | null = null;
+      let coolSetpoint: number | null = null;
+      let hvacMode: string | undefined = undefined;
+      let hvacState: string | undefined = undefined;
+      
+      // Parse thermostat data from Beestat API response
+      if (thermostat.temperature) {
+        currentTemp = thermostat.temperature; // Already in Fahrenheit
+        
+        // Setpoints from main properties (these appear to be in degrees Fahrenheit already)
+        heatSetpoint = thermostat.setpoint_heat || null;
+        coolSetpoint = thermostat.setpoint_cool || null;
+        
+        console.log(`Raw setpoints from main properties: heat=${thermostat.setpoint_heat}, cool=${thermostat.setpoint_cool}`);
+        
+        // If setpoints are null, try to get from current climate/program
+        if ((!heatSetpoint || !coolSetpoint) && thermostat.program?.currentClimateRef) {
+          const currentClimate = thermostat.program.climates?.find(c => c.climateRef === thermostat.program?.currentClimateRef);
+          if (currentClimate) {
+            if (!heatSetpoint && currentClimate.heatTemp) {
+              heatSetpoint = currentClimate.heatTemp / 10; // Program temps are in tenths
+            }
+            if (!coolSetpoint && currentClimate.coolTemp) {
+              coolSetpoint = currentClimate.coolTemp / 10; // Program temps are in tenths  
+            }
+            console.log(`Using current climate '${currentClimate.name}' setpoints: heat=${heatSetpoint}°F, cool=${coolSetpoint}°F`);
+          }
         }
+        
+        // HVAC mode from settings or main property
+        hvacMode = thermostat.settings?.hvacMode || thermostat.hvac_mode;
+        
+        // Check running equipment for current state
+        hvacState = thermostat.running_equipment && thermostat.running_equipment.length > 0 
+          ? thermostat.running_equipment.join(',') 
+          : 'idle';
       }
+
+      
+      console.log(`Temperature data: current=${currentTemp}°F, heat_setpoint=${heatSetpoint}°F, cool_setpoint=${coolSetpoint}°F`);
+      console.log(`HVAC mode: ${hvacMode}, HVAC state: ${hvacState}`);
+      
+      // Determine target temperature and effective HVAC mode
+      let targetTemp = 72; // default fallback
+      let effectiveMode = hvacMode || 'auto'; // Default to auto if mode not specified
+      
+      if (hvacMode === 'heat' && heatSetpoint) {
+        targetTemp = heatSetpoint;
+      } else if (hvacMode === 'cool' && coolSetpoint) {
+        targetTemp = coolSetpoint;
+      } else if (hvacMode === 'auto' && heatSetpoint && coolSetpoint) {
+        // For auto mode, use the appropriate setpoint based on current state
+        if (hvacState?.includes('heat')) {
+          targetTemp = heatSetpoint;
+        } else if (hvacState?.includes('cool')) {
+          targetTemp = coolSetpoint;
+        } else {
+          // Use cool setpoint if temperature is closer to it, otherwise heat
+          targetTemp = Math.abs(currentTemp - coolSetpoint) <= Math.abs(currentTemp - heatSetpoint) ? coolSetpoint : heatSetpoint;
+        }
+      } else if (!hvacMode && heatSetpoint && coolSetpoint) {
+        // No explicit mode but both setpoints available - infer from current temperature and setpoints
+        if (heatSetpoint === coolSetpoint) {
+          // Same setpoint for both, use it directly
+          targetTemp = coolSetpoint;
+          effectiveMode = 'auto';
+        } else if (currentTemp < heatSetpoint - 1) {
+          // Need heating
+          targetTemp = heatSetpoint;
+          effectiveMode = 'heat';
+        } else if (currentTemp > coolSetpoint + 1) {
+          // Need cooling  
+          targetTemp = coolSetpoint;
+          effectiveMode = 'cool';
+        } else {
+          // In between, use the closer setpoint
+          targetTemp = Math.abs(currentTemp - coolSetpoint) <= Math.abs(currentTemp - heatSetpoint) ? coolSetpoint : heatSetpoint;
+          effectiveMode = 'auto';
+        }
+      } else if (!hvacMode && coolSetpoint) {
+        // Only cool setpoint available
+        targetTemp = coolSetpoint;
+        effectiveMode = 'cool';
+      } else if (!hvacMode && heatSetpoint) {
+        // Only heat setpoint available  
+        targetTemp = heatSetpoint;
+        effectiveMode = 'heat';
+      }
+      
+      console.log(`Determined target temperature: ${targetTemp}°F for mode ${effectiveMode} (original hvacMode: ${hvacMode})`);
 
       // Determine location based on thermostat name
       let location = 'Home';
@@ -130,10 +230,10 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
         id: parseInt(id),
         thermostatId: `beestat-${thermostat.ecobee_thermostat_id}`,
         name: location, // Use simplified location name
-        temperature: thermostat.temperature, // Temperature should already be in Fahrenheit
+        temperature: currentTemp || 72, // Convert from tenths of degrees
         targetTemp: targetTemp,
         humidity: thermostat.humidity || null,
-        mode: mapBeestatMode(thermostat.hvac_mode),
+        mode: mapBeestatMode(effectiveMode || 'off'),
         timestamp: new Date(),
         lastUpdated: new Date()
       });
