@@ -7,6 +7,8 @@ This project is a modern weather monitoring application that displays real-time 
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (August 2025)
+- **Daily Temperature Reset Fix**: Fixed timezone issue where daily high/low temperatures were resetting at 8:00 PM instead of midnight by implementing proper Eastern timezone handling with daylight saving time detection
+- **Real-time Thermostat Updates**: Enhanced thermostat data refresh system to show immediate updates on dashboard when background polling detects changes, eliminating delays in displaying current HVAC status
 - **Database Storage Reliability**: Fixed PostgreSQL thermostat storage to properly replace old records instead of creating duplicates, ensuring data consistency
 - **HVAC State Detection**: Enhanced thermostat status accuracy using actual equipment state from Beestat API, correctly showing cooling/heating/idle status
 - **Thermostat Display Fix**: Resolved duplicate thermostat display issue by fixing database query to return only latest record per device

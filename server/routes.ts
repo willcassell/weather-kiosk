@@ -350,7 +350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const forceRefresh = req.query.force === 'true';
       const shouldRefresh = forceRefresh || !currentThermostatData || currentThermostatData.length === 0 ||
         (currentThermostatData.length > 0 && currentThermostatData[0].lastUpdated && 
-         Date.now() - currentThermostatData[0].lastUpdated.getTime() > 30 * 1000); // 30 seconds
+         Date.now() - currentThermostatData[0].lastUpdated.getTime() > 10 * 1000); // 10 seconds - more frequent updates
       
       // Try Beestat API first  
       if (process.env.BEESTAT_API_KEY) {

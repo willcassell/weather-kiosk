@@ -390,10 +390,35 @@ export class PostgreSQLStorage implements IStorage {
     }
   }
 
+  private isDaylightSavingTime(date: Date): boolean {
+    // For US Eastern timezone: DST is second Sunday in March to first Sunday in November
+    const year = date.getFullYear();
+    
+    // Calculate second Sunday in March
+    const march = new Date(year, 2, 1); // March 1st
+    const marchFirstSunday = new Date(march.getTime() + (7 - march.getDay()) * 24 * 60 * 60 * 1000);
+    const marchSecondSunday = new Date(marchFirstSunday.getTime() + 7 * 24 * 60 * 60 * 1000);
+    
+    // Calculate first Sunday in November  
+    const november = new Date(year, 10, 1); // November 1st
+    const novemberFirstSunday = new Date(november.getTime() + (7 - november.getDay()) * 24 * 60 * 60 * 1000);
+    
+    return date >= marchSecondSunday && date < novemberFirstSunday;
+  }
+
   async getDailyTemperatureExtremes(stationId: string, date: Date): Promise<{ high: number; low: number; highTime: Date; lowTime: Date } | null> {
     try {
-      const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+      // Convert to Eastern timezone for proper daily calculations
+      // Assuming the weather station is in Eastern timezone
+      const easternOffset = -5; // EST is UTC-5 (adjust to -4 for EDT during daylight saving time)
+      const currentDate = new Date();
+      const isDST = this.isDaylightSavingTime(currentDate);
+      const timezoneOffset = isDST ? -4 : -5; // EDT is UTC-4, EST is UTC-5
+      
+      // Create start of day in Eastern timezone
+      const startOfDayEastern = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const startOfDayUTC = new Date(startOfDayEastern.getTime() - (timezoneOffset * 60 * 60 * 1000));
+      const endOfDayUTC = new Date(startOfDayUTC.getTime() + 24 * 60 * 60 * 1000);
       
       const result = await this.db
         .select({
@@ -404,8 +429,8 @@ export class PostgreSQLStorage implements IStorage {
         .where(
           and(
             eq(weatherObservations.stationId, stationId),
-            gte(weatherObservations.timestamp, startOfDay),
-            sql`${weatherObservations.timestamp} < ${endOfDay}`
+            gte(weatherObservations.timestamp, startOfDayUTC),
+            sql`${weatherObservations.timestamp} < ${endOfDayUTC}`
           )
         );
       
@@ -422,8 +447,8 @@ export class PostgreSQLStorage implements IStorage {
             and(
               eq(weatherObservations.stationId, stationId),
               eq(weatherObservations.temperature, result[0].maxTemp),
-              gte(weatherObservations.timestamp, startOfDay),
-              sql`${weatherObservations.timestamp} < ${endOfDay}`
+              gte(weatherObservations.timestamp, startOfDayUTC),
+              sql`${weatherObservations.timestamp} < ${endOfDayUTC}`
             )
           )
           .limit(1),
@@ -434,8 +459,8 @@ export class PostgreSQLStorage implements IStorage {
             and(
               eq(weatherObservations.stationId, stationId),
               eq(weatherObservations.temperature, result[0].minTemp),
-              gte(weatherObservations.timestamp, startOfDay),
-              sql`${weatherObservations.timestamp} < ${endOfDay}`
+              gte(weatherObservations.timestamp, startOfDayUTC),
+              sql`${weatherObservations.timestamp} < ${endOfDayUTC}`
             )
           )
           .limit(1)
@@ -444,8 +469,8 @@ export class PostgreSQLStorage implements IStorage {
       return {
         high: result[0].maxTemp,
         low: result[0].minTemp,
-        highTime: highRecord[0]?.timestamp || startOfDay,
-        lowTime: lowRecord[0]?.timestamp || startOfDay
+        highTime: highRecord[0]?.timestamp || startOfDayUTC,
+        lowTime: lowRecord[0]?.timestamp || startOfDayUTC
       };
     } catch (error) {
       console.error("Error getting daily temperature extremes:", error);

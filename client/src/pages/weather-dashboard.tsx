@@ -33,7 +33,7 @@ export default function WeatherDashboard() {
     refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: 5000,
-    staleTime: 30 * 1000, // Consider data stale after 30 seconds
+    staleTime: 0, // Always fetch fresh data - no caching
   });
 
   // Set up auto-refresh for both weather and thermostat data
