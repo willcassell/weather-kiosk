@@ -198,6 +198,29 @@ async function fetchWeatherFlowData(): Promise<any> {
     
 
 
+    // Get recent lightning data from database if available (within last 30 minutes)
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    let lightningStrikeTime = null;
+    let lightningStrikeDistance = null;
+    
+    try {
+      const recentLightning = await storage.getRecentLightningData(STATION_ID, thirtyMinutesAgo);
+      if (recentLightning) {
+        lightningStrikeTime = recentLightning.timestamp;
+        lightningStrikeDistance = recentLightning.distance;
+        console.log(`Recent lightning detected: ${lightningStrikeDistance} mi at ${lightningStrikeTime.toISOString()}`);
+      }
+    } catch (error) {
+      console.warn("Error fetching recent lightning data:", error);
+      // Fallback to current observation data if database query fails
+      if (currentConditions.lightning_strike_count > 0 && latestObs) {
+        lightningStrikeTime = new Date(latestObs.timestamp * 1000);
+        lightningStrikeDistance = currentConditions.lightning_strike_avg_distance ? 
+          Math.round(currentConditions.lightning_strike_avg_distance * 0.621371 * 10) / 10 : null;
+        console.log(`Using observation lightning data: ${lightningStrikeDistance} mi at ${lightningStrikeTime.toISOString()}`);
+      }
+    }
+
     // Convert WeatherFlow data to our format (with proper unit conversions)
     const weatherData = {
       stationId: STATION_ID,
@@ -216,9 +239,8 @@ async function fetchWeatherFlowData(): Promise<any> {
       pressureTrend: currentConditions.pressure_trend || determinePressureTrend(millibarsToInchesHg(currentConditions.sea_level_pressure), historicalData),
       humidity: currentConditions.relative_humidity,
       uvIndex: currentConditions.uv,
-      lightningStrikeDistance: currentConditions.lightning_strike_avg_distance ? 
-        Math.round(currentConditions.lightning_strike_avg_distance * 0.621371 * 10) / 10 : null, // Convert km to miles with 1 decimal
-      lightningStrikeTime: currentConditions.lightning_strike_count > 0 ? new Date() : null, // Use current time if strikes detected
+      lightningStrikeDistance: lightningStrikeDistance, // Use real lightning data from observations
+      lightningStrikeTime: lightningStrikeTime, // Use actual observation timestamp, not current time
       dewPoint: celsiusToFahrenheit(currentConditions.dew_point),
       rainToday: Math.round(millimetersToInches(currentConditions.precip_accum_local_day || 0) * 100) / 100,
       rainYesterday: Math.round(millimetersToInches(currentConditions.precip_accum_local_yesterday || 0) * 100) / 100

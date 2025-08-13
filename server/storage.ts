@@ -14,6 +14,7 @@ export interface IStorage {
   getWeatherObservations(stationId: string, hours: number): Promise<WeatherObservation[]>;
   getWeatherObservationsSince(stationId: string, since: Date): Promise<WeatherObservation[]>;
   getDailyTemperatureExtremes(stationId: string, date: Date): Promise<{ high: number; low: number; highTime: Date; lowTime: Date } | null>;
+  getRecentLightningData(stationId: string, since: Date): Promise<{ timestamp: Date; distance: number } | null>;
   
   getLatestThermostatData(): Promise<ThermostatData[]>;
   saveThermostatData(data: InsertThermostatData): Promise<ThermostatData>;
@@ -182,6 +183,27 @@ export class MemStorage implements IStorage {
       low: lowRecord.temperature,
       highTime: highRecord.timestamp,
       lowTime: lowRecord.timestamp
+    };
+  }
+
+  async getRecentLightningData(stationId: string, since: Date): Promise<{ timestamp: Date; distance: number } | null> {
+    const observations = this.weatherObservations.get(stationId) || [];
+    const recentObservations = observations.filter(obs => 
+      obs.timestamp.getTime() >= since.getTime() && 
+      obs.lightningStrikeCount && obs.lightningStrikeCount > 0 &&
+      obs.lightningStrikeDistance !== null
+    );
+    
+    if (recentObservations.length === 0) return null;
+    
+    // Return the most recent lightning strike
+    const mostRecent = recentObservations.reduce((latest, obs) => 
+      obs.timestamp.getTime() > latest.timestamp.getTime() ? obs : latest
+    );
+    
+    return {
+      timestamp: mostRecent.timestamp,
+      distance: mostRecent.lightningStrikeDistance!
     };
   }
 }
@@ -475,6 +497,36 @@ export class PostgreSQLStorage implements IStorage {
     } catch (error) {
       console.error("Error getting daily temperature extremes:", error);
       throw new Error("Failed to retrieve daily temperature extremes from database");
+    }
+  }
+
+  async getRecentLightningData(stationId: string, since: Date): Promise<{ timestamp: Date; distance: number } | null> {
+    try {
+      const result = await this.db
+        .select()
+        .from(weatherObservations)
+        .where(
+          and(
+            eq(weatherObservations.stationId, stationId),
+            gte(weatherObservations.timestamp, since),
+            sql`${weatherObservations.lightningStrikeCount} > 0`,
+            sql`${weatherObservations.lightningStrikeDistance} IS NOT NULL`
+          )
+        )
+        .orderBy(desc(weatherObservations.timestamp))
+        .limit(1);
+      
+      if (!result[0] || !result[0].lightningStrikeDistance) {
+        return null;
+      }
+      
+      return {
+        timestamp: result[0].timestamp,
+        distance: result[0].lightningStrikeDistance
+      };
+    } catch (error) {
+      console.error("Error getting recent lightning data:", error);
+      throw new Error("Failed to retrieve recent lightning data from database");
     }
   }
 }
