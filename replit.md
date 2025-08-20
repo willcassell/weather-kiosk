@@ -8,6 +8,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (August 2025)
 - **PostgreSQL Cost Optimization**: Implemented comprehensive cost reduction strategy with in-memory caching and off-peak scheduling (10 PM - 6 AM) to minimize database compute time and reduce billing costs
+- **Thermostat Database Removal**: Eliminated all PostgreSQL storage for thermostat data, using only in-memory caching and direct API calls to reduce database costs significantly
 - **Smart Caching Layer**: Added intelligent caching system with different TTL values for peak (2-3 min) vs off-peak hours (8-10 min) to serve data from memory instead of database queries
 - **Off-Peak Scheduling**: Automatic detection of off-peak hours with reduced API polling frequency - weather updates every 8 minutes and thermostat updates every 5 minutes during 10 PM to 6 AM period
 - **Dynamic Refresh Intervals**: Frontend adapts polling based on time of day - maintains real-time experience during peak hours while reducing costs during off-peak periods

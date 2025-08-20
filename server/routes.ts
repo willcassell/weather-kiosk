@@ -339,17 +339,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const cacheTTL = isOffPeak ? 8 : 2; // 8 min off-peak, 2 min peak
         dataCache.set(cacheKey, savedData, cacheTTL);
         
-        // Reduce thermostat polling during off-peak hours
-        if (!isOffPeak || Math.random() < 0.3) { // 30% chance during off-peak
-          try {
-            if (process.env.BEESTAT_API_KEY) {
-              console.log(`Refreshing thermostat data (off-peak: ${isOffPeak})`);
-              await fetchBeestatThermostats();
-            }
-          } catch (thermostatError) {
-            console.warn("Failed to refresh thermostat data:", thermostatError);
-          }
-        }
+        // Note: Thermostat data is now only cached in-memory, no database storage needed
         
         res.json(savedData);
       } else {
@@ -430,41 +420,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (process.env.BEESTAT_API_KEY) {
         try {
-          // During off-peak, reduce API calls frequency
+          // During off-peak, extend cache usage to reduce API calls
           if (isOffPeak && !forceRefresh) {
-            // Try database first during off-peak hours
-            const storedData = await storage.getLatestThermostatData();
-            if (storedData.length > 0) {
-              const lastUpdate = storedData[0]?.lastUpdated || new Date(0);
-              const staleThreshold = 15 * 60 * 1000; // 15 minutes for off-peak
-              
-              if (Date.now() - lastUpdate.getTime() < staleThreshold) {
-                console.log("Off-peak: Using recent database thermostat data to reduce API calls");
-                dataCache.set(cacheKey, storedData, 10); // Cache for 10 minutes
-                return res.json(storedData);
-              }
+            // Check if we have relatively fresh cached data (extend tolerance during off-peak)
+            let extendedCachedData = dataCache.get(`${cacheKey}:extended`);
+            if (extendedCachedData) {
+              console.log("Off-peak: Using extended cache to reduce API calls");
+              return res.json(extendedCachedData);
             }
           }
           
           console.log(`Fetching fresh thermostat data (off-peak: ${isOffPeak})`);
           const thermostatData = await fetchBeestatThermostats();
           
-          // Save to storage 
-          for (const thermostat of thermostatData) {
-            await storage.saveThermostatData({
-              thermostatId: thermostat.thermostatId,
-              name: thermostat.name,
-              temperature: thermostat.temperature,
-              targetTemp: thermostat.targetTemp,
-              humidity: thermostat.humidity,
-              mode: thermostat.mode,
-              hvacState: thermostat.hvacState
-            });
-          }
-          
-          // Cache with different TTL based on peak hours
+          // Only use in-memory cache - no database storage needed for thermostat data
           const cacheTTL = isOffPeak ? 10 : 2; // 10 min off-peak, 2 min peak
           dataCache.set(cacheKey, thermostatData, cacheTTL);
+          
+          // Set extended cache during off-peak for additional cost savings
+          if (isOffPeak) {
+            dataCache.set(`${cacheKey}:extended`, thermostatData, 20); // 20 min extended cache
+          }
           
           // Reduced cache-busting during off-peak for better caching
           if (isOffPeak) {
@@ -481,18 +457,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           return res.json(thermostatData);
         } catch (beestatError) {
-          console.error("Beestat API failed, falling back to database:", beestatError);
-          // Only fallback to database if API fails
-          const currentThermostatData = await storage.getLatestThermostatData();
-          if (currentThermostatData && currentThermostatData.length > 0) {
-            console.log("Using database fallback thermostat data due to API failure");
-            // Set cache-busting headers to prevent browser caching
-            res.set({
-              'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-              'Expires': '0',
-              'Pragma': 'no-cache'
-            });
-            return res.json(currentThermostatData);
+          console.error("Beestat API failed:", beestatError);
+          
+          // Fallback to cache if available
+          await initializeCache();
+          const fallbackCached = dataCache.get(cacheKey) || dataCache.get(`${cacheKey}:extended`);
+          if (fallbackCached) {
+            console.log("Using cached fallback thermostat data due to API failure");
+            return res.json({ ...fallbackCached, stale: true, cached: true });
           }
         }
       } else {
@@ -524,18 +496,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Force refreshing thermostat data from Beestat API");
       const thermostatData = await fetchBeestatThermostats();
       
-      // Save fresh data to storage
-      for (const thermostat of thermostatData) {
-        await storage.saveThermostatData({
-          thermostatId: thermostat.thermostatId,
-          name: thermostat.name,
-          temperature: thermostat.temperature,
-          targetTemp: thermostat.targetTemp,
-          humidity: thermostat.humidity,
-          mode: thermostat.mode,
-          hvacState: thermostat.hvacState
-        });
-      }
+      // Clear cache and set fresh data
+      await initializeCache();
+      const cacheKey = `thermostats:current`;
+      dataCache.set(cacheKey, thermostatData, 2); // Short cache after manual refresh
       
       res.json({ success: true, message: "Thermostat data refreshed", thermostats: thermostatData });
     } catch (error) {
@@ -652,33 +616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Background polling for thermostat data 
-  if (process.env.BEESTAT_API_KEY) {
-    console.log("Starting background thermostat data polling (every 60 seconds)");
-    setInterval(async () => {
-      try {
-        console.log("Background: Fetching thermostat data from Beestat API");
-        const thermostatData = await fetchBeestatThermostats();
-        
-        // Save to storage for caching
-        for (const thermostat of thermostatData) {
-          await storage.saveThermostatData({
-            thermostatId: thermostat.thermostatId,
-            name: thermostat.name,
-            temperature: thermostat.temperature,
-            targetTemp: thermostat.targetTemp,
-            humidity: thermostat.humidity,
-            mode: thermostat.mode,
-            hvacState: thermostat.hvacState
-          });
-        }
-        
-        console.log(`Background: Updated ${thermostatData.length} thermostats`);
-      } catch (error) {
-        console.error("Background thermostat polling failed:", error);
-      }
-    }, 60 * 1000); // Every 60 seconds
-  }
+  // Note: No background polling needed for thermostat data - using on-demand API calls with caching
 
   const httpServer = createServer(app);
   return httpServer;
