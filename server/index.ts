@@ -3,6 +3,46 @@ import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
+// Simple in-memory cache for cost optimization
+class SimpleCache {
+  private cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+
+  set(key: string, data: any, ttlMinutes: number = 5): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl: ttlMinutes * 60 * 1000
+    });
+  }
+
+  get(key: string): any | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    
+    if (Date.now() - entry.timestamp > entry.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return entry.data;
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+// Helper function to determine if we're in off-peak hours (10 PM - 6 AM)
+function isOffPeakHours(): boolean {
+  const now = new Date();
+  const hour = now.getHours();
+  return hour >= 22 || hour < 6; // 10 PM (22:00) to 6 AM
+}
+
+// Export cache instance for use in routes
+export const dataCache = new SimpleCache();
+export { isOffPeakHours };
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

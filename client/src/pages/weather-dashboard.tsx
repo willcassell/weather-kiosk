@@ -15,13 +15,23 @@ import { AlertCircle } from "lucide-react";
 import { useUnitPreferences } from "@/hooks/use-unit-preferences";
 import type { WeatherData, ThermostatData } from "@shared/schema";
 
-const REFRESH_INTERVAL = 1 * 60 * 1000; // 1 minute for thermostats
+// Helper function to determine if we're in off-peak hours (10 PM - 6 AM)
+function isOffPeakHours(): boolean {
+  const now = new Date();
+  const hour = now.getHours();
+  return hour >= 22 || hour < 6; // 10 PM (22:00) to 6 AM
+}
 
 export default function WeatherDashboard() {
   const { preferences, isLoaded } = useUnitPreferences();
+  
+  // Dynamic refresh intervals based on off-peak hours - reduces database costs
+  const weatherRefreshInterval = isOffPeakHours() ? 8 * 60 * 1000 : 3 * 60 * 1000; // 8 min off-peak, 3 min peak
+  const thermostatRefreshInterval = isOffPeakHours() ? 5 * 60 * 1000 : 1 * 60 * 1000; // 5 min off-peak, 1 min peak
+  
   const { data: weatherData, isLoading, error, isError } = useQuery<WeatherData>({
     queryKey: ['/api/weather/current'],
-    refetchInterval: 3 * 60 * 1000, // 3 minutes for weather
+    refetchInterval: weatherRefreshInterval,
     refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: 5000,
@@ -29,26 +39,36 @@ export default function WeatherDashboard() {
 
   const { data: thermostatData, isLoading: thermostatLoading, error: thermostatError } = useQuery<ThermostatData[]>({
     queryKey: ['/api/thermostats/current'],
-    refetchInterval: REFRESH_INTERVAL,
+    refetchInterval: thermostatRefreshInterval,
     refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: 5000,
     staleTime: 0, // Always fetch fresh data - no caching
   });
 
-  // Set up auto-refresh for both weather and thermostat data
+  // Set up dynamic auto-refresh based on off-peak hours
   useEffect(() => {
-    const weatherInterval = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: ['/api/weather/current'] });
-    }, 3 * 60 * 1000); // 3 minutes for weather
+    const checkAndRefresh = () => {
+      const currentWeatherInterval = isOffPeakHours() ? 8 * 60 * 1000 : 3 * 60 * 1000;
+      const currentThermostatInterval = isOffPeakHours() ? 5 * 60 * 1000 : 1 * 60 * 1000;
+      
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/weather/current'] });
+      }, currentWeatherInterval);
+      
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/thermostats/current'] });
+      }, currentThermostatInterval);
+    };
 
-    const thermostatInterval = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: ['/api/thermostats/current'] });
-    }, REFRESH_INTERVAL); // 1 minute for thermostats
+    // Initial check
+    checkAndRefresh();
+    
+    // Check every hour to adjust for peak/off-peak transitions
+    const hourlyCheck = setInterval(checkAndRefresh, 60 * 60 * 1000);
 
     return () => {
-      clearInterval(weatherInterval);
-      clearInterval(thermostatInterval);
+      clearInterval(hourlyCheck);
     };
   }, []);
 

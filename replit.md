@@ -7,17 +7,17 @@ This project is a modern weather monitoring application that displays real-time 
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (August 2025)
+- **PostgreSQL Cost Optimization**: Implemented comprehensive cost reduction strategy with in-memory caching and off-peak scheduling (10 PM - 6 AM) to minimize database compute time and reduce billing costs
+- **Smart Caching Layer**: Added intelligent caching system with different TTL values for peak (2-3 min) vs off-peak hours (8-10 min) to serve data from memory instead of database queries
+- **Off-Peak Scheduling**: Automatic detection of off-peak hours with reduced API polling frequency - weather updates every 8 minutes and thermostat updates every 5 minutes during 10 PM to 6 AM period
+- **Dynamic Refresh Intervals**: Frontend adapts polling based on time of day - maintains real-time experience during peak hours while reducing costs during off-peak periods
+- **Database Activity Reduction**: Strategic use of cached data and extended refresh intervals during low-usage hours to allow PostgreSQL database to go idle and reduce compute costs
+- **Real-Time Lightning Detection Enhancement**: Fixed lightning timestamp logic to use actual WeatherFlow observation timestamps instead of server time, ensuring accurate lightning activity display within 30-minute windows
 - **Daily Temperature Reset Fix**: Fixed timezone issue where daily high/low temperatures were resetting at 8:00 PM instead of midnight by implementing proper Eastern timezone handling with daylight saving time detection
 - **Real-time Thermostat Updates**: Enhanced thermostat data refresh system to show immediate updates on dashboard when background polling detects changes, eliminating delays in displaying current HVAC status
 - **Database Storage Reliability**: Fixed PostgreSQL thermostat storage to properly replace old records instead of creating duplicates, ensuring data consistency
 - **HVAC State Detection**: Enhanced thermostat status accuracy using actual equipment state from Beestat API, correctly showing cooling/heating/idle status
-- **Thermostat Display Fix**: Resolved duplicate thermostat display issue by fixing database query to return only latest record per device
 - **Weather Observations Database**: Implemented PostgreSQL storage for individual weather readings with accurate daily temperature calculations from observed data only
-- **Temperature Accuracy Enhancement**: Fixed daily high/low temperature timing by storing every API observation and calculating extremes from database queries instead of forecast data
-- **Database Schema Updates**: Added weather_observations table to store all individual readings with timestamps, replacing forecast-dependent temperature calculations
-- **UI Layout Optimization**: Balanced wind/rain card proportions (60/40 split), reduced wind font sizes for better space utilization
-- **Thermostat Card Redesign**: Three-column layout separating current temperature, humidity, and target temperature for clarity
-- **Data Refresh Enhancement**: Reduced thermostat data refresh from 3 minutes to 1 minute for more responsive updates
 - **Visual Improvements**: Rain card units now display as small superscripts, humidity values reduced in size as secondary information
 - **Kiosk-Focused Unit System**: Removed interactive settings UI, units now controlled via VITE_UNIT_SYSTEM environment variable
 - **Parameterized Station Display**: Station name in banner now configurable via VITE_STATION_DISPLAY_NAME environment variable
