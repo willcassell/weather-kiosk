@@ -72,6 +72,23 @@ export default function ThermostatCard({ thermostats, isLoading, isStale, error,
     return false;
   };
 
+  const getModeIcon = (mode: string) => {
+    const iconClasses = "h-3 w-3 lg:h-4 lg:w-4 xl:h-5 xl:w-5";
+
+    switch (mode) {
+      case 'cool':
+        return <Snowflake className={`${iconClasses} text-blue-400`} />;
+      case 'heat':
+        return <Flame className={`${iconClasses} text-red-400`} />;
+      case 'auto':
+        return <Target className={`${iconClasses} text-purple-400`} />;
+      case 'off':
+        return <Pause className={`${iconClasses} text-gray-400`} />;
+      default:
+        return null;
+    }
+  };
+
   const getHvacStatusIndicator = (thermostat: any) => {
     const active = isHvacActive(thermostat);
     const { mode, temperature: currentTemp, targetTemp, hvacState } = thermostat;
@@ -162,21 +179,21 @@ export default function ThermostatCard({ thermostats, isLoading, isStale, error,
       </div>
       
       <div className="weather-card-content">
-        <div className="flex items-stretch justify-between space-x-4 w-full">
+        <div className="flex items-stretch justify-between space-x-8 w-full">
           {thermostats.map((thermostat, index) => {
             const tempColor = getTemperatureColor(thermostat.temperature, thermostat.targetTemp, thermostat.mode);
             const active = isHvacActive(thermostat);
             
             return (
               <div key={thermostat.id} className="flex-1 relative flex flex-col justify-center space-y-2">
-                {/* Top Row - Location Name with HVAC Status */}
+                {/* Top Row - Location Name and HVAC Status */}
                 <div className="flex items-center justify-between">
                   <span className="text-responsive-sm font-semibold text-foreground">
                     {thermostat.name}
                   </span>
                   {getHvacStatusIndicator(thermostat)}
                 </div>
-                
+
                 {/* Bottom Row - Temperature and Humidity Info */}
                 <div className="flex items-center justify-between">
                   {/* Current Temperature */}
@@ -186,8 +203,8 @@ export default function ThermostatCard({ thermostats, isLoading, isStale, error,
                     </div>
                     <div className="text-responsive-xs text-muted-foreground">Current</div>
                   </div>
-                  
-                  {/* Center - Humidity (smaller as secondary info) */}
+
+                  {/* Center - Humidity */}
                   <div className="text-center">
                     {thermostat.humidity && (
                       <>
@@ -198,7 +215,7 @@ export default function ThermostatCard({ thermostats, isLoading, isStale, error,
                       </>
                     )}
                   </div>
-                  
+
                   {/* Target Temperature */}
                   <div className="text-right">
                     <div className="text-responsive-md font-medium text-cyan-400">
@@ -207,10 +224,10 @@ export default function ThermostatCard({ thermostats, isLoading, isStale, error,
                     <div className="text-responsive-xs text-muted-foreground">Target</div>
                   </div>
                 </div>
-                
-                {/* Add divider between thermostats with buffer space */}
+
+                {/* Add divider between thermostats with more spacing */}
                 {index < thermostats.length - 1 && (
-                  <div className="absolute -right-3 top-1/2 transform -translate-y-1/2 w-px h-8 lg:h-12 xl:h-16 2xl:h-20 bg-border"></div>
+                  <div className="absolute -right-6 top-1/2 transform -translate-y-1/2 w-px h-8 lg:h-12 xl:h-16 2xl:h-20 bg-border"></div>
                 )}
               </div>
             );

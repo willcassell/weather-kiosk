@@ -234,8 +234,36 @@ All services have `restart: unless-stopped` for automatic recovery.
 5. **Rainfall Card**: Today's and yesterday's precipitation
 6. **Lightning Card**: Real-time lightning strike detection
 7. **Humidity & Dew Point Card**: Atmospheric moisture data
-8. **Thermostat Card**: Multi-location indoor climate with HVAC status
+8. **Thermostat Card**: Multi-location indoor climate with HVAC status and intelligent color-coding
 9. **Live Radar**: Embedded weather radar
+
+### Thermostat Card Color Coding
+
+The thermostat card uses intelligent color-coding to provide at-a-glance status information:
+
+#### Current Temperature Colors
+
+**When HVAC is Active** (>1°F difference from target):
+- 🔵 **Blue** - Actively cooling OR auto mode when temperature is above target
+- 🔴 **Red** - Actively heating OR auto mode when temperature is below target
+- Temperature will pulse to indicate active HVAC operation
+
+**When HVAC is Idle** (<1°F difference):
+- 🟢 **Green** - At target temperature (within 0.5°F)
+- 🟠 **Orange** - Too warm (>1°F above target, needs cooling)
+- 🔵 **Cyan** - Too cool (>1°F below target, needs heating)
+- ⚪ **White** - Close to target (within 1°F range)
+
+#### HVAC Status Indicators
+- **Cooling**: Snowflake icon with activity indicator (blue, animated)
+- **Heating**: Flame icon with activity indicator (red, animated)
+- **Idle**: Pause icon (gray, static)
+- **Delayed**: Yellow badge when data is stale (>5 minutes old)
+
+This color-coding provides immediate visual feedback about:
+- How close each thermostat is to its target temperature
+- Whether the HVAC system is actively working
+- Which direction adjustment is needed (warmer or cooler)
 
 ## Data Refresh & Caching
 
