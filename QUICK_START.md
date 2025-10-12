@@ -22,7 +22,7 @@ Deploy your own weather kiosk display in 5 minutes using Docker.
 ### 1. Download
 
 ```bash
-git clone https://github.com/yourusername/weather-kiosk.git
+git clone https://github.com/<your-username>/weather-kiosk.git
 cd weather-kiosk
 ```
 

@@ -2,7 +2,7 @@
 
 A modern, secure weather monitoring application that displays real-time data from your WeatherFlow Tempest weather station with optional Ecobee thermostat integration. Built with React, TypeScript, and designed for continuous kiosk display with secure internet access via Cloudflare Tunnel.
 
-**Live Demo**: [https://weather.dukestv.cc](https://weather.dukestv.cc)
+<!-- **Live Demo**: [https://weather.dukestv.cc](https://weather.dukestv.cc) -->
 
 ---
 
@@ -83,7 +83,7 @@ A modern, secure weather monitoring application that displays real-time data fro
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/yourusername/weather-kiosk.git
+   git clone https://github.com/<your-username>/weather-kiosk.git
    cd weather-kiosk
    ```
 
