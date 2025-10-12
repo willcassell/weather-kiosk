@@ -7,18 +7,16 @@ import { EcobeeAPI, convertEcobeeToThermostatData } from "./ecobee-api";
 import { fetchBeestatThermostats } from './beestat-api';
 import { z } from "zod";
 
-// Import cache and off-peak helpers for cost optimization
+// Import cache for data optimization
 let dataCache: any = null;
-let isOffPeakHours: () => boolean = () => false;
 
 // Dynamic import to avoid circular dependency
 async function initializeCache() {
   if (!dataCache) {
-    const { dataCache: cache, isOffPeakHours: offPeak } = await import('./index.js');
+    const { dataCache: cache } = await import('./index.js');
     dataCache = cache;
-    isOffPeakHours = offPeak;
   }
-  return { dataCache, isOffPeakHours };
+  return dataCache;
 }
 
 const WEATHERFLOW_API_BASE = "https://swd.weatherflow.com/swd/rest";
@@ -304,67 +302,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get current weather data with caching and off-peak optimization
+  // Get current weather data with caching
   app.get("/api/weather/current", async (req, res) => {
     try {
-      await initializeCache();
-      const isOffPeak = isOffPeakHours();
+      const cache = await initializeCache();
       const forceRefresh = req.query.force === 'true';
-      
+
       // Check in-memory cache first
       const cacheKey = `weather:${STATION_ID}`;
-      let cachedData = dataCache.get(cacheKey);
-      
+      let cachedData = cache.get(cacheKey);
+
       if (cachedData && !forceRefresh) {
-        console.log(`Serving cached weather data (off-peak: ${isOffPeak})`);
+        console.log(`Serving cached weather data`);
         return res.json(cachedData);
       }
-      
+
       const currentData = await storage.getLatestWeatherData(STATION_ID);
-      
-      // Adjust refresh intervals based on peak hours
-      const refreshInterval = isOffPeak ? 10 * 60 * 1000 : 3 * 60 * 1000; // 10 min off-peak, 3 min peak
-      const shouldRefresh = forceRefresh || !currentData || 
+
+      // Fixed 3-minute refresh interval
+      const refreshInterval = 3 * 60 * 1000; // 3 minutes
+      const shouldRefresh = forceRefresh || !currentData ||
         (currentData.lastUpdated && Date.now() - currentData.lastUpdated.getTime() > refreshInterval);
-      
+
       if (shouldRefresh) {
-        const reason = forceRefresh ? "Force refresh requested" : 
-                      isOffPeak ? "Off-peak scheduled refresh" : "Peak hours refresh";
+        const reason = forceRefresh ? "Force refresh requested" : "Scheduled refresh";
         console.log(`${reason} - Fetching fresh weather data from WeatherFlow API...`);
-        
+
         const freshData = await fetchWeatherFlowData();
         const savedData = await storage.saveWeatherData(freshData);
-        
-        // Cache the fresh data (longer TTL during off-peak)
-        const cacheTTL = isOffPeak ? 8 : 2; // 8 min off-peak, 2 min peak
-        dataCache.set(cacheKey, savedData, cacheTTL);
-        
-        // Note: Thermostat data is now only cached in-memory, no database storage needed
-        
+
+        // Cache the fresh data for 2 minutes
+        cache.set(cacheKey, savedData, 2);
+
         res.json(savedData);
       } else {
-        // Cache the database data
-        const cacheTTL = isOffPeak ? 8 : 2;
-        dataCache.set(cacheKey, currentData, cacheTTL);
-        console.log(`Using stored data from ${currentData.lastUpdated} (off-peak: ${isOffPeak})`);
+        // Cache the database data for 2 minutes
+        cache.set(cacheKey, currentData, 2);
+        console.log(`Using stored data from ${currentData.lastUpdated}`);
         res.json(currentData);
       }
     } catch (error) {
       console.error("Error getting current weather:", error);
-      
+
       // Fallback to cache
       try {
-        await initializeCache();
+        const cache = await initializeCache();
         const cacheKey = `weather:${STATION_ID}`;
-        const fallbackCached = dataCache.get(cacheKey);
+        const fallbackCached = cache.get(cacheKey);
         if (fallbackCached) {
           return res.json({ ...fallbackCached, stale: true, cached: true });
         }
       } catch (cacheError) {
         console.error("Cache fallback failed:", cacheError);
       }
-      
-      res.status(500).json({ 
+
+      res.status(500).json({
         error: "Failed to fetch weather data",
         message: error instanceof Error ? error.message : "Unknown error"
       });
@@ -402,83 +394,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Thermostat API endpoints with off-peak optimization
+  // Thermostat API endpoints
   app.get("/api/thermostats/current", async (req, res) => {
     try {
-      await initializeCache();
-      const isOffPeak = isOffPeakHours();
+      const cache = await initializeCache();
       const forceRefresh = req.query.force === 'true';
-      
-      // Check cache first - longer TTL during off-peak
+
+      // Check cache first
       const cacheKey = `thermostats:current`;
-      let cachedData = dataCache.get(cacheKey);
-      
+      let cachedData = cache.get(cacheKey);
+
       if (cachedData && !forceRefresh) {
-        console.log(`Serving cached thermostat data (off-peak: ${isOffPeak})`);
-        return res.json(cachedData);
+        console.log(`Serving cached thermostat data`);
+        // Add timestamp to indicate data age
+        const dataAge = Date.now() - cachedData.timestamp;
+        const isStale = dataAge > 5 * 60 * 1000; // Consider stale after 5 minutes
+
+        return res.json({
+          thermostats: cachedData.data,
+          cached: true,
+          stale: isStale,
+          lastUpdated: new Date(cachedData.timestamp).toISOString()
+        });
       }
-      
+
       if (process.env.BEESTAT_API_KEY) {
         try {
-          // During off-peak, extend cache usage to reduce API calls
-          if (isOffPeak && !forceRefresh) {
-            // Check if we have relatively fresh cached data (extend tolerance during off-peak)
-            let extendedCachedData = dataCache.get(`${cacheKey}:extended`);
-            if (extendedCachedData) {
-              console.log("Off-peak: Using extended cache to reduce API calls");
-              return res.json(extendedCachedData);
-            }
-          }
-          
-          console.log(`Fetching fresh thermostat data (off-peak: ${isOffPeak})`);
+          console.log(`Fetching fresh thermostat data`);
           const thermostatData = await fetchBeestatThermostats();
-          
-          // Only use in-memory cache - no database storage needed for thermostat data
-          const cacheTTL = isOffPeak ? 10 : 2; // 10 min off-peak, 2 min peak
-          dataCache.set(cacheKey, thermostatData, cacheTTL);
-          
-          // Set extended cache during off-peak for additional cost savings
-          if (isOffPeak) {
-            dataCache.set(`${cacheKey}:extended`, thermostatData, 20); // 20 min extended cache
-          }
-          
-          // Reduced cache-busting during off-peak for better caching
-          if (isOffPeak) {
-            res.set({
-              'Cache-Control': 'public, max-age=300', // 5 min browser cache during off-peak
-            });
-          } else {
-            res.set({
-              'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-              'Expires': '0',
-              'Pragma': 'no-cache'
-            });
-          }
-          
-          return res.json(thermostatData);
+
+          // Cache with timestamp for 2 minutes
+          cache.set(cacheKey, {
+            data: thermostatData,
+            timestamp: Date.now()
+          }, 2);
+
+          // No browser caching - always fetch fresh
+          res.set({
+            'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+            'Expires': '0',
+            'Pragma': 'no-cache'
+          });
+
+          return res.json({
+            thermostats: thermostatData,
+            cached: false,
+            stale: false,
+            lastUpdated: new Date().toISOString()
+          });
         } catch (beestatError) {
           console.error("Beestat API failed:", beestatError);
-          
+
           // Fallback to cache if available
-          await initializeCache();
-          const fallbackCached = dataCache.get(cacheKey) || dataCache.get(`${cacheKey}:extended`);
+          const fallbackCached = cache.get(cacheKey);
           if (fallbackCached) {
-            console.log("Using cached fallback thermostat data due to API failure");
-            return res.json({ ...fallbackCached, stale: true, cached: true });
+            const dataAge = Date.now() - fallbackCached.timestamp;
+            console.log(`Using stale cached thermostat data (${Math.floor(dataAge / 1000 / 60)} minutes old)`);
+
+            return res.json({
+              thermostats: fallbackCached.data,
+              cached: true,
+              stale: true,
+              lastUpdated: new Date(fallbackCached.timestamp).toISOString(),
+              error: "Failed to fetch fresh data, using cached version"
+            });
           }
         }
       } else {
         console.log("BEESTAT_API_KEY not found, no thermostat data available");
       }
-      
+
       // No thermostat data available
       console.log("No thermostat data available - Beestat API key required");
-      return res.json([]);
-      
+      return res.json({
+        thermostats: [],
+        cached: false,
+        stale: false
+      });
 
     } catch (error) {
       console.error("Error getting thermostat data:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to fetch thermostat data",
         message: error instanceof Error ? error.message : "Unknown error"
       });

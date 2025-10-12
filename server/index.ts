@@ -32,16 +32,8 @@ class SimpleCache {
   }
 }
 
-// Helper function to determine if we're in off-peak hours (10 PM - 6 AM)
-function isOffPeakHours(): boolean {
-  const now = new Date();
-  const hour = now.getHours();
-  return hour >= 22 || hour < 6; // 10 PM (22:00) to 6 AM
-}
-
 // Export cache instance for use in routes
 export const dataCache = new SimpleCache();
-export { isOffPeakHours };
 
 const app = express();
 app.use(express.json());

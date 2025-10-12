@@ -1,6 +1,7 @@
 import { weatherData, weatherObservations, thermostatData, type WeatherData, type WeatherObservation, type ThermostatData, type InsertWeatherData, type InsertWeatherObservation, type InsertThermostatData, type WeatherFlowStation, type WeatherFlowObservation, type WeatherFlowForecast } from "@shared/schema";
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import pkg from "pg";
+const { Pool } = pkg;
+import { drizzle } from "drizzle-orm/node-postgres";
 import { desc, eq, and, gte, sql } from "drizzle-orm";
 
 export interface IStorage {
@@ -211,17 +212,17 @@ export class MemStorage implements IStorage {
 // PostgreSQL Storage Implementation
 export class PostgreSQLStorage implements IStorage {
   private db: ReturnType<typeof drizzle>;
-  private sql: ReturnType<typeof neon>;
+  private pool: InstanceType<typeof Pool>;
 
   constructor() {
     const databaseUrl = process.env.DATABASE_URL;
     if (!databaseUrl) {
       throw new Error("DATABASE_URL environment variable is required for PostgreSQL storage");
     }
-    
+
     try {
-      this.sql = neon(databaseUrl);
-      this.db = drizzle(this.sql);
+      this.pool = new Pool({ connectionString: databaseUrl });
+      this.db = drizzle({ client: this.pool });
       console.log("PostgreSQL storage initialized successfully");
     } catch (error) {
       console.error("Failed to initialize PostgreSQL storage:", error);

@@ -1,0 +1,9 @@
+tunnel: TUNNEL_ID_PLACEHOLDER
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  # Route weather.duketv.cc to the weather app
+  - hostname: weather.duketv.cc
+    service: http://app:5000
+  # Catch-all rule (required)
+  - service: http_status:404

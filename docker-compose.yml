@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: weather-kiosk-db
+    environment:
+      POSTGRES_DB: weather_kiosk
+      POSTGRES_USER: weather_user
+      POSTGRES_PASSWORD: weather_pass_local
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U weather_user -d weather_kiosk"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weather-kiosk-app
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://weather_user:weather_pass_local@postgres:5432/weather_kiosk
+    env_file:
+      - .env
+    ports:
+      - "5001:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: weather-kiosk-tunnel
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    restart: unless-stopped
+    depends_on:
+      - app
+
+volumes:
+  postgres_data:

@@ -15,62 +15,41 @@ import { AlertCircle } from "lucide-react";
 import { useUnitPreferences } from "@/hooks/use-unit-preferences";
 import type { WeatherData, ThermostatData } from "@shared/schema";
 
-// Helper function to determine if we're in off-peak hours (10 PM - 6 AM)
-function isOffPeakHours(): boolean {
-  const now = new Date();
-  const hour = now.getHours();
-  return hour >= 22 || hour < 6; // 10 PM (22:00) to 6 AM
+// Updated response type to include stale flag
+interface ThermostatResponse {
+  thermostats: ThermostatData[];
+  cached: boolean;
+  stale: boolean;
+  lastUpdated?: string;
+  error?: string;
 }
 
 export default function WeatherDashboard() {
   const { preferences, isLoaded } = useUnitPreferences();
-  
-  // Dynamic refresh intervals based on off-peak hours - reduces database costs
-  const weatherRefreshInterval = isOffPeakHours() ? 8 * 60 * 1000 : 3 * 60 * 1000; // 8 min off-peak, 3 min peak
-  const thermostatRefreshInterval = isOffPeakHours() ? 5 * 60 * 1000 : 1 * 60 * 1000; // 5 min off-peak, 1 min peak
-  
+
+  // Fixed 3-minute refresh interval for all data
+  const refreshInterval = 3 * 60 * 1000; // 3 minutes
+
   const { data: weatherData, isLoading, error, isError } = useQuery<WeatherData>({
     queryKey: ['/api/weather/current'],
-    refetchInterval: weatherRefreshInterval,
+    refetchInterval: refreshInterval,
     refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: 5000,
   });
 
-  const { data: thermostatData, isLoading: thermostatLoading, error: thermostatError } = useQuery<ThermostatData[]>({
+  const { data: thermostatResponse, isLoading: thermostatLoading, error: thermostatError } = useQuery<ThermostatResponse>({
     queryKey: ['/api/thermostats/current'],
-    refetchInterval: thermostatRefreshInterval,
+    refetchInterval: refreshInterval,
     refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: 5000,
     staleTime: 0, // Always fetch fresh data - no caching
   });
 
-  // Set up dynamic auto-refresh based on off-peak hours
-  useEffect(() => {
-    const checkAndRefresh = () => {
-      const currentWeatherInterval = isOffPeakHours() ? 8 * 60 * 1000 : 3 * 60 * 1000;
-      const currentThermostatInterval = isOffPeakHours() ? 5 * 60 * 1000 : 1 * 60 * 1000;
-      
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['/api/weather/current'] });
-      }, currentWeatherInterval);
-      
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['/api/thermostats/current'] });
-      }, currentThermostatInterval);
-    };
-
-    // Initial check
-    checkAndRefresh();
-    
-    // Check every hour to adjust for peak/off-peak transitions
-    const hourlyCheck = setInterval(checkAndRefresh, 60 * 60 * 1000);
-
-    return () => {
-      clearInterval(hourlyCheck);
-    };
-  }, []);
+  // Extract thermostat data and stale flag
+  const thermostatData = thermostatResponse?.thermostats;
+  const thermostatDataIsStale = thermostatResponse?.stale || false;
 
   if (isError) {
     return (
@@ -184,7 +163,7 @@ export default function WeatherDashboard() {
               
               {/* Thermostat Card - More space for detailed thermostat information */}
               <div className="flex-[2.3]">
-                <ThermostatCard 
+                <ThermostatCard
                   thermostats={thermostatData?.map(t => ({
                     ...t,
                     temperature: t.temperature ?? 0,
@@ -193,6 +172,7 @@ export default function WeatherDashboard() {
                     mode: (t.mode as 'heat' | 'cool' | 'auto' | 'off') ?? 'off'
                   }))}
                   isLoading={thermostatLoading}
+                  isStale={thermostatDataIsStale}
                   error={thermostatError instanceof Error ? thermostatError.message : undefined}
                   preferences={preferences}
                 />

@@ -1,27 +1,30 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import pkg from "pg";
+const { Pool } = pkg;
+import { drizzle } from "drizzle-orm/node-postgres";
 import { weatherData, weatherObservations, thermostatData } from "@shared/schema";
 
 export async function initializeDatabase(): Promise<boolean> {
   const databaseUrl = process.env.DATABASE_URL;
-  
+
   if (!databaseUrl) {
     console.log("DATABASE_URL not provided, skipping database initialization");
     return false;
   }
 
+  let pool: Pool | null = null;
+
   try {
     console.log("Initializing database connection...");
-    const sql = neon(databaseUrl);
-    const db = drizzle(sql);
+    pool = new Pool({ connectionString: databaseUrl });
+    const db = drizzle({ client: pool });
 
     // Test connection by attempting a simple query
-    await sql`SELECT 1 as test`;
+    await pool.query('SELECT 1 as test');
     console.log("Database connection successful");
 
     // Create tables if they don't exist (simple approach for deployment)
     try {
-      await sql`
+      await pool.query(`
         CREATE TABLE IF NOT EXISTS weather_data (
           id SERIAL PRIMARY KEY,
           station_id TEXT NOT NULL,
@@ -48,10 +51,10 @@ export async function initializeDatabase(): Promise<boolean> {
           rain_yesterday REAL,
           last_updated TIMESTAMP DEFAULT NOW() NOT NULL
         )
-      `;
-      
+      `);
+
       // Create weather observations table
-      await sql`
+      await pool.query(`
         CREATE TABLE IF NOT EXISTS weather_observations (
           id SERIAL PRIMARY KEY,
           station_id TEXT NOT NULL,
@@ -70,9 +73,9 @@ export async function initializeDatabase(): Promise<boolean> {
           lightning_strike_distance REAL,
           created_at TIMESTAMP DEFAULT NOW() NOT NULL
         )
-      `;
+      `);
 
-      await sql`
+      await pool.query(`
         CREATE TABLE IF NOT EXISTS thermostat_data (
           id SERIAL PRIMARY KEY,
           thermostat_id TEXT NOT NULL,
@@ -85,28 +88,28 @@ export async function initializeDatabase(): Promise<boolean> {
           timestamp TIMESTAMP DEFAULT NOW() NOT NULL,
           last_updated TIMESTAMP DEFAULT NOW() NOT NULL
         )
-      `;
+      `);
 
       // Create session table for connect-pg-simple
-      await sql`
+      await pool.query(`
         CREATE TABLE IF NOT EXISTS session (
           sid VARCHAR NOT NULL COLLATE "default",
           sess JSON NOT NULL,
           expire TIMESTAMP(6) NOT NULL
         )
-      `;
+      `);
 
       // Add primary key constraint if it doesn't exist (PostgreSQL compatible syntax)
       try {
-        await sql`ALTER TABLE session ADD CONSTRAINT session_pkey PRIMARY KEY (sid)`;
+        await pool.query(`ALTER TABLE session ADD CONSTRAINT session_pkey PRIMARY KEY (sid)`);
       } catch (constraintError) {
         // Constraint probably already exists, which is fine
         console.log("Session table constraint already exists or not needed");
       }
 
-      await sql`
+      await pool.query(`
         CREATE INDEX IF NOT EXISTS IDX_session_expire ON session (expire)
-      `;
+      `);
 
       console.log("Database tables initialized successfully");
       return true;
@@ -117,5 +120,10 @@ export async function initializeDatabase(): Promise<boolean> {
   } catch (error) {
     console.error("Database initialization failed:", error);
     return false;
+  } finally {
+    // Clean up pool connection
+    if (pool) {
+      await pool.end();
+    }
   }
 }

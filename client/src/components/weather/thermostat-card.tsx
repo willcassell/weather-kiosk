@@ -17,11 +17,12 @@ interface ThermostatData {
 interface ThermostatCardProps {
   thermostats?: ThermostatData[];
   isLoading?: boolean;
+  isStale?: boolean;
   error?: string;
   preferences?: UnitPreferences;
 }
 
-export default function ThermostatCard({ thermostats, isLoading, error, preferences }: ThermostatCardProps) {
+export default function ThermostatCard({ thermostats, isLoading, isStale, error, preferences }: ThermostatCardProps) {
   if (isLoading) {
     return (
       <div className="weather-card col-span-2 minimal-padding">
@@ -146,7 +147,14 @@ export default function ThermostatCard({ thermostats, isLoading, error, preferen
   return (
     <div className="weather-card col-span-2 minimal-padding">
       <div className="weather-card-header">
-        <h3 className="weather-card-title">Indoor Climate</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="weather-card-title">Indoor Climate</h3>
+          {isStale && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 animate-pulse">
+              Delayed
+            </span>
+          )}
+        </div>
         <div className="flex items-center space-x-1">
           <Home className="weather-card-icon" />
           <Thermometer className="weather-card-icon" />

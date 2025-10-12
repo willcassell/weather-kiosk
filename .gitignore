@@ -105,3 +105,13 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Docker volumes and data
+postgres_data/
+*.pem
+*.crt
+*.key
+
+# Cloudflare Tunnel credentials
+credentials.json
+.cloudflared/
