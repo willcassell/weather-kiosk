@@ -27,6 +27,9 @@ interface ThermostatResponse {
 export default function WeatherDashboard() {
   const { preferences, isLoaded } = useUnitPreferences();
 
+  // Check if thermostat functionality is enabled (requires Beestat API key on server)
+  const thermostatEnabled = import.meta.env.VITE_ENABLE_THERMOSTATS !== 'false';
+
   // Fixed 3-minute refresh interval for all data
   const refreshInterval = 3 * 60 * 1000; // 3 minutes
 
@@ -45,6 +48,7 @@ export default function WeatherDashboard() {
     retry: 3,
     retryDelay: 5000,
     staleTime: 0, // Always fetch fresh data - no caching
+    enabled: thermostatEnabled, // Only fetch if thermostats are enabled
   });
 
   // Extract thermostat data and stale flag
@@ -160,23 +164,26 @@ export default function WeatherDashboard() {
                   />
                 </div>
               </div>
-              
+
               {/* Thermostat Card - More space for detailed thermostat information */}
-              <div className="flex-[2.3]">
-                <ThermostatCard
-                  thermostats={thermostatData?.map(t => ({
-                    ...t,
-                    temperature: t.temperature ?? 0,
-                    targetTemp: t.targetTemp ?? 0,
-                    humidity: t.humidity ?? undefined,
-                    mode: (t.mode as 'heat' | 'cool' | 'auto' | 'off') ?? 'off'
-                  }))}
-                  isLoading={thermostatLoading}
-                  isStale={thermostatDataIsStale}
-                  error={thermostatError instanceof Error ? thermostatError.message : undefined}
-                  preferences={preferences}
-                />
-              </div>
+              {/* Only show if thermostats are enabled */}
+              {thermostatEnabled && (
+                <div className="flex-[2.3]">
+                  <ThermostatCard
+                    thermostats={thermostatData?.map(t => ({
+                      ...t,
+                      temperature: t.temperature ?? 0,
+                      targetTemp: t.targetTemp ?? 0,
+                      humidity: t.humidity ?? undefined,
+                      mode: (t.mode as 'heat' | 'cool' | 'auto' | 'off') ?? 'off'
+                    }))}
+                    isLoading={thermostatLoading}
+                    isStale={thermostatDataIsStale}
+                    error={thermostatError instanceof Error ? thermostatError.message : undefined}
+                    preferences={preferences}
+                  />
+                </div>
+              )}
             </>
           ) : (
             <div className="weather-card">

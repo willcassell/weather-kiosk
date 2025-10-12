@@ -4,6 +4,16 @@ A modern, secure weather monitoring application that displays real-time data fro
 
 **Live Demo**: [https://weather.dukestv.cc](https://weather.dukestv.cc)
 
+---
+
+## 🚀 Quick Start
+
+**New to this project?** See the [Quick Start Guide](./QUICK_START.md) for a simple 5-minute setup.
+
+**Need detailed deployment instructions?** See [DEPLOYMENT.md](./DEPLOYMENT.md) for various platforms.
+
+---
+
 ## Features
 
 ### Weather Monitoring
@@ -20,6 +30,7 @@ A modern, secure weather monitoring application that displays real-time data fro
 - **Real-time HVAC Status**: Live equipment state detection (heating/cooling/idle) with visual indicators
 - **Smart Temperature Display**: Color-coded temperatures with pulsing animation during HVAC operation
 - **Stale Data Detection**: "Delayed" indicator when thermostat data hasn't updated recently
+- **Auto-Hide When Disabled**: Thermostat card automatically hides if no Beestat API key is configured
 - **PostgreSQL Storage**: Reliable thermostat data storage with duplicate prevention
 
 ### Kiosk Optimization
@@ -207,7 +218,9 @@ Your weather kiosk is now securely accessible at `https://weather.your-domain.co
 | `VITE_RADAR_CENTER_LAT` | Yes | Radar center latitude |
 | `VITE_RADAR_CENTER_LON` | Yes | Radar center longitude |
 | `VITE_RADAR_ZOOM_LEVEL` | Yes | Radar zoom level (default: 7.25) |
-| `BEESTAT_API_KEY` | No | Beestat API key for thermostats |
+| `VITE_UNIT_SYSTEM` | Yes | Unit system: `imperial` or `metric` |
+| `VITE_STATION_DISPLAY_NAME` | No | Custom station name (overrides API name) |
+| `BEESTAT_API_KEY` | No | Beestat API key (thermostat card hidden if blank) |
 | `TARGET_THERMOSTAT_NAMES` | No | Comma-separated thermostat names |
 | `CLOUDFLARE_TUNNEL_TOKEN` | No | Cloudflare Tunnel token |
 | `SESSION_SECRET` | No | Session encryption key (auto-generated) |

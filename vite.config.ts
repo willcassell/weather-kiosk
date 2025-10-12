@@ -24,4 +24,10 @@ export default defineConfig({
       deny: ["**/.*"],
     },
   },
+  define: {
+    // Auto-detect if thermostats should be enabled based on Beestat API key
+    'import.meta.env.VITE_ENABLE_THERMOSTATS': JSON.stringify(
+      process.env.BEESTAT_API_KEY ? 'true' : 'false'
+    ),
+  },
 });

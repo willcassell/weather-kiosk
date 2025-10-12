@@ -1,5 +1,5 @@
 import { Thermometer, TrendingUp, TrendingDown } from "lucide-react";
-import { formatTemperature, formatTemperatureWhole } from "@/utils/format-values";
+import { TemperatureDisplay } from "@/components/ui/temperature-display";
 import type { UnitPreferences } from "@shared/units";
 
 interface TemperatureCardProps {
@@ -12,18 +12,15 @@ interface TemperatureCardProps {
   preferences: UnitPreferences;
 }
 
-export default function TemperatureCard({ 
-  currentTemp, 
+export default function TemperatureCard({
+  currentTemp,
   feelsLike,
-  highTemp, 
+  highTemp,
   lowTemp,
   highTempTime,
   lowTempTime,
   preferences
 }: TemperatureCardProps) {
-  const formatTemp = (temp?: number) => {
-    return temp !== undefined ? formatTemperature(temp, preferences, 1) : "--";
-  };
 
   const formatTime = (time?: Date) => {
     if (!time) return "";
@@ -45,25 +42,33 @@ export default function TemperatureCard({
           {/* Left - Feels Like */}
           <div className="text-left">
             <div className="text-responsive-lg font-bold text-cyan-400">
-              {formatTemp(feelsLike)}
+              {feelsLike !== undefined ? (
+                <TemperatureDisplay temperature={feelsLike} preferences={preferences} decimals={1} />
+              ) : "--"}
             </div>
             <div className="text-responsive-sm text-muted-foreground">Feels Like</div>
           </div>
-          
+
           {/* Center - Current Temperature (Larger) */}
           <div className="text-center">
             <div className="text-responsive-3xl font-bold text-foreground">
-              {formatTemp(currentTemp)}
+              {currentTemp !== undefined ? (
+                <TemperatureDisplay temperature={currentTemp} preferences={preferences} decimals={1} />
+              ) : "--"}
             </div>
           </div>
-          
+
           {/* Right - Daily High/Low */}
           <div className="text-right">
             <div className="flex flex-col space-y-1">
               <div className="flex items-center space-x-1 text-red-400 justify-end">
                 <TrendingUp className="h-3 w-3" />
                 <div className="flex flex-col items-end">
-                  <span className="text-responsive-md">{formatTemp(highTemp)}</span>
+                  <span className="text-responsive-md">
+                    {highTemp !== undefined ? (
+                      <TemperatureDisplay temperature={highTemp} preferences={preferences} decimals={1} />
+                    ) : "--"}
+                  </span>
                   {highTempTime && (
                     <span className="text-responsive-sm text-muted-foreground">{formatTime(highTempTime)}</span>
                   )}
@@ -72,7 +77,11 @@ export default function TemperatureCard({
               <div className="flex items-center space-x-1 text-blue-400 justify-end">
                 <TrendingDown className="h-3 w-3" />
                 <div className="flex flex-col items-end">
-                  <span className="text-responsive-md">{formatTemp(lowTemp)}</span>
+                  <span className="text-responsive-md">
+                    {lowTemp !== undefined ? (
+                      <TemperatureDisplay temperature={lowTemp} preferences={preferences} decimals={1} />
+                    ) : "--"}
+                  </span>
                   {lowTempTime && (
                     <span className="text-responsive-sm text-muted-foreground">{formatTime(lowTempTime)}</span>
                   )}

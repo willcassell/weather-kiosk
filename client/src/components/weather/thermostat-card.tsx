@@ -1,5 +1,5 @@
 import { Thermometer, Home, Snowflake, Flame, Target, Pause, Activity } from "lucide-react";
-import { formatTemperature } from "@/utils/format-values";
+import { TemperatureDisplay } from "@/components/ui/temperature-display";
 import type { UnitPreferences } from "@shared/units";
 
 interface ThermostatData {
@@ -199,7 +199,14 @@ export default function ThermostatCard({ thermostats, isLoading, isStale, error,
                   {/* Current Temperature */}
                   <div className="text-left">
                     <div className={`text-responsive-lg font-bold ${tempColor} ${active ? 'animate-pulse' : ''}`}>
-                      {preferences ? formatTemperature(thermostat.temperature, preferences, 1) : `${thermostat.temperature.toFixed(1)}°F`}
+                      {preferences ? (
+                        <TemperatureDisplay temperature={thermostat.temperature} preferences={preferences} decimals={1} />
+                      ) : (
+                        <>
+                          {thermostat.temperature.toFixed(1)}
+                          <sup className="text-[0.6em] ml-0.5">°F</sup>
+                        </>
+                      )}
                     </div>
                     <div className="text-responsive-xs text-muted-foreground">Current</div>
                   </div>
@@ -219,7 +226,14 @@ export default function ThermostatCard({ thermostats, isLoading, isStale, error,
                   {/* Target Temperature */}
                   <div className="text-right">
                     <div className="text-responsive-md font-medium text-cyan-400">
-                      → {preferences ? formatTemperature(thermostat.targetTemp, preferences, 0) : `${thermostat.targetTemp}°F`}
+                      → {preferences ? (
+                        <TemperatureDisplay temperature={thermostat.targetTemp} preferences={preferences} decimals={0} />
+                      ) : (
+                        <>
+                          {thermostat.targetTemp}
+                          <sup className="text-[0.6em] ml-0.5">°F</sup>
+                        </>
+                      )}
                     </div>
                     <div className="text-responsive-xs text-muted-foreground">Target</div>
                   </div>
