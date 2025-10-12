@@ -5,5 +5,3 @@ dist
 *.md
 .gitignore
 migrations
-.replit
-replit.nix

@@ -28,19 +28,6 @@ NODE_ENV=production
 PORT=5000
 ```
 
-## Replit Deployment
-
-### Using Replit Deployments
-1. Ensure all environment variables are configured in Replit Secrets
-2. Click "Deploy" in your Repl
-3. Choose "Autoscale" for production workloads
-4. Configure custom domain if desired
-
-### Environment Setup in Replit
-1. Go to your Repl's "Secrets" tab
-2. Add each environment variable from `.env.example`
-3. Use the actual values for your setup
-
 ## Railway Deployment
 
 ### Setup

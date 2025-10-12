@@ -27,9 +27,6 @@ interface ThermostatResponse {
 export default function WeatherDashboard() {
   const { preferences, isLoaded } = useUnitPreferences();
 
-  // Check if thermostat functionality is enabled (requires Beestat API key on server)
-  const thermostatEnabled = import.meta.env.VITE_ENABLE_THERMOSTATS !== 'false';
-
   // Fixed 3-minute refresh interval for all data
   const refreshInterval = 3 * 60 * 1000; // 3 minutes
 
@@ -48,12 +45,14 @@ export default function WeatherDashboard() {
     retry: 3,
     retryDelay: 5000,
     staleTime: 0, // Always fetch fresh data - no caching
-    enabled: thermostatEnabled, // Only fetch if thermostats are enabled
   });
 
   // Extract thermostat data and stale flag
   const thermostatData = thermostatResponse?.thermostats;
   const thermostatDataIsStale = thermostatResponse?.stale || false;
+
+  // Auto-detect if thermostats are enabled based on whether we have data
+  const thermostatEnabled = !thermostatError && thermostatData && thermostatData.length > 0;
 
   if (isError) {
     return (
