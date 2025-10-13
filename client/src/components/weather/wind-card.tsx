@@ -72,12 +72,13 @@ export default function WindCard({
                 <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-xs lg:text-sm font-bold text-muted-foreground">S</div>
                 <div className="absolute left-0 top-1/2 transform -translate-y-1/2 text-xs lg:text-sm font-bold text-muted-foreground">W</div>
               </div>
-              {/* Wind direction arrow */}
-              <Navigation 
-                className="absolute inset-0 m-auto h-8 w-8 lg:h-10 lg:w-10 xl:h-12 xl:w-12 2xl:h-14 2xl:w-14 text-cyan-400" 
-                style={{ 
-                  transform: `rotate(${(windDirection ?? 0) - 45}deg)` 
-                }} 
+              {/* Wind direction arrow - larger and more prominent */}
+              <Navigation
+                className="absolute inset-0 m-auto h-10 w-10 lg:h-12 lg:w-12 xl:h-16 xl:w-16 2xl:h-20 2xl:w-20 text-cyan-400 drop-shadow-lg"
+                style={{
+                  transform: `rotate(${(windDirection ?? 0) - 45}deg)`,
+                  filter: 'drop-shadow(0 0 8px rgba(34, 211, 238, 0.6))'
+                }}
               />
             </div>
           </div>

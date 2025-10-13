@@ -404,30 +404,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cacheKey = `thermostats:current`;
       let cachedData = cache.get(cacheKey);
 
+      // Only use cache if it's less than 3 minutes old and not a force refresh
       if (cachedData && !forceRefresh) {
-        console.log(`Serving cached thermostat data`);
-        // Add timestamp to indicate data age
         const dataAge = Date.now() - cachedData.timestamp;
-        const isStale = dataAge > 5 * 60 * 1000; // Consider stale after 5 minutes
+        const maxCacheAge = 3 * 60 * 1000; // 3 minutes to match frontend refresh
 
-        return res.json({
-          thermostats: cachedData.data,
-          cached: true,
-          stale: isStale,
-          lastUpdated: new Date(cachedData.timestamp).toISOString()
-        });
+        if (dataAge < maxCacheAge) {
+          console.log(`Serving cached thermostat data (${Math.floor(dataAge / 1000)}s old)`);
+          return res.json({
+            thermostats: cachedData.data,
+            cached: true,
+            stale: false,
+            lastUpdated: new Date(cachedData.timestamp).toISOString()
+          });
+        } else {
+          console.log(`Cache expired (${Math.floor(dataAge / 1000)}s old), fetching fresh data`);
+          // Cache expired, fall through to fetch fresh data
+        }
       }
 
       if (process.env.BEESTAT_API_KEY) {
         try {
-          console.log(`Fetching fresh thermostat data`);
+          console.log(`Fetching fresh thermostat data from Beestat API`);
           const thermostatData = await fetchBeestatThermostats();
 
-          // Cache with timestamp for 2 minutes
+          // Cache with timestamp for 2.5 minutes (150 seconds)
+          // This ensures cache expires before the 3-minute frontend refetch
           cache.set(cacheKey, {
             data: thermostatData,
             timestamp: Date.now()
-          }, 2);
+          }, 2.5);
 
           // No browser caching - always fetch fresh
           res.set({

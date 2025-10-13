@@ -63,11 +63,12 @@ export default function PressureCard({ pressure, trend, preferences }: PressureC
                 <div className="absolute top-0 right-0 h-full bg-gradient-to-r from-green-400 to-green-500" style={{ width: '33%' }}></div>
               </div>
               
-              {/* Pressure indicator needle */}
-              <div 
-                className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 bg-white rounded-full shadow-lg border border-gray-800 w-1 h-5 lg:w-1.5 lg:h-6 xl:w-2 xl:h-8 2xl:w-2.5 2xl:h-10"
-                style={{ 
-                  left: `${pressurePosition}%`
+              {/* Pressure indicator needle - more prominent */}
+              <div
+                className="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 bg-white rounded-full shadow-2xl border-2 border-gray-900 w-2 h-6 lg:w-2.5 lg:h-8 xl:w-3 xl:h-10 2xl:w-4 2xl:h-12"
+                style={{
+                  left: `${pressurePosition}%`,
+                  boxShadow: '0 0 20px rgba(255, 255, 255, 0.8), 0 4px 12px rgba(0, 0, 0, 0.5)'
                 }}
               />
             </div>

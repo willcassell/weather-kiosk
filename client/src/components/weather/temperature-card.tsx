@@ -41,17 +41,17 @@ export default function TemperatureCard({
         <div className="flex items-center justify-between space-x-3 w-full">
           {/* Left - Feels Like */}
           <div className="text-left">
-            <div className="text-responsive-lg font-bold text-cyan-400">
+            <div className="text-responsive-lg font-semibold text-cyan-400/80">
               {feelsLike !== undefined ? (
                 <TemperatureDisplay temperature={feelsLike} preferences={preferences} decimals={1} />
               ) : "--"}
             </div>
-            <div className="text-responsive-sm text-muted-foreground">Feels Like</div>
+            <div className="text-responsive-sm text-muted-foreground/70">Feels Like</div>
           </div>
 
-          {/* Center - Current Temperature (Larger) */}
+          {/* Center - Current Temperature (Larger and more prominent) */}
           <div className="text-center">
-            <div className="text-responsive-3xl font-bold text-foreground">
+            <div className="text-responsive-3xl font-extrabold text-foreground drop-shadow-lg">
               {currentTemp !== undefined ? (
                 <TemperatureDisplay temperature={currentTemp} preferences={preferences} decimals={1} />
               ) : "--"}

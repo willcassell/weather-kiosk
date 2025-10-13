@@ -186,11 +186,21 @@ export default function ThermostatCard({ thermostats, isLoading, isStale, error,
             
             return (
               <div key={thermostat.id} className="flex-1 relative flex flex-col justify-center space-y-2">
-                {/* Top Row - Location Name and HVAC Status */}
+                {/* Top Row - Location Name with Icon and HVAC Status */}
                 <div className="flex items-center justify-between">
-                  <span className="text-responsive-sm font-semibold text-foreground">
-                    {thermostat.name}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    {thermostat.name.toLowerCase().includes('lake') ? (
+                      <svg className="h-4 w-4 lg:h-5 lg:w-5 xl:h-6 xl:w-6 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9h10v2H7z"/>
+                        <path d="M7 13h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"/>
+                      </svg>
+                    ) : (
+                      <Home className="h-4 w-4 lg:h-5 lg:w-5 xl:h-6 xl:w-6 text-green-400" />
+                    )}
+                    <span className="text-responsive-sm font-semibold text-foreground">
+                      {thermostat.name}
+                    </span>
+                  </div>
                   {getHvacStatusIndicator(thermostat)}
                 </div>
 
