@@ -8,13 +8,14 @@ interface HumidityDewPointCardProps {
   preferences: UnitPreferences;
 }
 
-export default function HumidityDewPointCard({ 
-  humidity, 
+export default function HumidityDewPointCard({
+  humidity,
   dewPoint,
   preferences
 }: HumidityDewPointCardProps) {
-  const formatValue = (value?: number, unit: string = "") => {
-    return value !== undefined ? `${value.toFixed(1)}${unit}` : "--";
+  const formatHumidity = (value?: number) => {
+    if (value === undefined) return { value: "--", unit: "" };
+    return { value: value.toFixed(1), unit: "%" };
   };
 
   return (
@@ -28,7 +29,8 @@ export default function HumidityDewPointCard({
           {/* Left - Humidity */}
           <div className="text-left">
             <div className="text-responsive-lg font-bold text-blue-400">
-              {formatValue(humidity)}<span className="text-xs">%</span>
+              {formatHumidity(humidity).value}
+              <sup className="text-[0.5em] ml-0.5">{formatHumidity(humidity).unit}</sup>
             </div>
             <div className="text-responsive-sm text-muted-foreground">Humidity</div>
           </div>

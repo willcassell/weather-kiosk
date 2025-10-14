@@ -19,7 +19,7 @@ export function TemperatureDisplay({
   return (
     <span className={className}>
       {converted.toFixed(decimals)}
-      <sup className="text-[0.6em] ml-0.5">{symbol}</sup>
+      <sup className="text-[0.5em] ml-0.5">{symbol}</sup>
     </span>
   );
 }

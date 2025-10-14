@@ -1,5 +1,5 @@
 import { Wind, Navigation } from "lucide-react";
-import { formatSpeed } from "@/utils/format-values";
+import { convertSpeed, getUnitSymbol } from "@shared/units";
 import type { UnitPreferences } from "@shared/units";
 
 interface WindCardProps {
@@ -10,15 +10,18 @@ interface WindCardProps {
   preferences: UnitPreferences;
 }
 
-export default function WindCard({ 
-  windSpeed, 
+export default function WindCard({
+  windSpeed,
   windGust,
-  windDirection, 
+  windDirection,
   windDirectionCardinal,
   preferences
 }: WindCardProps) {
   const formatWindSpeed = (speed?: number) => {
-    return speed !== undefined ? formatSpeed(speed, preferences, 1) : "--";
+    if (speed === undefined) return { value: "--", unit: "" };
+    const converted = convertSpeed(speed, 'mph', preferences.speed);
+    const symbol = getUnitSymbol(preferences.speed);
+    return { value: converted.toFixed(1), unit: symbol };
   };
 
   const formatDirection = (direction?: number) => {
@@ -54,11 +57,17 @@ export default function WindCard({
           {/* Left - Wind Speed and Gust compact for one-line display */}
           <div className="flex flex-col space-y-1">
             <div className="flex items-baseline space-x-1">
-              <span className="text-responsive-lg font-bold text-cyan-400">{formatWindSpeed(windSpeed)}</span>
+              <span className="text-responsive-lg font-bold text-cyan-400">
+                {formatWindSpeed(windSpeed).value}
+                <sup className="text-[0.5em] ml-0.5">{formatWindSpeed(windSpeed).unit}</sup>
+              </span>
             </div>
             <div className="flex items-baseline space-x-1">
               <span className="text-responsive-xs">Gust:</span>
-              <span className="text-responsive-sm font-semibold text-blue-300">{formatWindSpeed(windGust)}</span>
+              <span className="text-responsive-sm font-semibold text-blue-300">
+                {formatWindSpeed(windGust).value}
+                <sup className="text-[0.5em] ml-0.5">{formatWindSpeed(windGust).unit}</sup>
+              </span>
             </div>
           </div>
           
