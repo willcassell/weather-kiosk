@@ -111,3 +111,6 @@ postgres_data/
 # Cloudflare Tunnel credentials
 credentials.json
 .cloudflared/
+
+# Test/debug scripts
+test-*.js
