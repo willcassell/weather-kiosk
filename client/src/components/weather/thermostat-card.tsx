@@ -147,18 +147,33 @@ export default function ThermostatCard({ thermostats, isLoading, isStale, error,
   const getTemperatureColor = (current: number, target: number, mode: string) => {
     const diff = current - target;
     const active = Math.abs(current - target) > 1.0;
-    
+
     if (active) {
       // HVAC is actively working
       if (mode === 'cool' || (mode === 'auto' && diff > 0)) return 'text-blue-300';
       if (mode === 'heat' || (mode === 'auto' && diff < 0)) return 'text-red-300';
     }
-    
+
     // Normal temperature display
     if (Math.abs(diff) < 0.5) return 'text-green-400'; // At target
     if (diff > 1) return 'text-orange-400'; // Too warm
     if (diff < -1) return 'text-cyan-400'; // Too cool
     return 'text-foreground'; // Close to target
+  };
+
+  const getTargetTempColor = (mode: string) => {
+    switch (mode) {
+      case 'cool':
+        return 'text-blue-400';
+      case 'heat':
+        return 'text-red-400';
+      case 'auto':
+        return 'text-yellow-400';
+      case 'off':
+        return 'text-gray-400';
+      default:
+        return 'text-cyan-400';
+    }
   };
 
   return (
@@ -235,7 +250,7 @@ export default function ThermostatCard({ thermostats, isLoading, isStale, error,
 
                   {/* Target Temperature */}
                   <div className="text-right">
-                    <div className="text-responsive-md font-medium text-cyan-400">
+                    <div className={`text-responsive-md font-medium ${getTargetTempColor(thermostat.mode)}`}>
                       → {preferences ? (
                         <TemperatureDisplay temperature={thermostat.targetTemp} preferences={preferences} decimals={0} />
                       ) : (
