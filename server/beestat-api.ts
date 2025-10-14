@@ -1,6 +1,28 @@
 import type { ThermostatData } from '../shared/schema.ts';
 
-const BEESTAT_API_BASE = 'https://beestat.io/api/';
+/**
+ * Beestat API Integration
+ *
+ * Single API Call Required:
+ * GET https://api.beestat.io/?api_key={KEY}&resource=thermostat&method=read_id
+ *
+ * This endpoint returns ALL thermostat data including:
+ * - Current temperature (°F)
+ * - Current humidity (%)
+ * - Heat & cool setpoints (°F)
+ * - Running equipment (array)
+ * - Weather data
+ * - Property information
+ * - Historical analytics
+ *
+ * Important Notes:
+ * - HVAC mode is NOT directly provided by Beestat API
+ * - Must infer mode from running_equipment and setpoint configuration
+ * - All temperatures are already in Fahrenheit (no conversion needed)
+ * - Data updates every 5 minutes from Ecobee
+ */
+
+const BEESTAT_API_BASE = 'https://api.beestat.io/';
 
 interface BeestatThermostat {
   // Core thermostat identification
@@ -8,26 +30,26 @@ interface BeestatThermostat {
   identifier: string;
   name: string;
 
-  // Temperature data (from actual API response structure)
-  temperature: number;          // This might be actual temp or setpoint depending on API
-  actual_temperature?: number;  // Actual current temperature if available
-  indoor_temperature?: number;  // Alternative field for current temperature
-  setpoint_heat?: number;       // Heat setpoint in tenths of degrees
-  setpoint_cool?: number;       // Cool setpoint in tenths of degrees
-  humidity?: number;
-  hvac_mode?: string;
-  
-  // System settings
+  // Temperature data - directly from Beestat API (already in Fahrenheit)
+  temperature: number;          // Current temperature in °F
+  setpoint_heat?: number;       // Heat setpoint in °F
+  setpoint_cool?: number;       // Cool setpoint in °F
+  humidity?: number;            // Current humidity in %
+
+  // Note: hvac_mode is NOT provided by Beestat API - must be inferred
+  hvac_mode?: string;           // Usually null/undefined
+
+  // System settings (usually empty)
   settings?: {
-    hvacMode?: string;
+    hvacMode?: string;          // Usually null/undefined
     differential_cool?: number;
     differential_heat?: number;
   };
-  
-  // Current equipment status
-  running_equipment: string[];  // Array of currently running equipment
-  
-  // Ecobee program/schedule info (from the actual response structure we see)
+
+  // Current equipment status - THIS is what we use to determine mode
+  running_equipment: string[];  // Array of currently running equipment (e.g., ['compCool1'], ['fan'], [])
+
+  // Program/schedule info (optional - used as fallback for setpoints)
   program?: {
     currentClimateRef?: string;
     climates?: Array<{
@@ -49,200 +71,173 @@ interface BeestatResponse {
 
 export async function fetchBeestatThermostats(): Promise<ThermostatData[]> {
   const apiKey = process.env.BEESTAT_API_KEY;
-  
+
   if (!apiKey) {
     throw new Error('BEESTAT_API_KEY environment variable not set');
   }
 
-  // Try multiple endpoint formats that might work
-  const endpointVariations = [
-    `${BEESTAT_API_BASE}?api_key=${apiKey}&resource=thermostat&method=read_id`,
-    `${BEESTAT_API_BASE}?api_key=${apiKey}&resource=ecobee_runtime_thermostat&method=read_id`,
-    `${BEESTAT_API_BASE}?api_key=${apiKey}&resource=runtime_thermostat&method=read_id`,
-    `https://api.beestat.io/?api_key=${apiKey}&resource=thermostat&method=read_id`
-  ];
+  // Single API call to get all thermostat data
+  // This endpoint returns: current temp, humidity, setpoints, running equipment, and more
+  const endpoint = `${BEESTAT_API_BASE}?api_key=${apiKey}&resource=thermostat&method=read_id`;
 
-  let lastError: Error | null = null;
+  try {
+    console.log(`Fetching Beestat data from: ${endpoint.replace(apiKey, apiKey.substring(0, 8) + '...')}`);
 
-  for (const endpoint of endpointVariations) {
-    try {
-      console.log(`Trying Beestat endpoint: ${endpoint.replace(apiKey, apiKey.substring(0, 8) + '...')}`);
-      
-      const response = await fetch(endpoint);
-      console.log(`Response: ${response.status} ${response.statusText}`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log(`Error response: ${errorText.substring(0, 200)}...`);
-        lastError = new Error(`${response.status}: ${errorText.substring(0, 100)}`);
-        continue;
-      }
+    const response = await fetch(endpoint);
+    console.log(`Beestat API Response: ${response.status} ${response.statusText}`);
 
-      const data: BeestatResponse = await response.json();
-      console.log(`Success! Response data keys:`, Object.keys(data || {}));
-      
-      if (!data || (!data.success && !data.data)) {
-        console.log(`API returned unexpected format:`, data);
-        lastError = new Error(`API returned unexpected format: ${JSON.stringify(data)}`);
-        continue;
-      }
-
-      // If we got here, we have valid data
-      return await processBeestatResponse(data);
-      
-    } catch (error) {
-      console.log(`Endpoint failed:`, error);
-      lastError = error instanceof Error ? error : new Error(String(error));
-      continue;
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Beestat API error: ${errorText.substring(0, 200)}`);
+      throw new Error(`Beestat API error ${response.status}: ${errorText.substring(0, 100)}`);
     }
+
+    const data: BeestatResponse = await response.json();
+
+    if (!data || (!data.success && !data.data)) {
+      console.error(`Unexpected Beestat response format:`, data);
+      throw new Error(`Beestat API returned unexpected format`);
+    }
+
+    console.log(`✓ Successfully retrieved data for ${Object.keys(data.data || {}).length} thermostat(s)`);
+
+    // Process and return thermostat data
+    return await processBeestatResponse(data);
+
+  } catch (error) {
+    console.error(`Beestat API request failed:`, error);
+    throw error instanceof Error ? error : new Error(String(error));
   }
-  
-  // If all endpoints failed, throw the last error
-  throw lastError || new Error('All Beestat API endpoints failed');
 }
 
 async function processBeestatResponse(data: BeestatResponse): Promise<ThermostatData[]> {
-
-    // Convert Beestat data to our thermostat format
     const thermostats: ThermostatData[] = [];
-    
+
     // Get target thermostat names from environment variable
     const targetNamesEnv = process.env.TARGET_THERMOSTAT_NAMES || 'Downstairs,809 Sailors Cove';
     const targetThermostats = targetNamesEnv.split(',').map(name => name.trim());
-    
+
     for (const [id, thermostat] of Object.entries(data.data || {})) {
       // Check if this thermostat matches our target list
       const thermostatName = thermostat.name || thermostat.identifier || '';
-      const isTargetThermostat = targetThermostats.some(target => 
+      const isTargetThermostat = targetThermostats.some(target =>
         thermostatName.toLowerCase().includes(target.toLowerCase())
       );
-      
+
       if (!isTargetThermostat) {
-        console.log(`Skipping thermostat: ${thermostatName} (not in target list: ${targetThermostats.join(', ')})`);
+        console.log(`⊗ Skipping thermostat: ${thermostatName} (not in target list)`);
         continue;
       }
 
-      console.log(`\n========================================`);
-      console.log(`Processing thermostat: ${thermostatName}`);
-      console.log(`========================================`);
-      console.log(`Full thermostat data:`, JSON.stringify(thermostat, null, 2));
-      console.log(`Available properties:`, Object.keys(thermostat));
-      console.log(`Settings properties:`, thermostat.settings ? Object.keys(thermostat.settings) : 'no settings');
-      console.log(`========================================\n`);
-      
-      // Handle different API response formats
-      let currentTemp: number | null = null;
-      let heatSetpoint: number | null = null;
-      let coolSetpoint: number | null = null;
-      let hvacMode: string | undefined = undefined;
-      let hvacState: string | undefined = undefined;
-      
-      // Parse thermostat data from Beestat API response
-      if (thermostat.temperature || thermostat.actual_temperature || thermostat.indoor_temperature) {
-        // Determine actual current temperature from available fields
-        currentTemp = thermostat.actual_temperature || thermostat.indoor_temperature || thermostat.temperature;
+      console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      console.log(`Processing: ${thermostatName}`);
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
 
-        console.log(`Raw temperature fields: temperature=${thermostat.temperature}°F, actual=${thermostat.actual_temperature}°F, indoor=${thermostat.indoor_temperature}°F`);
-        console.log(`Using current temperature: ${currentTemp}°F`);
+      // Extract data from Beestat API response
+      // All temperature values are already in Fahrenheit
+      const currentTemp = thermostat.temperature;
+      let heatSetpoint = thermostat.setpoint_heat || null;
+      let coolSetpoint = thermostat.setpoint_cool || null;
 
-        // Setpoints from Beestat API are already in Fahrenheit (Beestat divides by 10)
-        heatSetpoint = thermostat.setpoint_heat || null;
-        coolSetpoint = thermostat.setpoint_cool || null;
+      console.log(`📊 Current Temperature: ${currentTemp}°F`);
+      console.log(`📊 Heat Setpoint: ${heatSetpoint}°F`);
+      console.log(`📊 Cool Setpoint: ${coolSetpoint}°F`);
+      console.log(`📊 Humidity: ${thermostat.humidity}%`);
 
-        console.log(`Setpoints from Beestat API: heat=${heatSetpoint}°F, cool=${coolSetpoint}°F`);
-        
-        // If setpoints are null, try to get from current climate/program
-        if ((!heatSetpoint || !coolSetpoint) && thermostat.program?.currentClimateRef) {
-          const currentClimate = thermostat.program.climates?.find(c => c.climateRef === thermostat.program?.currentClimateRef);
-          if (currentClimate) {
-            if (!heatSetpoint && currentClimate.heatTemp) {
-              heatSetpoint = currentClimate.heatTemp / 10; // Program temps are in tenths
-            }
-            if (!coolSetpoint && currentClimate.coolTemp) {
-              coolSetpoint = currentClimate.coolTemp / 10; // Program temps are in tenths  
-            }
-            console.log(`Using current climate '${currentClimate.name}' setpoints: heat=${heatSetpoint}°F, cool=${coolSetpoint}°F`);
+
+      // If setpoints are null, try to get from current climate/program (fallback)
+      if ((!heatSetpoint || !coolSetpoint) && thermostat.program?.currentClimateRef) {
+        const currentClimate = thermostat.program.climates?.find(c => c.climateRef === thermostat.program?.currentClimateRef);
+        if (currentClimate) {
+          if (!heatSetpoint && currentClimate.heatTemp) {
+            heatSetpoint = currentClimate.heatTemp / 10; // Program temps are in tenths
           }
-        }
-        
-        // HVAC mode from settings or main property
-        hvacMode = thermostat.settings?.hvacMode || thermostat.hvac_mode;
-        
-        // Check running equipment for current state
-        if (thermostat.running_equipment && thermostat.running_equipment.length > 0) {
-          hvacState = thermostat.running_equipment.join(',');
-          console.log(`Active equipment detected: ${hvacState}`);
-        } else {
-          hvacState = 'idle';
-          console.log(`No active equipment detected - HVAC is idle`);
+          if (!coolSetpoint && currentClimate.coolTemp) {
+            coolSetpoint = currentClimate.coolTemp / 10; // Program temps are in tenths
+          }
+          console.log(`📋 Using climate '${currentClimate.name}' setpoints: heat=${heatSetpoint}°F, cool=${coolSetpoint}°F`);
         }
       }
 
-      
-      console.log(`Temperature data: current=${currentTemp}°F, heat_setpoint=${heatSetpoint}°F, cool_setpoint=${coolSetpoint}°F`);
-      console.log(`HVAC mode: ${hvacMode}, HVAC state: ${hvacState}`);
-      
-      // Determine target temperature and effective HVAC mode
+      // Check running equipment to determine HVAC state
+      const runningEquipment = thermostat.running_equipment || [];
+      let hvacState: string;
+
+      if (runningEquipment.length > 0) {
+        hvacState = runningEquipment.join(',');
+        console.log(`🔧 Running Equipment: ${hvacState}`);
+      } else {
+        hvacState = 'idle';
+        console.log(`💤 HVAC State: idle`);
+      }
+
+      // Note: hvac_mode is NOT provided by Beestat API
+      // We infer the effective mode from running equipment and setpoints
+      const hvacMode = thermostat.settings?.hvacMode || thermostat.hvac_mode;
+      console.log(`⚙️  HVAC Mode (from API): ${hvacMode || 'not provided - will infer from equipment'}`);
+
+
+      // Infer effective HVAC mode and determine target temperature
       let targetTemp = 72; // default fallback
       let effectiveMode = hvacMode || 'auto'; // Default to auto if mode not specified
 
-      // First, check running equipment to infer actual operating mode (overrides everything)
-      // This is the most accurate indicator of what the system is actually doing
-      const runningEquipment = thermostat.running_equipment || [];
+      // Priority 1: Check running equipment (most accurate - shows what's actually happening)
       const hasCompCool = runningEquipment.some(eq => eq.toLowerCase().includes('compcool'));
       const hasCompHeat = runningEquipment.some(eq => eq.toLowerCase().includes('compheat'));
       const hasAuxHeat = runningEquipment.some(eq => eq.toLowerCase().includes('auxheat'));
 
       if (hasCompCool || hvacState?.includes('cool')) {
-        // Actively cooling - must be in cool mode
         effectiveMode = 'cool';
         targetTemp = coolSetpoint || targetTemp;
-        console.log(`Equipment-based detection: COOLING mode (equipment: ${runningEquipment.join(', ')})`);
+        console.log(`🌡️  Mode Detection: COOLING (equipment: ${runningEquipment.join(', ')})`);
       } else if (hasCompHeat || hasAuxHeat || hvacState?.includes('heat')) {
-        // Actively heating - must be in heat mode
         effectiveMode = 'heat';
         targetTemp = heatSetpoint || targetTemp;
-        console.log(`Equipment-based detection: HEATING mode (equipment: ${runningEquipment.join(', ')})`);
-      } else if (hvacMode === 'heat' && heatSetpoint) {
+        console.log(`🌡️  Mode Detection: HEATING (equipment: ${runningEquipment.join(', ')})`);
+      }
+      // Priority 2: Use explicit mode from API if available
+      else if (hvacMode === 'heat' && heatSetpoint) {
         targetTemp = heatSetpoint;
+        console.log(`🌡️  Mode Detection: HEAT mode (from API)`);
       } else if (hvacMode === 'cool' && coolSetpoint) {
         targetTemp = coolSetpoint;
+        console.log(`🌡️  Mode Detection: COOL mode (from API)`);
       } else if (hvacMode === 'auto' && heatSetpoint && coolSetpoint) {
-        // For auto mode when nothing is running, use the appropriate setpoint
-        targetTemp = Math.abs((currentTemp ?? 72) - coolSetpoint) <= Math.abs((currentTemp ?? 72) - heatSetpoint) ? coolSetpoint : heatSetpoint;
-      } else if (!hvacMode && heatSetpoint && coolSetpoint) {
-        // No explicit mode but both setpoints available - infer from current temperature and setpoints
+        // Auto mode: choose closest setpoint to current temp
+        targetTemp = Math.abs((currentTemp ?? 72) - coolSetpoint) <= Math.abs((currentTemp ?? 72) - heatSetpoint)
+          ? coolSetpoint : heatSetpoint;
+        console.log(`🌡️  Mode Detection: AUTO mode (target: ${targetTemp}°F)`);
+      }
+      // Priority 3: Infer from setpoints when mode not provided
+      else if (!hvacMode && heatSetpoint && coolSetpoint) {
         if (heatSetpoint === coolSetpoint) {
-          // Same setpoint for both, use it directly
           targetTemp = coolSetpoint;
           effectiveMode = 'auto';
+          console.log(`🌡️  Mode Inference: AUTO (same setpoints: ${targetTemp}°F)`);
         } else if ((currentTemp ?? 72) < heatSetpoint - 1) {
-          // Significantly below heat setpoint - need heating
           targetTemp = heatSetpoint;
           effectiveMode = 'heat';
+          console.log(`🌡️  Mode Inference: HEAT (temp below setpoint)`);
         } else if ((currentTemp ?? 72) > coolSetpoint + 1) {
-          // Significantly above cool setpoint - need cooling
           targetTemp = coolSetpoint;
           effectiveMode = 'cool';
+          console.log(`🌡️  Mode Inference: COOL (temp above setpoint)`);
         } else {
-          // Temperature is between heat and cool setpoints
-          // Equipment check already handled above, so this is idle/auto mode
-          // Default to cool setpoint as the "target" since that's what most thermostats display
-          // in auto mode (ecobee shows the boundary the system is maintaining)
           targetTemp = coolSetpoint;
           effectiveMode = 'auto';
+          console.log(`🌡️  Mode Inference: AUTO (temp in range, using cool setpoint)`);
         }
       } else if (!hvacMode && coolSetpoint) {
-        // Only cool setpoint available
         targetTemp = coolSetpoint;
         effectiveMode = 'cool';
+        console.log(`🌡️  Mode Inference: COOL (only cool setpoint available)`);
       } else if (!hvacMode && heatSetpoint) {
-        // Only heat setpoint available  
         targetTemp = heatSetpoint;
         effectiveMode = 'heat';
+        console.log(`🌡️  Mode Inference: HEAT (only heat setpoint available)`);
       }
 
-      // Determine location based on thermostat name
+      // Determine display location based on thermostat name
       let location = 'Home';
       if (thermostatName.toLowerCase().includes('809 sailors cove')) {
         location = 'Lake';
@@ -250,32 +245,30 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
         location = 'Home';
       }
 
-      console.log(`\n----- FINAL DECISION (${location}) -----`);
-      console.log(`Current Temperature: ${currentTemp}°F`);
-      console.log(`Target Temperature: ${targetTemp}°F`);
-      console.log(`Effective Mode: ${effectiveMode} (original hvacMode: ${hvacMode})`);
-      console.log(`Heat Setpoint: ${heatSetpoint}°F`);
-      console.log(`Cool Setpoint: ${coolSetpoint}°F`);
-      console.log(`HVAC State: ${hvacState}`);
-      console.log(`Running Equipment: ${JSON.stringify(thermostat.running_equipment)}`);
-      console.log(`Beestat Sync Time: ${new Date().toISOString()}`);
-      console.log(`--------------------------\n`);
+      // Summary
+      console.log(`\n✓ THERMOSTAT: ${location}`);
+      console.log(`  Current: ${currentTemp}°F, Target: ${targetTemp}°F`);
+      console.log(`  Mode: ${effectiveMode.toUpperCase()}${hvacMode && hvacMode !== effectiveMode ? ` (inferred from ${hvacMode})` : ''}`);
+      console.log(`  Setpoints: Heat ${heatSetpoint}°F, Cool ${coolSetpoint}°F`);
+      console.log(`  HVAC: ${hvacState}, Equipment: ${JSON.stringify(runningEquipment)}`);
+      console.log(`  Humidity: ${thermostat.humidity}%`);
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
       thermostats.push({
         id: parseInt(id),
         thermostatId: `beestat-${thermostat.ecobee_thermostat_id}`,
         name: location, // Use simplified location name
-        temperature: currentTemp ?? 72, // Convert from tenths of degrees
+        temperature: currentTemp ?? 72,
         targetTemp: targetTemp,
         humidity: thermostat.humidity || null,
         mode: mapBeestatMode(effectiveMode || 'off'),
-        hvacState: hvacState || null, // Add actual HVAC equipment state
+        hvacState: hvacState || null, // Actual HVAC equipment state
         timestamp: new Date(),
         lastUpdated: new Date()
       });
     }
 
-    console.log(`Found ${thermostats.length} target thermostats from ${Object.keys(data.data || {}).length} total thermostats`);
+    console.log(`\n✓ Successfully processed ${thermostats.length} thermostat(s) from ${Object.keys(data.data || {}).length} total\n`);
 
     return thermostats;
 }
