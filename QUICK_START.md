@@ -47,8 +47,13 @@ VITE_RADAR_CENTER_LON=-78.415
 # Units: "imperial" or "metric" (REQUIRED)
 VITE_UNIT_SYSTEM=imperial
 
-# Generate a secure session secret (REQUIRED)
-SESSION_SECRET=$(openssl rand -hex 32)
+# Session secret: A random 64-character hex string (REQUIRED)
+# Mac/Linux: Run this command in terminal to generate one:
+#   openssl rand -hex 32
+# Windows PowerShell: Run this command:
+#   -join ((48..57) + (97..102) | Get-Random -Count 64 | ForEach-Object {[char]$_})
+# Then paste the output here:
+SESSION_SECRET=paste_generated_secret_here
 ```
 
 **Optional: Custom Station Name**
