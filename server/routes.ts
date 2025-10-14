@@ -404,10 +404,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cacheKey = `thermostats:current`;
       let cachedData = cache.get(cacheKey);
 
-      // Only use cache if it's less than 3 minutes old and not a force refresh
+      // Only use cache if it's less than 1 minute old and not a force refresh
       if (cachedData && !forceRefresh) {
         const dataAge = Date.now() - cachedData.timestamp;
-        const maxCacheAge = 3 * 60 * 1000; // 3 minutes to match frontend refresh
+        const maxCacheAge = 1 * 60 * 1000; // 1 minute for faster updates
 
         if (dataAge < maxCacheAge) {
           console.log(`Serving cached thermostat data (${Math.floor(dataAge / 1000)}s old)`);
@@ -428,12 +428,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Fetching fresh thermostat data from Beestat API`);
           const thermostatData = await fetchBeestatThermostats();
 
-          // Cache with timestamp for 2.5 minutes (150 seconds)
-          // This ensures cache expires before the 3-minute frontend refetch
+          // Cache with timestamp for 1 minute (60 seconds)
+          // Short cache to quickly pick up changes from Beestat API
           cache.set(cacheKey, {
             data: thermostatData,
             timestamp: Date.now()
-          }, 2.5);
+          }, 1);
 
           // No browser caching - always fetch fresh
           res.set({

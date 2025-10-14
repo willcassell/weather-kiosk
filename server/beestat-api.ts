@@ -240,15 +240,6 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
         targetTemp = heatSetpoint;
         effectiveMode = 'heat';
       }
-      
-      console.log(`\n----- FINAL DECISION -----`);
-      console.log(`Current Temperature: ${currentTemp}°F`);
-      console.log(`Target Temperature: ${targetTemp}°F`);
-      console.log(`Effective Mode: ${effectiveMode} (original hvacMode: ${hvacMode})`);
-      console.log(`Heat Setpoint: ${heatSetpoint}°F`);
-      console.log(`Cool Setpoint: ${coolSetpoint}°F`);
-      console.log(`HVAC State: ${hvacState}`);
-      console.log(`--------------------------\n`);
 
       // Determine location based on thermostat name
       let location = 'Home';
@@ -257,6 +248,17 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
       } else if (thermostatName.toLowerCase().includes('downstairs')) {
         location = 'Home';
       }
+
+      console.log(`\n----- FINAL DECISION (${location}) -----`);
+      console.log(`Current Temperature: ${currentTemp}°F`);
+      console.log(`Target Temperature: ${targetTemp}°F`);
+      console.log(`Effective Mode: ${effectiveMode} (original hvacMode: ${hvacMode})`);
+      console.log(`Heat Setpoint: ${heatSetpoint}°F`);
+      console.log(`Cool Setpoint: ${coolSetpoint}°F`);
+      console.log(`HVAC State: ${hvacState}`);
+      console.log(`Running Equipment: ${JSON.stringify(thermostat.running_equipment)}`);
+      console.log(`Beestat Sync Time: ${new Date().toISOString()}`);
+      console.log(`--------------------------\n`);
 
       thermostats.push({
         id: parseInt(id),
