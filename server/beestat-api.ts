@@ -7,9 +7,11 @@ interface BeestatThermostat {
   ecobee_thermostat_id: number;
   identifier: string;
   name: string;
-  
+
   // Temperature data (from actual API response structure)
-  temperature: number;          // Current indoor temperature in Fahrenheit
+  temperature: number;          // This might be actual temp or setpoint depending on API
+  actual_temperature?: number;  // Actual current temperature if available
+  indoor_temperature?: number;  // Alternative field for current temperature
   setpoint_heat?: number;       // Heat setpoint in tenths of degrees
   setpoint_cool?: number;       // Cool setpoint in tenths of degrees
   humidity?: number;
@@ -120,10 +122,13 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
         continue;
       }
 
+      console.log(`\n========================================`);
       console.log(`Processing thermostat: ${thermostatName}`);
+      console.log(`========================================`);
       console.log(`Full thermostat data:`, JSON.stringify(thermostat, null, 2));
       console.log(`Available properties:`, Object.keys(thermostat));
       console.log(`Settings properties:`, thermostat.settings ? Object.keys(thermostat.settings) : 'no settings');
+      console.log(`========================================\n`);
       
       // Handle different API response formats
       let currentTemp: number | null = null;
@@ -133,14 +138,18 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
       let hvacState: string | undefined = undefined;
       
       // Parse thermostat data from Beestat API response
-      if (thermostat.temperature) {
-        currentTemp = thermostat.temperature; // Already in Fahrenheit
-        
-        // Setpoints from main properties (these appear to be in degrees Fahrenheit already)
+      if (thermostat.temperature || thermostat.actual_temperature || thermostat.indoor_temperature) {
+        // Determine actual current temperature from available fields
+        currentTemp = thermostat.actual_temperature || thermostat.indoor_temperature || thermostat.temperature;
+
+        console.log(`Raw temperature fields: temperature=${thermostat.temperature}°F, actual=${thermostat.actual_temperature}°F, indoor=${thermostat.indoor_temperature}°F`);
+        console.log(`Using current temperature: ${currentTemp}°F`);
+
+        // Setpoints from Beestat API are already in Fahrenheit (Beestat divides by 10)
         heatSetpoint = thermostat.setpoint_heat || null;
         coolSetpoint = thermostat.setpoint_cool || null;
-        
-        console.log(`Raw setpoints from main properties: heat=${thermostat.setpoint_heat}, cool=${thermostat.setpoint_cool}`);
+
+        console.log(`Setpoints from Beestat API: heat=${heatSetpoint}°F, cool=${coolSetpoint}°F`);
         
         // If setpoints are null, try to get from current climate/program
         if ((!heatSetpoint || !coolSetpoint) && thermostat.program?.currentClimateRef) {
@@ -198,17 +207,29 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
           targetTemp = coolSetpoint;
           effectiveMode = 'auto';
         } else if ((currentTemp ?? 72) < heatSetpoint - 1) {
-          // Need heating
+          // Significantly below heat setpoint - need heating
           targetTemp = heatSetpoint;
           effectiveMode = 'heat';
         } else if ((currentTemp ?? 72) > coolSetpoint + 1) {
-          // Need cooling  
+          // Significantly above cool setpoint - need cooling
           targetTemp = coolSetpoint;
           effectiveMode = 'cool';
         } else {
-          // In between, use the closer setpoint
-          targetTemp = Math.abs((currentTemp ?? 72) - coolSetpoint) <= Math.abs((currentTemp ?? 72) - heatSetpoint) ? coolSetpoint : heatSetpoint;
-          effectiveMode = 'auto';
+          // Temperature is between heat and cool setpoints (auto mode range)
+          // Check if cooling or heating equipment is running
+          if (hvacState?.includes('cool') || hvacState?.includes('compressor')) {
+            targetTemp = coolSetpoint;
+            effectiveMode = 'cool';
+          } else if (hvacState?.includes('heat') || hvacState?.includes('auxHeat')) {
+            targetTemp = heatSetpoint;
+            effectiveMode = 'heat';
+          } else {
+            // No active equipment running - system is in auto mode maintaining between setpoints
+            // Default to cool setpoint as the "target" since that's what most thermostats display
+            // in auto mode (ecobee shows the boundary the system is maintaining)
+            targetTemp = coolSetpoint;
+            effectiveMode = 'auto';
+          }
         }
       } else if (!hvacMode && coolSetpoint) {
         // Only cool setpoint available
@@ -220,7 +241,14 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
         effectiveMode = 'heat';
       }
       
-      console.log(`Determined target temperature: ${targetTemp}°F for mode ${effectiveMode} (original hvacMode: ${hvacMode})`);
+      console.log(`\n----- FINAL DECISION -----`);
+      console.log(`Current Temperature: ${currentTemp}°F`);
+      console.log(`Target Temperature: ${targetTemp}°F`);
+      console.log(`Effective Mode: ${effectiveMode} (original hvacMode: ${hvacMode})`);
+      console.log(`Heat Setpoint: ${heatSetpoint}°F`);
+      console.log(`Cool Setpoint: ${coolSetpoint}°F`);
+      console.log(`HVAC State: ${hvacState}`);
+      console.log(`--------------------------\n`);
 
       // Determine location based on thermostat name
       let location = 'Home';
