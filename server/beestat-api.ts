@@ -185,21 +185,31 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
       // Determine target temperature and effective HVAC mode
       let targetTemp = 72; // default fallback
       let effectiveMode = hvacMode || 'auto'; // Default to auto if mode not specified
-      
-      if (hvacMode === 'heat' && heatSetpoint) {
+
+      // First, check running equipment to infer actual operating mode (overrides everything)
+      // This is the most accurate indicator of what the system is actually doing
+      const runningEquipment = thermostat.running_equipment || [];
+      const hasCompCool = runningEquipment.some(eq => eq.toLowerCase().includes('compcool'));
+      const hasCompHeat = runningEquipment.some(eq => eq.toLowerCase().includes('compheat'));
+      const hasAuxHeat = runningEquipment.some(eq => eq.toLowerCase().includes('auxheat'));
+
+      if (hasCompCool || hvacState?.includes('cool')) {
+        // Actively cooling - must be in cool mode
+        effectiveMode = 'cool';
+        targetTemp = coolSetpoint || targetTemp;
+        console.log(`Equipment-based detection: COOLING mode (equipment: ${runningEquipment.join(', ')})`);
+      } else if (hasCompHeat || hasAuxHeat || hvacState?.includes('heat')) {
+        // Actively heating - must be in heat mode
+        effectiveMode = 'heat';
+        targetTemp = heatSetpoint || targetTemp;
+        console.log(`Equipment-based detection: HEATING mode (equipment: ${runningEquipment.join(', ')})`);
+      } else if (hvacMode === 'heat' && heatSetpoint) {
         targetTemp = heatSetpoint;
       } else if (hvacMode === 'cool' && coolSetpoint) {
         targetTemp = coolSetpoint;
       } else if (hvacMode === 'auto' && heatSetpoint && coolSetpoint) {
-        // For auto mode, use the appropriate setpoint based on current state
-        if (hvacState?.includes('heat')) {
-          targetTemp = heatSetpoint;
-        } else if (hvacState?.includes('cool')) {
-          targetTemp = coolSetpoint;
-        } else {
-          // Use cool setpoint if temperature is closer to it, otherwise heat
-          targetTemp = Math.abs((currentTemp ?? 72) - coolSetpoint) <= Math.abs((currentTemp ?? 72) - heatSetpoint) ? coolSetpoint : heatSetpoint;
-        }
+        // For auto mode when nothing is running, use the appropriate setpoint
+        targetTemp = Math.abs((currentTemp ?? 72) - coolSetpoint) <= Math.abs((currentTemp ?? 72) - heatSetpoint) ? coolSetpoint : heatSetpoint;
       } else if (!hvacMode && heatSetpoint && coolSetpoint) {
         // No explicit mode but both setpoints available - infer from current temperature and setpoints
         if (heatSetpoint === coolSetpoint) {
@@ -215,21 +225,12 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
           targetTemp = coolSetpoint;
           effectiveMode = 'cool';
         } else {
-          // Temperature is between heat and cool setpoints (auto mode range)
-          // Check if cooling or heating equipment is running
-          if (hvacState?.includes('cool') || hvacState?.includes('compressor')) {
-            targetTemp = coolSetpoint;
-            effectiveMode = 'cool';
-          } else if (hvacState?.includes('heat') || hvacState?.includes('auxHeat')) {
-            targetTemp = heatSetpoint;
-            effectiveMode = 'heat';
-          } else {
-            // No active equipment running - system is in auto mode maintaining between setpoints
-            // Default to cool setpoint as the "target" since that's what most thermostats display
-            // in auto mode (ecobee shows the boundary the system is maintaining)
-            targetTemp = coolSetpoint;
-            effectiveMode = 'auto';
-          }
+          // Temperature is between heat and cool setpoints
+          // Equipment check already handled above, so this is idle/auto mode
+          // Default to cool setpoint as the "target" since that's what most thermostats display
+          // in auto mode (ecobee shows the boundary the system is maintaining)
+          targetTemp = coolSetpoint;
+          effectiveMode = 'auto';
         }
       } else if (!hvacMode && coolSetpoint) {
         // Only cool setpoint available
