@@ -22,7 +22,7 @@ Deploy your own weather kiosk display in 5 minutes using Docker.
 ### 1. Download
 
 ```bash
-git clone https://github.com/<your-username>/weather-kiosk.git
+git clone https://github.com/willcassell/weather-kiosk.git
 cd weather-kiosk
 ```
 
@@ -255,7 +255,7 @@ echo "@/home/pi/start-kiosk.sh" >> ~/.config/lxsession/LXDE-pi/autostart
 ## Get Help
 
 - **Full Documentation**: [README.md](./README.md)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/weather-kiosk/issues)
+- **Issues**: [GitHub Issues](https://github.com/willcassell/weather-kiosk/issues)
 - **WeatherFlow Support**: https://help.weatherflow.com/
 - **Beestat Support**: https://beestat.io/
 
