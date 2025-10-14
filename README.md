@@ -83,7 +83,7 @@ A modern, secure weather monitoring application that displays real-time data fro
 
 1. **Clone the Repository**
    ```bash
-   git clone https://github.com/<your-username>/weather-kiosk.git
+   git clone https://github.com/willcassell/weather-kiosk.git
    cd weather-kiosk
    ```
 
