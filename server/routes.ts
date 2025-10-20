@@ -428,6 +428,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Fetching fresh thermostat data from Beestat API`);
           const thermostatData = await fetchBeestatThermostats();
 
+          // Save thermostat data to database for historical tracking
+          for (const thermostat of thermostatData) {
+            try {
+              await storage.saveThermostatData({
+                thermostatId: thermostat.id.toString(),
+                name: thermostat.name,
+                temperature: thermostat.temperature,
+                targetTemp: thermostat.targetTemp,
+                humidity: thermostat.humidity || null,
+                mode: thermostat.mode,
+                hvacState: thermostat.hvacState || 'unknown'
+              });
+              console.log(`✓ Saved thermostat data to database: ${thermostat.name} (${thermostat.temperature}°F)`);
+            } catch (saveError) {
+              console.error(`✗ Failed to save thermostat data for ${thermostat.name}:`, saveError);
+            }
+          }
+
           // Cache with timestamp for 1 minute (60 seconds)
           // Short cache to quickly pick up changes from Beestat API
           cache.set(cacheKey, {
