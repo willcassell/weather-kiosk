@@ -1,0 +1,19 @@
+apiVersion: 1
+
+datasources:
+  - name: Weather Kiosk PostgreSQL
+    type: postgres
+    uid: weather-kiosk-postgres
+    access: proxy
+    url: postgres:5432
+    database: weather_kiosk
+    user: weather_user
+    secureJsonData:
+      password: weather_pass_local
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: false
+      database: weather_kiosk
+    isDefault: true
+    editable: true

@@ -146,6 +146,13 @@ A modern, secure weather monitoring application that displays real-time data fro
   - Listens on port 5000 (mapped to 5001 externally)
   - Auto-restarts on failure
 
+- **grafana** (optional): Grafana Analytics & Dashboards
+  - Data visualization and analytics platform
+  - Pre-configured PostgreSQL datasource
+  - Access at http://localhost:3000
+  - Persistent dashboards and settings
+  - Auto-restarts on failure
+
 - **cloudflared** (optional): Cloudflare Tunnel
   - Secure internet exposure without open ports
   - Zero-trust network access
@@ -194,6 +201,168 @@ Cloudflare Edge → Tunnel → App Container → User
 
 Your weather kiosk is now securely accessible at `https://weather.your-domain.com`!
 
+## Data Analytics with Grafana
+
+The Weather Kiosk includes optional Grafana integration for advanced data visualization and historical analysis of your weather and thermostat data.
+
+### What is Grafana?
+
+Grafana is a powerful open-source analytics and monitoring platform that connects directly to your PostgreSQL database, allowing you to:
+
+- **Visualize Historical Trends**: Graph temperature, humidity, pressure, and wind patterns over time
+- **Compare Indoor vs Outdoor**: Correlate thermostat performance with outdoor conditions
+- **Analyze Weather Patterns**: Identify trends in rainfall, pressure changes, and temperature variations
+- **HVAC Efficiency**: Track heating/cooling runtime and energy patterns
+- **Custom Time Ranges**: View data from hours to weeks with flexible zoom controls
+- **Create Custom Dashboards**: Build your own visualizations with SQL queries
+
+### Included Dashboard Panels
+
+The pre-configured Weather Kiosk Overview dashboard includes:
+
+1. **Current Conditions Gauges** (4 panels)
+   - Temperature (color-coded: blue/green/yellow/orange/red)
+   - Wind Speed with threshold indicators
+   - Humidity percentage
+   - Barometric Pressure
+
+2. **24-Hour Trend Graphs** (4 panels)
+   - Temperature Trends (current, feels like, dew point)
+   - Wind Speed & Gusts
+   - Humidity Over Time
+   - Barometric Pressure Trends
+
+3. **Historical Data** (2 panels)
+   - Rainfall Accumulation (7 days)
+   - Indoor vs Outdoor Temperature Comparison
+
+4. **Thermostat Activity Table**
+   - Recent HVAC state changes (color-coded: heating/cooling/idle)
+   - Temperature vs target tracking
+
+### Quick Start with Grafana
+
+1. **Grafana is already configured in `docker-compose.yml`** - no additional setup needed!
+
+2. **Set credentials in `.env`** (optional, defaults to admin/admin):
+   ```bash
+   GRAFANA_ADMIN_USER=admin
+   GRAFANA_ADMIN_PASSWORD=your_secure_password
+   ```
+
+3. **Start Grafana with your stack**:
+   ```bash
+   docker compose up -d
+   ```
+
+4. **Access Grafana**:
+   - Open: http://localhost:3000
+   - Login with your credentials (default: admin/admin)
+   - Navigate to **Dashboards** → **Weather Kiosk Overview**
+
+### What Data is Available?
+
+Grafana queries your PostgreSQL database tables:
+
+**weather_observations** (7 days of raw data):
+- Temperature, feels like, dew point, UV index
+- Wind speed, gust, direction
+- Humidity, barometric pressure
+- Lightning strikes (count and distance)
+- Rain accumulation per reading
+- Individual timestamps for all measurements
+
+**weather_data** (48 hours of processed data):
+- Daily high/low temperatures with exact times
+- Pressure trends (rising/falling/steady)
+- Aggregated rain totals (today/yesterday)
+- Wind direction in cardinal format (N, NE, etc.)
+
+**thermostat_data** (unlimited history):
+- Indoor temperature, target temperature
+- HVAC mode (heat/cool/auto/off)
+- HVAC state (heating/cooling/idle)
+- Humidity levels
+- Multi-thermostat tracking
+
+### Creating Custom Queries
+
+Grafana uses standard SQL to query your data. Here are some example queries you can use:
+
+**Average temperature by hour over last 7 days:**
+```sql
+SELECT
+  DATE_TRUNC('hour', timestamp) as time,
+  AVG(temperature) as avg_temp
+FROM weather_observations
+WHERE timestamp > NOW() - INTERVAL '7 days'
+GROUP BY DATE_TRUNC('hour', timestamp)
+ORDER BY time;
+```
+
+**Total rainfall per day:**
+```sql
+SELECT
+  DATE_TRUNC('day', timestamp) as time,
+  SUM(COALESCE(rain_accumulation, 0)) as daily_rain
+FROM weather_observations
+WHERE timestamp > NOW() - INTERVAL '30 days'
+GROUP BY DATE_TRUNC('day', timestamp)
+ORDER BY time;
+```
+
+**HVAC runtime percentage:**
+```sql
+SELECT
+  mode,
+  hvac_state,
+  COUNT(*) * 100.0 / SUM(COUNT(*)) OVER() as percentage
+FROM thermostat_data
+WHERE timestamp > NOW() - INTERVAL '7 days'
+GROUP BY mode, hvac_state;
+```
+
+### Grafana Configuration Files
+
+All Grafana configuration is stored in the `grafana/` directory:
+
+```
+grafana/
+├── provisioning/
+│   ├── datasources/
+│   │   └── postgres.yml           # PostgreSQL connection
+│   └── dashboards/
+│       ├── dashboard-provider.yml # Dashboard auto-loading
+│       └── weather-overview.json  # Pre-built dashboard
+```
+
+- **Datasource**: Auto-configured to connect to your PostgreSQL database
+- **Dashboard**: Automatically loaded on first startup
+- **Editable**: Modify dashboards in the UI, changes persist in the Grafana volume
+
+### Tips for Using Grafana
+
+- **Auto-refresh**: Set dashboard refresh to 30s or 1m for near real-time monitoring
+- **Time Range Selector**: Use the top-right dropdown to adjust the time window
+- **Panel Editing**: Click any panel title → Edit to customize queries and visualizations
+- **Export/Import**: Share dashboards as JSON files
+- **Alerts**: Configure alerts for temperature thresholds, HVAC failures, etc. (advanced)
+
+### Troubleshooting Grafana
+
+**Can't access Grafana at localhost:3000:**
+- Check if container is running: `docker ps | grep grafana`
+- View logs: `docker compose logs grafana`
+
+**No data showing in panels:**
+- Verify PostgreSQL has data: `docker compose exec postgres psql -U weather_user -d weather_kiosk -c "SELECT COUNT(*) FROM weather_observations;"`
+- Check datasource connection: Grafana → Configuration → Data Sources → Test
+
+**Dashboard not loading:**
+- Check provisioning files exist in `grafana/provisioning/`
+- Restart Grafana: `docker compose restart grafana`
+- View provisioning logs: `docker compose logs grafana | grep provision`
+
 ## API Endpoints
 
 ### Weather Data
@@ -226,6 +395,8 @@ Your weather kiosk is now securely accessible at `https://weather.your-domain.co
 | `SESSION_SECRET` | No | Session encryption key (auto-generated) |
 | `NODE_ENV` | No | Environment (production/development) |
 | `PORT` | No | Server port (default: 5000) |
+| `GRAFANA_ADMIN_USER` | No | Grafana admin username (default: admin) |
+| `GRAFANA_ADMIN_PASSWORD` | No | Grafana admin password (default: admin) |
 
 ### Docker Compose Configuration
 
@@ -233,6 +404,7 @@ Your weather kiosk is now securely accessible at `https://weather.your-domain.co
 services:
   postgres:    # PostgreSQL database
   app:         # Weather kiosk application
+  grafana:     # Grafana analytics (optional)
   cloudflared: # Cloudflare Tunnel (optional)
 ```
 
