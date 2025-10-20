@@ -166,11 +166,38 @@ export class MemStorage implements IStorage {
   }
 
   async getDailyTemperatureExtremes(stationId: string, date: Date): Promise<{ high: number; low: number; highTime: Date; lowTime: Date } | null> {
-    const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    // Get timezone from environment variable, default to America/New_York
+    const timezone = process.env.TIMEZONE || 'America/New_York';
+
+    // Get the calendar day in the configured timezone
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      hour12: false
+    });
+
+    const parts = formatter.formatToParts(date);
+    const year = parseInt(parts.find(p => p.type === 'year')!.value);
+    const month = parseInt(parts.find(p => p.type === 'month')!.value) - 1; // JS months are 0-indexed
+    const day = parseInt(parts.find(p => p.type === 'day')!.value);
+
+    // Create midnight in the target timezone
+    // We create a date string in the target timezone, then parse it
+    const midnightLocal = new Date(`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00`);
+
+    // Get the UTC offset for this specific date/time in this timezone
+    const localTimeStr = midnightLocal.toLocaleString('en-US', { timeZone: timezone });
+    const utcTimeStr = midnightLocal.toLocaleString('en-US', { timeZone: 'UTC' });
+    const offset = (new Date(localTimeStr).getTime() - new Date(utcTimeStr).getTime()) / (60 * 60 * 1000);
+
+    const startOfDay = new Date(Date.UTC(year, month, day, -offset, 0, 0, 0));
     const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
-    
+
     const observations = this.weatherObservations.get(stationId) || [];
-    const dayObservations = observations.filter(obs => 
+    const dayObservations = observations.filter(obs =>
       obs.timestamp.getTime() >= startOfDay.getTime() && obs.timestamp.getTime() < endOfDay.getTime()
     );
     
@@ -207,6 +234,7 @@ export class MemStorage implements IStorage {
       distance: mostRecent.lightningStrikeDistance!
     };
   }
+
 }
 
 // PostgreSQL Storage Implementation
@@ -413,36 +441,37 @@ export class PostgreSQLStorage implements IStorage {
     }
   }
 
-  private isDaylightSavingTime(date: Date): boolean {
-    // For US Eastern timezone: DST is second Sunday in March to first Sunday in November
-    const year = date.getFullYear();
-    
-    // Calculate second Sunday in March
-    const march = new Date(year, 2, 1); // March 1st
-    const marchFirstSunday = new Date(march.getTime() + (7 - march.getDay()) * 24 * 60 * 60 * 1000);
-    const marchSecondSunday = new Date(marchFirstSunday.getTime() + 7 * 24 * 60 * 60 * 1000);
-    
-    // Calculate first Sunday in November  
-    const november = new Date(year, 10, 1); // November 1st
-    const novemberFirstSunday = new Date(november.getTime() + (7 - november.getDay()) * 24 * 60 * 60 * 1000);
-    
-    return date >= marchSecondSunday && date < novemberFirstSunday;
-  }
-
   async getDailyTemperatureExtremes(stationId: string, date: Date): Promise<{ high: number; low: number; highTime: Date; lowTime: Date } | null> {
     try {
-      // Convert to Eastern timezone for proper daily calculations
-      // Assuming the weather station is in Eastern timezone
-      const easternOffset = -5; // EST is UTC-5 (adjust to -4 for EDT during daylight saving time)
-      const currentDate = new Date();
-      const isDST = this.isDaylightSavingTime(currentDate);
-      const timezoneOffset = isDST ? -4 : -5; // EDT is UTC-4, EST is UTC-5
-      
-      // Create start of day in Eastern timezone
-      const startOfDayEastern = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const startOfDayUTC = new Date(startOfDayEastern.getTime() - (timezoneOffset * 60 * 60 * 1000));
+      // Get timezone from environment variable, default to America/New_York
+      const timezone = process.env.TIMEZONE || 'America/New_York';
+
+      // Get the calendar day in the configured timezone
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        hour12: false
+      });
+
+      const parts = formatter.formatToParts(date);
+      const year = parseInt(parts.find(p => p.type === 'year')!.value);
+      const month = parseInt(parts.find(p => p.type === 'month')!.value) - 1; // JS months are 0-indexed
+      const day = parseInt(parts.find(p => p.type === 'day')!.value);
+
+      // Create midnight in the target timezone
+      const midnightLocal = new Date(`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00`);
+
+      // Get the UTC offset for this specific date/time in this timezone
+      const localTimeStr = midnightLocal.toLocaleString('en-US', { timeZone: timezone });
+      const utcTimeStr = midnightLocal.toLocaleString('en-US', { timeZone: 'UTC' });
+      const offset = (new Date(localTimeStr).getTime() - new Date(utcTimeStr).getTime()) / (60 * 60 * 1000);
+
+      const startOfDayUTC = new Date(Date.UTC(year, month, day, -offset, 0, 0, 0));
       const endOfDayUTC = new Date(startOfDayUTC.getTime() + 24 * 60 * 60 * 1000);
-      
+
       const result = await this.db
         .select({
           maxTemp: sql<number>`MAX(temperature)`.as('maxTemp'),
