@@ -1,4 +1,6 @@
 import { BarChart3 } from "lucide-react";
+import { useUnitPreferences } from "@/hooks/use-unit-preferences";
+import { formatTemperature, formatDistance } from "@/utils/format-values";
 
 interface AdditionalDataCardProps {
   humidity?: number;
@@ -7,12 +9,14 @@ interface AdditionalDataCardProps {
   dewPoint?: number;
 }
 
-export default function AdditionalDataCard({ 
-  humidity, 
-  uvIndex, 
+export default function AdditionalDataCard({
+  humidity,
+  uvIndex,
   visibility,
   dewPoint
 }: AdditionalDataCardProps) {
+  const { preferences } = useUnitPreferences();
+
   const formatValue = (value?: number, decimals: number = 0) => {
     return value !== undefined ? value.toFixed(decimals) : "--";
   };
@@ -41,14 +45,14 @@ export default function AdditionalDataCard({
           <div className="w-px h-8 lg:h-10 xl:h-12 2xl:h-16 bg-border"></div>
           <div className="text-center flex-1">
             <div className="text-responsive-md font-bold text-green-400">
-              {formatValue(visibility)}<span className="text-xs">mi</span>
+              {visibility !== undefined && preferences ? formatDistance(visibility, preferences, 0) : `${formatValue(visibility)}mi`}
             </div>
             <div className="text-responsive-sm text-muted-foreground">Visibility</div>
           </div>
           <div className="w-px h-8 lg:h-10 xl:h-12 2xl:h-16 bg-border"></div>
           <div className="text-center flex-1">
             <div className="text-responsive-md font-bold text-cyan-400">
-              {formatValue(dewPoint, 1)}<span className="text-xs">°F</span>
+              {dewPoint !== undefined && preferences ? formatTemperature(dewPoint, preferences, 1) : `${formatValue(dewPoint, 1)}°F`}
             </div>
             <div className="text-responsive-sm text-muted-foreground">Dew Point</div>
           </div>
