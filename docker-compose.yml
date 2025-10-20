@@ -4,8 +4,8 @@ services:
     container_name: weather-kiosk-db
     environment:
       POSTGRES_DB: weather_kiosk
-      POSTGRES_USER: weather_user
-      POSTGRES_PASSWORD: weather_pass_local
+      POSTGRES_USER: ${POSTGRES_USER:-weather_user}
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?ERROR - POSTGRES_PASSWORD must be set in .env file for security}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -24,7 +24,6 @@ services:
     container_name: weather-kiosk-app
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://weather_user:weather_pass_local@postgres:5432/weather_kiosk
     env_file:
       - .env
     ports:

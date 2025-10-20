@@ -81,7 +81,8 @@ export async function fetchBeestatThermostats(): Promise<ThermostatData[]> {
   const endpoint = `${BEESTAT_API_BASE}?api_key=${apiKey}&resource=thermostat&method=read_id`;
 
   try {
-    console.log(`Fetching Beestat data from: ${endpoint.replace(apiKey, apiKey.substring(0, 8) + '...')}`);
+    // SECURITY: Fully redact API key from logs
+    console.log(`Fetching Beestat data from: ${endpoint.replace(/api_key=[^&]+/, 'api_key=***REDACTED***')}`);
 
     const response = await fetch(endpoint);
     console.log(`Beestat API Response: ${response.status} ${response.statusText}`);

@@ -1,5 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
@@ -36,12 +38,50 @@ class SimpleCache {
 export const dataCache = new SimpleCache();
 
 const app = express();
+
+// SECURITY: HTTP security headers via Helmet
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"], // Needed for Tailwind/styled-components
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      frameSrc: ["https://embed.windy.com"], // For weather radar embed
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", "data:"],
+    },
+  },
+  hsts: {
+    maxAge: 31536000, // 1 year in seconds
+    includeSubDomains: true,
+    preload: true,
+  },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  frameguard: { action: 'sameorigin' }, // Allow same-origin framing for development
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Session configuration - will be initialized in async IIFE
-const sessionSecret = process.env.SESSION_SECRET || "weather-kiosk-default-secret-change-in-production";
 const isProduction = process.env.NODE_ENV === "production";
+
+// SECURITY: Require strong session secret in production, generate temporary in dev
+let sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret || sessionSecret.length < 32) {
+  if (isProduction) {
+    throw new Error(
+      "SECURITY ERROR: SESSION_SECRET must be set in production and be at least 32 characters long.\n" +
+      "Generate a secure secret with: openssl rand -hex 32\n" +
+      "Then add it to your .env file: SESSION_SECRET=your_generated_secret"
+    );
+  }
+  // In development, generate a temporary random secret
+  console.warn("⚠️  WARNING: Using auto-generated session secret for development only");
+  console.warn("⚠️  Generate a permanent secret with: openssl rand -hex 32");
+  sessionSecret = require('crypto').randomBytes(32).toString('hex');
+}
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -111,6 +151,30 @@ app.use((req, res, next) => {
         },
       })
     );
+
+    // SECURITY: Rate limiting to prevent API abuse and DoS attacks
+    const apiLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000, // 15 minutes
+      max: 100, // Limit each IP to 100 requests per windowMs
+      message: 'Too many requests from this IP, please try again later.',
+      standardHeaders: true, // Return rate limit info in RateLimit-* headers
+      legacyHeaders: false, // Disable X-RateLimit-* headers
+    });
+
+    // Apply general rate limit to all API routes
+    app.use('/api/', apiLimiter);
+
+    // Stricter rate limit for refresh endpoints (expensive operations)
+    const refreshLimiter = rateLimit({
+      windowMs: 60 * 1000, // 1 minute
+      max: 5, // Only 5 refresh requests per minute per IP
+      message: 'Refresh rate limit exceeded. Please wait before refreshing again.',
+      standardHeaders: true,
+      legacyHeaders: false,
+    });
+
+    // Export refreshLimiter for use in routes
+    (app as any).refreshLimiter = refreshLimiter;
   } catch (error) {
     log("Warning: Failed to initialize session store, continuing without sessions");
     console.error("Session initialization error:", error);

@@ -19,6 +19,13 @@ async function initializeCache() {
   return dataCache;
 }
 
+// SECURITY: Sanitize URLs containing API keys/tokens for safe logging
+function sanitizeUrl(url: string): string {
+  return url
+    .replace(/([?&])(token|api_key|access_token|key)=([^&]+)/gi, '$1$2=***REDACTED***')
+    .replace(/([?&])(password|secret|auth)=([^&]+)/gi, '$1$2=***REDACTED***');
+}
+
 const WEATHERFLOW_API_BASE = "https://swd.weatherflow.com/swd/rest";
 const STATION_ID = process.env.WEATHERFLOW_STATION_ID || "38335";
 
