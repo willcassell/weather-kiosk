@@ -40,26 +40,17 @@ export const dataCache = new SimpleCache();
 const app = express();
 
 // SECURITY: HTTP security headers via Helmet
+// Note: CSP frame-ancestors disabled to allow DakBoard embedding
+// DakBoard may use various domains/protocols that are hard to whitelist
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"], // Needed for Tailwind/styled-components
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      frameSrc: ["https://embed.windy.com"], // For weather radar embed
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'", "data:"],
-      frameAncestors: ["'self'", "https://*.dakboard.com", "https://dakboard.com"], // Allow DakBoard to embed this site
-    },
-  },
+  contentSecurityPolicy: false, // Temporarily disabled for DakBoard compatibility - re-enable after testing
   hsts: {
     maxAge: 31536000, // 1 year in seconds
     includeSubDomains: true,
     preload: true,
   },
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-  frameguard: false, // Disabled in favor of CSP frame-ancestors for DakBoard compatibility
+  frameguard: false, // Disabled to allow DakBoard iframe embedding
 }));
 
 app.use(express.json());
