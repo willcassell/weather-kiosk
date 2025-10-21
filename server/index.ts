@@ -50,6 +50,7 @@ app.use(helmet({
       frameSrc: ["https://embed.windy.com"], // For weather radar embed
       connectSrc: ["'self'"],
       fontSrc: ["'self'", "data:"],
+      frameAncestors: ["'self'", "https://*.dakboard.com", "https://dakboard.com"], // Allow DakBoard to embed this site
     },
   },
   hsts: {
@@ -58,7 +59,7 @@ app.use(helmet({
     preload: true,
   },
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-  frameguard: { action: 'sameorigin' }, // Allow same-origin framing for development
+  frameguard: false, // Disabled in favor of CSP frame-ancestors for DakBoard compatibility
 }));
 
 app.use(express.json());
