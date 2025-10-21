@@ -6,6 +6,14 @@
 **Purpose:** Continuous kiosk display for real-time weather data from WeatherFlow Tempest station with optional thermostat integration
 **Architecture:** Monorepo with shared types, API-driven data flow, dual-storage strategy (PostgreSQL + in-memory fallback)
 
+## Recent Updates (2025-10)
+- **Security Hardening**: Helmet middleware, rate limiting, secure sessions, API key sanitization
+- **Timezone Fix**: Corrected daily high/low calculations for late evening hours (post-9 PM issue)
+- **International Support**: Full metric/imperial unit conversion, configurable timezone (IANA)
+- **DakBoard Compatibility**: CSP frame-ancestors for iframe embedding while maintaining security
+- **Thermostat Persistence**: Fixed database storage for thermostat data (was cache-only)
+- **Grafana Integration**: Pre-configured dashboards for weather and thermostat analytics
+
 ## Technology Stack
 
 ### Frontend

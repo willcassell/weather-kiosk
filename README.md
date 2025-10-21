@@ -23,7 +23,8 @@ A modern, secure weather monitoring application that displays real-time data fro
 - **Visual Indicators**: Animated wind compass with directional colors and speed-based effects
 - **Live Weather Radar**: Embedded radar from Windy.com centered on your location
 - **Lightning Detection**: Real-time lightning strike distance and timing alerts
-- **Unit Preferences**: Automatic conversion between metric and imperial units
+- **International Support**: Full metric/imperial unit conversion (Celsius/Fahrenheit, km/h/mph, etc.)
+- **Timezone-Aware**: Accurate daily high/low calculations for any timezone worldwide
 
 ### Indoor Climate Control (Optional)
 - **Multi-Thermostat Support**: Monitor multiple Ecobee thermostats via Beestat API
@@ -46,6 +47,11 @@ A modern, secure weather monitoring application that displays real-time data fro
 - **Automatic HTTPS**: SSL/TLS encryption managed by Cloudflare
 - **DDoS Protection**: Built-in Cloudflare protection
 - **End-to-end Encryption**: Secure traffic from Cloudflare edge to your server
+- **HTTP Security Headers**: Helmet middleware with CSP, HSTS, XSS protection
+- **Rate Limiting**: API abuse prevention (100 req/15min general, 5 req/min refresh)
+- **Secure Sessions**: Strong session secret requirements in production
+- **API Key Protection**: Automatic sanitization in logs to prevent credential exposure
+- **DakBoard Compatible**: Configured to allow embedding in DakBoard iframes while maintaining security
 
 ## Technology Stack
 
@@ -104,12 +110,22 @@ A modern, secure weather monitoring application that displays real-time data fro
    VITE_RADAR_CENTER_LON=-78.415
    VITE_RADAR_ZOOM_LEVEL=7.25
 
-   # Database (auto-configured for Docker)
-   DATABASE_URL=postgresql://weather_user:weather_pass_local@postgres:5432/weather_kiosk
+   # Security (REQUIRED in production)
+   SESSION_SECRET=generate_with_openssl_rand_hex_32
+   POSTGRES_PASSWORD=generate_strong_password
+
+   # Database
+   DATABASE_URL=postgresql://weather_user:${POSTGRES_PASSWORD}@postgres:5432/weather_kiosk
    ```
 
    Optional variables:
    ```bash
+   # Unit System (for international users)
+   VITE_UNIT_SYSTEM=imperial  # or "metric" for Celsius, km/h, mm, hPa
+
+   # Timezone (for accurate daily high/low calculations)
+   TIMEZONE=America/New_York  # Use any IANA timezone
+
    # Ecobee Thermostat Integration
    BEESTAT_API_KEY=your_beestat_key
    TARGET_THERMOSTAT_NAMES=Downstairs,Upstairs
