@@ -80,14 +80,38 @@ export const thermostatData = pgTable("thermostat_data", {
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
 });
 
+// Raw Beestat API responses for debugging and analysis
+export const beestatRawData = pgTable("beestat_raw_data", {
+  id: serial("id").primaryKey(),
+  thermostatId: text("thermostat_id").notNull(), // Beestat/Ecobee thermostat ID
+  thermostatName: text("thermostat_name").notNull(), // Name from Beestat
+  temperature: real("temperature").notNull(), // Current temp in °F
+  setpointHeat: real("setpoint_heat"), // Heat setpoint in °F
+  setpointCool: real("setpoint_cool"), // Cool setpoint in °F
+  humidity: real("humidity"), // Humidity %
+  hvacMode: text("hvac_mode"), // HVAC mode from API (often null)
+  runningEquipment: text("running_equipment"), // JSON array of running equipment
+  effectiveMode: text("effective_mode"), // Our inferred mode (heat/cool/auto/off)
+  targetTemp: real("target_temp"), // Calculated target temperature
+  rawResponse: text("raw_response"), // Full JSON response for debugging
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
 export const insertThermostatDataSchema = createInsertSchema(thermostatData).omit({
   id: true,
   timestamp: true,
   lastUpdated: true,
 });
 
+export const insertBeestatRawDataSchema = createInsertSchema(beestatRawData).omit({
+  id: true,
+  timestamp: true,
+});
+
 export type InsertThermostatData = z.infer<typeof insertThermostatDataSchema>;
 export type ThermostatData = typeof thermostatData.$inferSelect;
+export type InsertBeestatRawData = z.infer<typeof insertBeestatRawDataSchema>;
+export type BeestatRawData = typeof beestatRawData.$inferSelect;
 
 // WeatherFlow API response types
 export interface WeatherFlowStation {

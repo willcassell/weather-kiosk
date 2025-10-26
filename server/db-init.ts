@@ -1,7 +1,7 @@
 import pkg from "pg";
 const { Pool } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
-import { weatherData, weatherObservations, thermostatData } from "@shared/schema";
+import { weatherData, weatherObservations, thermostatData, beestatRawData } from "@shared/schema";
 
 export async function initializeDatabase(): Promise<boolean> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -87,6 +87,25 @@ export async function initializeDatabase(): Promise<boolean> {
           hvac_state TEXT,
           timestamp TIMESTAMP DEFAULT NOW() NOT NULL,
           last_updated TIMESTAMP DEFAULT NOW() NOT NULL
+        )
+      `);
+
+      // Create Beestat raw data table for debugging
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS beestat_raw_data (
+          id SERIAL PRIMARY KEY,
+          thermostat_id TEXT NOT NULL,
+          thermostat_name TEXT NOT NULL,
+          temperature REAL NOT NULL,
+          setpoint_heat REAL,
+          setpoint_cool REAL,
+          humidity REAL,
+          hvac_mode TEXT,
+          running_equipment TEXT,
+          effective_mode TEXT,
+          target_temp REAL,
+          raw_response TEXT,
+          timestamp TIMESTAMP DEFAULT NOW() NOT NULL
         )
       `);
 

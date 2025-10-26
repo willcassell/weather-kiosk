@@ -1,4 +1,4 @@
-import { weatherData, weatherObservations, thermostatData, type WeatherData, type WeatherObservation, type ThermostatData, type InsertWeatherData, type InsertWeatherObservation, type InsertThermostatData, type WeatherFlowStation, type WeatherFlowObservation, type WeatherFlowForecast } from "@shared/schema";
+import { weatherData, weatherObservations, thermostatData, beestatRawData, type WeatherData, type WeatherObservation, type ThermostatData, type InsertWeatherData, type InsertWeatherObservation, type InsertThermostatData, type InsertBeestatRawData, type BeestatRawData, type WeatherFlowStation, type WeatherFlowObservation, type WeatherFlowForecast } from "@shared/schema";
 import pkg from "pg";
 const { Pool } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -19,6 +19,7 @@ export interface IStorage {
   
   getLatestThermostatData(): Promise<ThermostatData[]>;
   saveThermostatData(data: InsertThermostatData): Promise<ThermostatData>;
+  saveBeestatRawData(data: InsertBeestatRawData): Promise<BeestatRawData>;
 }
 
 export class MemStorage implements IStorage {
@@ -26,18 +27,22 @@ export class MemStorage implements IStorage {
   private weatherHistory: Map<string, WeatherData[]>;
   private weatherObservations: Map<string, WeatherObservation[]>;
   private thermostatData: ThermostatData[];
+  private beestatRawData: BeestatRawData[];
   currentId: number;
   currentObservationId: number;
   currentThermostatId: number;
+  currentBeestatId: number;
 
   constructor() {
     this.weatherData = new Map();
     this.weatherHistory = new Map();
     this.weatherObservations = new Map();
     this.thermostatData = [];
+    this.beestatRawData = [];
     this.currentId = 1;
     this.currentObservationId = 1;
     this.currentThermostatId = 1;
+    this.currentBeestatId = 1;
   }
 
   async getLatestWeatherData(stationId: string): Promise<WeatherData | undefined> {
@@ -115,11 +120,40 @@ export class MemStorage implements IStorage {
 
     // Remove existing data for this thermostat
     this.thermostatData = this.thermostatData.filter(t => t.thermostatId !== insertData.thermostatId);
-    
+
     // Add new data
     this.thermostatData.push(thermostatRecord);
-    
+
     return thermostatRecord;
+  }
+
+  async saveBeestatRawData(data: InsertBeestatRawData): Promise<BeestatRawData> {
+    const id = this.currentBeestatId++;
+    const beestatRecord: BeestatRawData = {
+      ...data,
+      id,
+      timestamp: new Date(),
+      // Ensure all optional fields have proper null values instead of undefined
+      setpointHeat: data.setpointHeat ?? null,
+      setpointCool: data.setpointCool ?? null,
+      humidity: data.humidity ?? null,
+      hvacMode: data.hvacMode ?? null,
+      runningEquipment: data.runningEquipment ?? null,
+      effectiveMode: data.effectiveMode ?? null,
+      targetTemp: data.targetTemp ?? null,
+      rawResponse: data.rawResponse ?? null,
+    };
+
+    // Store the raw data (keep last 1000 records to avoid memory issues)
+    if (!this.beestatRawData) {
+      this.beestatRawData = [];
+    }
+    this.beestatRawData.push(beestatRecord);
+    if (this.beestatRawData.length > 1000) {
+      this.beestatRawData.shift();
+    }
+
+    return beestatRecord;
   }
 
   // Weather observations methods for MemStorage
@@ -362,21 +396,39 @@ export class PostgreSQLStorage implements IStorage {
       await this.db
         .delete(thermostatData)
         .where(eq(thermostatData.thermostatId, insertData.thermostatId));
-      
+
       // Then insert the new record
       const result = await this.db
         .insert(thermostatData)
         .values(insertData)
         .returning();
-      
+
       if (!result[0]) {
         throw new Error("Failed to save thermostat data to database");
       }
-      
+
       return result[0];
     } catch (error) {
       console.error("Error saving thermostat data:", error);
       throw new Error("Failed to save thermostat data to database");
+    }
+  }
+
+  async saveBeestatRawData(data: InsertBeestatRawData): Promise<BeestatRawData> {
+    try {
+      const result = await this.db
+        .insert(beestatRawData)
+        .values(data)
+        .returning();
+
+      if (!result[0]) {
+        throw new Error("Failed to save Beestat raw data to database");
+      }
+
+      return result[0];
+    } catch (error) {
+      console.error("Error saving Beestat raw data:", error);
+      throw new Error("Failed to save Beestat raw data to database");
     }
   }
 

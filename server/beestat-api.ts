@@ -1,4 +1,5 @@
-import type { ThermostatData } from '../shared/schema.ts';
+import type { ThermostatData, InsertBeestatRawData } from '../shared/schema.ts';
+import { storage } from './storage.ts';
 
 /**
  * Beestat API Integration
@@ -254,6 +255,28 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
       console.log(`  HVAC: ${hvacState}, Equipment: ${JSON.stringify(runningEquipment)}`);
       console.log(`  Humidity: ${thermostat.humidity}%`);
       console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+
+      // Save raw Beestat API response for debugging and analysis
+      try {
+        const rawDataToSave: InsertBeestatRawData = {
+          thermostatId: `beestat-${thermostat.ecobee_thermostat_id}`,
+          thermostatName: location,
+          temperature: currentTemp ?? 72,
+          setpointHeat: heatSetpoint ?? null,
+          setpointCool: coolSetpoint ?? null,
+          humidity: thermostat.humidity ?? null,
+          hvacMode: hvacMode ?? null,
+          runningEquipment: JSON.stringify(runningEquipment),
+          effectiveMode: effectiveMode,
+          targetTemp: targetTemp,
+          rawResponse: JSON.stringify(thermostat), // Full raw response for debugging
+        };
+        await storage.saveBeestatRawData(rawDataToSave);
+        console.log(`✓ Saved raw Beestat data to database for debugging`);
+      } catch (error) {
+        console.error(`⚠️  Failed to save raw Beestat data:`, error);
+        // Don't fail the whole process if saving raw data fails
+      }
 
       thermostats.push({
         id: parseInt(id),
