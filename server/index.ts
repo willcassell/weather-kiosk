@@ -225,12 +225,18 @@ app.use((req, res, next) => {
       port,
       host: "0.0.0.0",
       reusePort: true,
-    }, () => {
+    }, async () => {
       log(`serving on port ${port}`);
       console.log(`Weather kiosk server started successfully on port ${port}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`Database URL configured: ${!!process.env.DATABASE_URL}`);
       console.log(`Session secret configured: ${!!process.env.SESSION_SECRET}`);
+
+      // Start background job to update thermostat data
+      if (process.env.BEESTAT_API_KEY) {
+        const { startThermostatUpdateJob } = await import('./background-jobs.js');
+        startThermostatUpdateJob();
+      }
     });
 
     // Handle server errors
@@ -249,16 +255,30 @@ app.use((req, res, next) => {
     });
 
     // Graceful shutdown handling
-    process.on('SIGTERM', () => {
+    process.on('SIGTERM', async () => {
       console.log('Received SIGTERM, shutting down gracefully');
+
+      // Stop background jobs
+      if (process.env.BEESTAT_API_KEY) {
+        const { stopThermostatUpdateJob } = await import('./background-jobs.js');
+        stopThermostatUpdateJob();
+      }
+
       server.close(() => {
         console.log('Server closed');
         process.exit(0);
       });
     });
 
-    process.on('SIGINT', () => {
+    process.on('SIGINT', async () => {
       console.log('Received SIGINT, shutting down gracefully');
+
+      // Stop background jobs
+      if (process.env.BEESTAT_API_KEY) {
+        const { stopThermostatUpdateJob } = await import('./background-jobs.js');
+        stopThermostatUpdateJob();
+      }
+
       server.close(() => {
         console.log('Server closed');
         process.exit(0);

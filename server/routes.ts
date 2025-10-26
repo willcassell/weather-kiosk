@@ -404,103 +404,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Thermostat API endpoints
   app.get("/api/thermostats/current", async (req, res) => {
     try {
-      const cache = await initializeCache();
-      const forceRefresh = req.query.force === 'true';
+      // ALWAYS fetch from database - never use cache
+      // The database is updated by a background job, so it's always fresh
+      console.log(`Fetching thermostat data from database`);
 
-      // Check cache first
-      const cacheKey = `thermostats:current`;
-      let cachedData = cache.get(cacheKey);
+      const thermostatData = await storage.getLatestThermostatData();
 
-      // Only use cache if it's less than 1 minute old and not a force refresh
-      if (cachedData && !forceRefresh) {
-        const dataAge = Date.now() - cachedData.timestamp;
-        const maxCacheAge = 1 * 60 * 1000; // 1 minute for faster updates
+      // No browser caching - always fetch fresh
+      res.set({
+        'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+        'Expires': '0',
+        'Pragma': 'no-cache'
+      });
 
-        if (dataAge < maxCacheAge) {
-          console.log(`Serving cached thermostat data (${Math.floor(dataAge / 1000)}s old)`);
-          return res.json({
-            thermostats: cachedData.data,
-            cached: true,
-            stale: false,
-            lastUpdated: new Date(cachedData.timestamp).toISOString()
-          });
-        } else {
-          console.log(`Cache expired (${Math.floor(dataAge / 1000)}s old), fetching fresh data`);
-          // Cache expired, fall through to fetch fresh data
-        }
+      if (!thermostatData || thermostatData.length === 0) {
+        console.log("No thermostat data in database");
+        return res.json({
+          thermostats: [],
+          cached: false,
+          stale: false
+        });
       }
 
-      if (process.env.BEESTAT_API_KEY) {
-        try {
-          console.log(`Fetching fresh thermostat data from Beestat API`);
-          const thermostatData = await fetchBeestatThermostats();
+      // Calculate staleness based on last database update
+      const lastUpdated = thermostatData[0]?.lastUpdated;
+      const dataAge = lastUpdated ? Date.now() - new Date(lastUpdated).getTime() : 0;
+      const isStale = dataAge > 5 * 60 * 1000; // Consider stale if older than 5 minutes
 
-          // Save thermostat data to database for historical tracking
-          for (const thermostat of thermostatData) {
-            try {
-              await storage.saveThermostatData({
-                thermostatId: thermostat.id.toString(),
-                name: thermostat.name,
-                temperature: thermostat.temperature,
-                targetTemp: thermostat.targetTemp,
-                humidity: thermostat.humidity || null,
-                mode: thermostat.mode,
-                hvacState: thermostat.hvacState || 'unknown'
-              });
-              console.log(`✓ Saved thermostat data to database: ${thermostat.name} (${thermostat.temperature}°F)`);
-            } catch (saveError) {
-              console.error(`✗ Failed to save thermostat data for ${thermostat.name}:`, saveError);
-            }
-          }
+      console.log(`✓ Serving fresh database data (${Math.floor(dataAge / 1000)}s old)`);
 
-          // Cache with timestamp for 1 minute (60 seconds)
-          // Short cache to quickly pick up changes from Beestat API
-          cache.set(cacheKey, {
-            data: thermostatData,
-            timestamp: Date.now()
-          }, 1);
-
-          // No browser caching - always fetch fresh
-          res.set({
-            'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-            'Expires': '0',
-            'Pragma': 'no-cache'
-          });
-
-          return res.json({
-            thermostats: thermostatData,
-            cached: false,
-            stale: false,
-            lastUpdated: new Date().toISOString()
-          });
-        } catch (beestatError) {
-          console.error("Beestat API failed:", beestatError);
-
-          // Fallback to cache if available
-          const fallbackCached = cache.get(cacheKey);
-          if (fallbackCached) {
-            const dataAge = Date.now() - fallbackCached.timestamp;
-            console.log(`Using stale cached thermostat data (${Math.floor(dataAge / 1000 / 60)} minutes old)`);
-
-            return res.json({
-              thermostats: fallbackCached.data,
-              cached: true,
-              stale: true,
-              lastUpdated: new Date(fallbackCached.timestamp).toISOString(),
-              error: "Failed to fetch fresh data, using cached version"
-            });
-          }
-        }
-      } else {
-        console.log("BEESTAT_API_KEY not found, no thermostat data available");
-      }
-
-      // No thermostat data available
-      console.log("No thermostat data available - Beestat API key required");
       return res.json({
-        thermostats: [],
+        thermostats: thermostatData,
         cached: false,
-        stale: false
+        stale: isStale,
+        lastUpdated: lastUpdated ? new Date(lastUpdated).toISOString() : new Date().toISOString()
       });
 
     } catch (error) {

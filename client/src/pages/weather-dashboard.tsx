@@ -44,7 +44,9 @@ export default function WeatherDashboard() {
     refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: 5000,
-    staleTime: 0, // Always fetch fresh data - no caching
+    staleTime: 0, // Always consider data stale
+    cacheTime: 0, // Don't cache data at all
+    refetchOnMount: 'always', // Always refetch when component mounts
   });
 
   // Extract thermostat data and stale flag
