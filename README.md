@@ -404,6 +404,7 @@ grafana/
 | `VITE_RADAR_CENTER_LON` | Yes | Radar center longitude |
 | `VITE_RADAR_ZOOM_LEVEL` | Yes | Radar zoom level (default: 7.25) |
 | `VITE_UNIT_SYSTEM` | Yes | Unit system: `imperial` or `metric` |
+| `TIMEZONE` | No | IANA timezone (e.g., `America/New_York`) for server logs and database queries |
 | `VITE_STATION_DISPLAY_NAME` | No | Custom station name (overrides API name) |
 | `BEESTAT_API_KEY` | No | Beestat API key (thermostat card hidden if blank) |
 | `TARGET_THERMOSTAT_NAMES` | No | Comma-separated thermostat names |
