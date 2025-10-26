@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import WeatherDashboard from "@/pages/weather-dashboard";
 import ThermostatAuth from "@/pages/thermostat-auth";
+import PrototypeCards from "@/pages/prototype-cards";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -12,6 +13,7 @@ function Router() {
     <Switch>
       <Route path="/" component={WeatherDashboard} />
       <Route path="/thermostat-auth" component={ThermostatAuth} />
+      <Route path="/prototype" component={PrototypeCards} />
       <Route component={NotFound} />
     </Switch>
   );
