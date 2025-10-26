@@ -81,8 +81,8 @@ export default function WeatherDashboard() {
   return (
     <div className="bg-background text-foreground h-screen flex flex-col">
       {/* Top Banner */}
-      <TopBanner 
-        stationId={import.meta.env.VITE_WEATHERFLOW_STATION_ID || "Unknown"} 
+      <TopBanner
+        stationId={import.meta.env.VITE_WEATHERFLOW_STATION_ID || "Unknown"}
         stationName={weatherData?.stationName || undefined}
         lastUpdated={weatherData?.lastUpdated}
         isLoading={isLoading}
@@ -91,9 +91,11 @@ export default function WeatherDashboard() {
 
 
       {/* Main Content - Orientation-based Layout */}
-      <main className="flex flex-col orientation-landscape:flex-row flex-1 overflow-hidden">
+      <main className="flex flex-col orientation-landscape:flex-row flex-1 orientation-landscape:overflow-hidden">
         {/* Weather Data Cards - Full width on portrait, left half on landscape */}
-        <section className="w-full orientation-landscape:w-1/2 bg-background p-2 flex flex-col gap-2 flex-1 overflow-hidden">
+        {/* Portrait: Allow scrolling for mobile/tablet interaction */}
+        {/* Landscape: No scrolling for kiosk mode */}
+        <section className="w-full orientation-landscape:w-1/2 bg-background p-2 flex flex-col gap-2 flex-1 overflow-y-auto orientation-landscape:overflow-hidden">
           {isLoading ? (
             <div className="flex flex-col justify-between gap-2 h-full">
               {Array.from({ length: 6 }).map((_, i) => (
