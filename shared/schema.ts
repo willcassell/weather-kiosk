@@ -1,4 +1,4 @@
-import { pgTable, text, serial, real, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, real, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -76,6 +76,7 @@ export const thermostatData = pgTable("thermostat_data", {
   humidity: real("humidity"), // Humidity percentage (optional)
   mode: text("mode").notNull(), // heat, cool, auto, off
   hvacState: text("hvac_state"), // Actual HVAC equipment status: idle, heating, cooling, etc.
+  occupied: boolean("occupied").default(false), // Location occupancy status from Ecobee comfort setting
   timestamp: timestamp("timestamp").defaultNow().notNull(),
   lastUpdated: timestamp("last_updated").defaultNow().notNull(),
 });

@@ -50,7 +50,7 @@ interface BeestatThermostat {
   // Current equipment status - THIS is what we use to determine mode
   running_equipment: string[];  // Array of currently running equipment (e.g., ['compCool1'], ['fan'], [])
 
-  // Program/schedule info (optional - used as fallback for setpoints)
+  // Program/schedule info (optional - used as fallback for setpoints and occupancy)
   program?: {
     currentClimateRef?: string;
     climates?: Array<{
@@ -58,6 +58,7 @@ interface BeestatThermostat {
       climateRef?: string;
       heatTemp?: number;     // Heat setpoint in tenths of degrees
       coolTemp?: number;     // Cool setpoint in tenths of degrees
+      isOccupied?: boolean;  // Whether this comfort setting indicates occupancy
     }>;
   };
 }
@@ -146,19 +147,29 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
       console.log(`📊 Cool Setpoint: ${coolSetpoint}°F`);
       console.log(`📊 Humidity: ${thermostat.humidity}%`);
 
-
-      // If setpoints are null, try to get from current climate/program (fallback)
-      if ((!heatSetpoint || !coolSetpoint) && thermostat.program?.currentClimateRef) {
+      // Extract occupancy status from current climate/program (always check, regardless of setpoints)
+      let isOccupied = false; // Default to not occupied if we can't determine
+      if (thermostat.program?.currentClimateRef) {
         const currentClimate = thermostat.program.climates?.find(c => c.climateRef === thermostat.program?.currentClimateRef);
         if (currentClimate) {
+          // Get occupancy status
+          isOccupied = currentClimate.isOccupied ?? false;
+          console.log(`🏠 Current Climate: '${currentClimate.name}' (${currentClimate.climateRef})`);
+          console.log(`👤 Occupancy: ${isOccupied ? 'Occupied ✓' : 'Away ✗'}`);
+
+          // Get setpoints if needed (fallback if not provided at top level)
           if (!heatSetpoint && currentClimate.heatTemp) {
             heatSetpoint = currentClimate.heatTemp / 10; // Program temps are in tenths
           }
           if (!coolSetpoint && currentClimate.coolTemp) {
             coolSetpoint = currentClimate.coolTemp / 10; // Program temps are in tenths
           }
-          console.log(`📋 Using climate '${currentClimate.name}' setpoints: heat=${heatSetpoint}°F, cool=${coolSetpoint}°F`);
+          if (!heatSetpoint || !coolSetpoint) {
+            console.log(`📋 Using climate '${currentClimate.name}' setpoints: heat=${heatSetpoint}°F, cool=${coolSetpoint}°F`);
+          }
         }
+      } else {
+        console.log(`⚠️  No program/climate data available - occupancy status unknown`);
       }
 
       // Check running equipment to determine HVAC state
@@ -287,6 +298,7 @@ async function processBeestatResponse(data: BeestatResponse): Promise<Thermostat
         humidity: thermostat.humidity || null,
         mode: mapBeestatMode(effectiveMode || 'off'),
         hvacState: hvacState || null, // Actual HVAC equipment state
+        occupied: isOccupied, // Occupancy status from Ecobee comfort setting
         timestamp: new Date(),
         lastUpdated: new Date()
       });

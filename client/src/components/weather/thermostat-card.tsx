@@ -1,4 +1,4 @@
-import { Thermometer, Home, Snowflake, Flame, Target, Pause, Activity } from "lucide-react";
+import { Thermometer, Home, Snowflake, Flame, Target, Pause, Activity, User } from "lucide-react";
 import { TemperatureDisplay } from "@/components/ui/temperature-display";
 import type { UnitPreferences } from "@shared/units";
 
@@ -10,6 +10,7 @@ interface ThermostatData {
   targetTemp: number;
   humidity?: number;
   mode: 'heat' | 'cool' | 'auto' | 'off';
+  occupied?: boolean;
   timestamp: Date;
   lastUpdated: Date;
 }
@@ -201,20 +202,35 @@ export default function ThermostatCard({ thermostats, isLoading, isStale, error,
             
             return (
               <div key={thermostat.id} className="flex-1 relative flex flex-col justify-center space-y-2">
-                {/* Top Row - Location Name with Icon and HVAC Status */}
+                {/* Top Row - Location Name with Occupancy Badge and HVAC Status */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    {thermostat.name.toLowerCase().includes('lake') ? (
-                      <svg className="h-4 w-4 lg:h-5 lg:w-5 xl:h-6 xl:w-6 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9h10v2H7z"/>
-                        <path d="M7 13h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"/>
-                      </svg>
-                    ) : (
-                      <Home className="h-4 w-4 lg:h-5 lg:w-5 xl:h-6 xl:w-6 text-green-400" />
-                    )}
-                    <span className="text-responsive-sm font-semibold text-foreground">
-                      {thermostat.name}
-                    </span>
+                    {/* Occupancy Badge */}
+                    <div className={`
+                      flex items-center space-x-1.5 px-2 py-1 rounded-md
+                      ${thermostat.occupied
+                        ? 'bg-green-500/20 border border-green-500/40'
+                        : 'bg-gray-500/20 border border-gray-500/40'
+                      }
+                    `}>
+                      {/* Location Icon */}
+                      {thermostat.name.toLowerCase().includes('lake') ? (
+                        <svg className={`h-3 w-3 lg:h-4 lg:w-4 ${thermostat.occupied ? 'text-green-400' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9h10v2H7z"/>
+                          <path d="M7 13h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"/>
+                        </svg>
+                      ) : (
+                        <Home className={`h-3 w-3 lg:h-4 lg:w-4 ${thermostat.occupied ? 'text-green-400' : 'text-gray-400'}`} />
+                      )}
+
+                      {/* Thermostat Name */}
+                      <span className={`text-responsive-sm font-semibold ${thermostat.occupied ? 'text-green-300' : 'text-gray-300'}`}>
+                        {thermostat.name}
+                      </span>
+
+                      {/* Person Icon */}
+                      <User className={`h-3 w-3 lg:h-4 lg:w-4 ${thermostat.occupied ? 'text-green-400' : 'text-gray-400'}`} />
+                    </div>
                   </div>
                   {getHvacStatusIndicator(thermostat)}
                 </div>
