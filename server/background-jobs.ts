@@ -5,33 +5,49 @@ import { storage } from './storage.js';
  * Background job to periodically fetch thermostat data from Beestat API
  * and store it in the database
  *
- * Strategy: Beestat's API serves cached data unless the user is "recently active"
- * - Trigger activity every 15 minutes to mark user as active
- * - Wait 2 minutes for Beestat's background job to sync fresh data from Ecobee
- * - Then fetch the updated data
+ * Strategy: Use Beestat's official sync methods to force fresh data from Ecobee
+ * - Call thermostat.sync and sensor.sync (batched) to trigger immediate sync
+ * - These methods sync data directly from Ecobee (max once per 3 minutes)
+ * - Then fetch the freshly synced thermostat data
  */
 
 let thermostatUpdateInterval: NodeJS.Timeout | null = null;
 
 /**
- * Trigger Beestat activity by making a simple API call
- * This marks the user as "recently active" and triggers Beestat's background sync
+ * Trigger Beestat sync using official API methods
+ * Uses batched API calls to sync thermostats and sensors simultaneously
+ * Updates run a maximum of once every 3 minutes per Beestat rate limits
  */
-async function triggerBeestatActivity() {
+async function syncBeestatData() {
   const apiKey = process.env.BEESTAT_API_KEY;
   if (!apiKey) return;
 
   try {
-    console.log('🔔 Triggering Beestat activity to request fresh sync...');
-    const response = await fetch(`https://api.beestat.io/?api_key=${apiKey}&resource=thermostat&method=read_id`);
+    console.log('🔄 Triggering Beestat sync (thermostat + sensor)...');
+
+    // Use Beestat's batch API to sync thermostats and sensors together
+    // This is more efficient than separate calls
+    const batchRequest = [
+      { resource: 'thermostat', method: 'sync', alias: 'thermostat_sync' },
+      { resource: 'sensor', method: 'sync', alias: 'sensor_sync' }
+    ];
+
+    const url = `https://api.beestat.io/?api_key=${apiKey}&batch=${encodeURIComponent(JSON.stringify(batchRequest))}`;
+    const response = await fetch(url);
 
     if (response.ok) {
-      console.log('✓ Activity triggered - Beestat will sync in background');
+      const result = await response.json();
+      console.log('✓ Beestat sync triggered successfully');
+
+      // Check if there were any errors in the batch response
+      if (result.thermostat_sync?.error_code || result.sensor_sync?.error_code) {
+        console.warn('⚠️  Sync completed with warnings:', result);
+      }
     } else {
-      console.warn(`⚠️  Activity trigger returned status ${response.status}`);
+      console.warn(`⚠️  Beestat sync returned status ${response.status}`);
     }
   } catch (error) {
-    console.error('✗ Failed to trigger Beestat activity:', error);
+    console.error('✗ Failed to trigger Beestat sync:', error);
   }
 }
 
@@ -70,37 +86,39 @@ export async function updateThermostatData() {
 }
 
 /**
- * Update cycle with activity trigger:
- * 1. Trigger activity to mark user as active
- * 2. Wait 2 minutes for Beestat to sync from Ecobee
- * 3. Fetch the fresh data
+ * Update cycle with sync trigger:
+ * 1. Trigger Beestat sync (thermostat + sensor) using official API
+ * 2. Wait briefly for sync to propagate
+ * 3. Fetch the freshly synced data
  */
-async function updateCycleWithTrigger() {
-  // Step 1: Trigger activity
-  await triggerBeestatActivity();
+async function updateCycleWithSync() {
+  // Step 1: Trigger sync using Beestat's official sync methods
+  await syncBeestatData();
 
-  // Step 2: Wait 2 minutes for Beestat's background sync to complete
-  console.log('⏳ Waiting 2 minutes for Beestat background sync...');
-  await new Promise(resolve => setTimeout(resolve, 2 * 60 * 1000));
+  // Step 2: Wait briefly for sync to complete and propagate
+  // Beestat's sync is fast, only need a short delay
+  console.log('⏳ Waiting 30 seconds for sync to complete...');
+  await new Promise(resolve => setTimeout(resolve, 30 * 1000));
 
-  // Step 3: Fetch the fresh data
+  // Step 3: Fetch the freshly synced data
   await updateThermostatData();
 }
 
 /**
  * Start the background job to update thermostat data every 15 minutes
- * Uses activity trigger strategy to ensure fresh data from Beestat
+ * Uses Beestat's official sync API to ensure fresh data from Ecobee
+ * Rate limited to once per 3 minutes by Beestat (using 15-min interval for efficiency)
  */
 export function startThermostatUpdateJob() {
   // Run immediately on startup
-  updateCycleWithTrigger();
+  updateCycleWithSync();
 
   // Then run every 15 minutes
   const interval = 15 * 60 * 1000; // 15 minutes
-  thermostatUpdateInterval = setInterval(updateCycleWithTrigger, interval);
+  thermostatUpdateInterval = setInterval(updateCycleWithSync, interval);
 
   console.log(`✓ Thermostat background job started (runs every ${interval / (60 * 1000)} minutes)`);
-  console.log(`  Strategy: Trigger activity → Wait 2min → Fetch fresh data`);
+  console.log(`  Strategy: Trigger sync (official API) → Wait 30s → Fetch fresh data`);
 }
 
 /**
