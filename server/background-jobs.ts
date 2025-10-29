@@ -105,16 +105,16 @@ async function updateCycleWithSync() {
 }
 
 /**
- * Start the background job to update thermostat data every 15 minutes
+ * Start the background job to update thermostat data every 3 minutes
  * Uses Beestat's official sync API to ensure fresh data from Ecobee
- * Rate limited to once per 3 minutes by Beestat (using 15-min interval for efficiency)
+ * Rate limited to once per 3 minutes by Beestat (we match this limit)
  */
 export function startThermostatUpdateJob() {
   // Run immediately on startup
   updateCycleWithSync();
 
-  // Then run every 15 minutes
-  const interval = 15 * 60 * 1000; // 15 minutes
+  // Then run every 3 minutes (matching Beestat's rate limit)
+  const interval = 3 * 60 * 1000; // 3 minutes
   thermostatUpdateInterval = setInterval(updateCycleWithSync, interval);
 
   console.log(`✓ Thermostat background job started (runs every ${interval / (60 * 1000)} minutes)`);

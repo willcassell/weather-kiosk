@@ -427,9 +427,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Calculate staleness based on last database update
+      // Background job runs every 3 minutes, so data older than 5 minutes is stale
       const lastUpdated = thermostatData[0]?.lastUpdated;
       const dataAge = lastUpdated ? Date.now() - new Date(lastUpdated).getTime() : 0;
-      const isStale = dataAge > 5 * 60 * 1000; // Consider stale if older than 5 minutes
+      const isStale = dataAge > 5 * 60 * 1000; // Consider stale if older than 5 minutes (2 min buffer)
 
       console.log(`✓ Serving fresh database data (${Math.floor(dataAge / 1000)}s old)`);
 
