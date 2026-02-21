@@ -24,11 +24,41 @@ interface ThermostatResponse {
   error?: string;
 }
 
+// Health check response type
+interface HealthCheckResponse {
+  status: "healthy" | "degraded" | "unhealthy";
+  timestamp: string;
+  uptime: number;
+  uptimeFormatted: string;
+  environment: string;
+  database?: {
+    connected: boolean;
+    latency?: string;
+    error?: string;
+  };
+  weatherFlowAPI?: {
+    configured: boolean;
+    status: string;
+  };
+  beestatAPI?: {
+    configured: boolean;
+    status: string;
+  };
+}
+
 export default function WeatherDashboard() {
   const { preferences, isLoaded } = useUnitPreferences();
 
   // Fixed 3-minute refresh interval for all data
   const refreshInterval = 3 * 60 * 1000; // 3 minutes
+
+  // Health check query - check every 1 minute
+  const { data: healthData } = useQuery<HealthCheckResponse>({
+    queryKey: ['/api/health'],
+    refetchInterval: 60 * 1000, // 1 minute
+    retry: 1,
+    staleTime: 30 * 1000, // Consider stale after 30 seconds
+  });
 
   const { data: weatherData, isLoading, error, isError } = useQuery<WeatherData>({
     queryKey: ['/api/weather/current'],
@@ -88,6 +118,7 @@ export default function WeatherDashboard() {
         stationName={weatherData?.stationName || undefined}
         lastUpdated={weatherData?.lastUpdated}
         isLoading={isLoading}
+        healthStatus={healthData?.status}
       />
 
 
