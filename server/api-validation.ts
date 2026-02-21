@@ -30,7 +30,7 @@ const BeestatSettingsSchema = z.object({
 
 export const BeestatThermostatSchema = z.object({
   ecobee_thermostat_id: z.number(),
-  identifier: z.string(),
+  identifier: z.string().optional(), // Not always present
   name: z.string(),
   temperature: z.number(),
   setpoint_heat: z.number().optional().nullable(),
@@ -40,13 +40,13 @@ export const BeestatThermostatSchema = z.object({
   settings: BeestatSettingsSchema,
   running_equipment: z.array(z.string()).default([]),
   program: BeestatProgramSchema.optional(),
-});
+}).passthrough();
 
 export const BeestatResponseSchema = z.object({
   data: z.record(z.string(), BeestatThermostatSchema).optional(),
   success: z.boolean().optional(),
   message: z.string().optional(),
-});
+}).passthrough();
 
 export type BeestatThermostat = z.infer<typeof BeestatThermostatSchema>;
 export type BeestatResponse = z.infer<typeof BeestatResponseSchema>;
@@ -64,14 +64,14 @@ const WeatherFlowDeviceSchema = z.object({
 });
 
 export const WeatherFlowStationSchema = z.object({
-  station_id: z.number(),
-  name: z.string(),
-  latitude: z.number(),
-  longitude: z.number(),
-  timezone: z.string(),
-  elevation: z.number(),
-  devices: z.array(WeatherFlowDeviceSchema),
-});
+  station_id: z.number().optional(),
+  name: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  timezone: z.string().optional(),
+  elevation: z.number().optional(),
+  devices: z.array(WeatherFlowDeviceSchema).optional(),
+}).passthrough();
 
 const WeatherFlowObsDataSchema = z.object({
   timestamp: z.number(),
@@ -90,33 +90,33 @@ const WeatherFlowObsDataSchema = z.object({
   lightning_strike_count: z.number().optional(),
   battery: z.number(),
   feels_like: z.number().optional(),
-});
+}).passthrough();
 
 export const WeatherFlowObservationSchema = z.object({
-  station_id: z.number(),
+  station_id: z.number().optional(),
   obs: z.array(WeatherFlowObsDataSchema),
-});
+}).passthrough();
 
 const WeatherFlowCurrentConditionsSchema = z.object({
-  time: z.number(),
-  conditions: z.string(),
-  icon: z.string(),
+  time: z.number().optional(),
+  conditions: z.string().optional(),
+  icon: z.string().optional(),
   air_temperature: z.number(),
-  feels_like: z.number(),
-  sea_level_pressure: z.number(),
+  feels_like: z.number().optional(),
+  sea_level_pressure: z.number().optional(),
   station_pressure: z.number(),
-  pressure_trend: z.string(),
+  pressure_trend: z.string().optional(),
   relative_humidity: z.number(),
   wind_avg: z.number(),
   wind_direction: z.number(),
   wind_gust: z.number(),
-  solar_radiation: z.number(),
-  uv: z.number(),
-  brightness: z.number(),
-  dew_point: z.number(),
-  wet_bulb_globe_temperature: z.number(),
-  delta_t: z.number(),
-  air_density: z.number(),
+  solar_radiation: z.number().optional(),
+  uv: z.number().optional(),
+  brightness: z.number().optional(),
+  dew_point: z.number().optional(),
+  wet_bulb_globe_temperature: z.number().optional(),
+  delta_t: z.number().optional(),
+  air_density: z.number().optional(),
   // Additional fields that may be present
   precip_accum_local_day: z.number().optional(),
   precip_accum_local_yesterday: z.number().optional(),
@@ -124,7 +124,7 @@ const WeatherFlowCurrentConditionsSchema = z.object({
   lightning_strike_count_last_3hr: z.number().optional(),
   lightning_strike_last_distance: z.number().optional(),
   lightning_strike_last_epoch: z.number().optional(),
-});
+}).passthrough();
 
 const WeatherFlowDailyForecastSchema = z.object({
   day_start_local: z.number(),
@@ -142,12 +142,12 @@ const WeatherFlowDailyForecastSchema = z.object({
 });
 
 export const WeatherFlowForecastSchema = z.object({
-  station_id: z.number(),
+  station_id: z.number().optional(),
   current_conditions: WeatherFlowCurrentConditionsSchema,
   forecast: z.object({
     daily: z.array(WeatherFlowDailyForecastSchema),
-  }),
-});
+  }).optional(),
+}).passthrough(); // Allow additional fields we might not have defined
 
 export type WeatherFlowStation = z.infer<typeof WeatherFlowStationSchema>;
 export type WeatherFlowObservation = z.infer<typeof WeatherFlowObservationSchema>;
