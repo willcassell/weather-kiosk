@@ -232,10 +232,17 @@ app.use((req, res, next) => {
       console.log(`Database URL configured: ${!!process.env.DATABASE_URL}`);
       console.log(`Session secret configured: ${!!process.env.SESSION_SECRET}`);
 
-      // Start background job to update thermostat data
+      // Start background jobs
+      const backgroundJobs = await import('./background-jobs.js');
+
+      // Start thermostat update job if Beestat API key is configured
       if (process.env.BEESTAT_API_KEY) {
-        const { startThermostatUpdateJob } = await import('./background-jobs.js');
-        startThermostatUpdateJob();
+        backgroundJobs.startThermostatUpdateJob();
+      }
+
+      // Start database cleanup job if using PostgreSQL
+      if (process.env.DATABASE_URL) {
+        backgroundJobs.startCleanupJob();
       }
     });
 
@@ -259,9 +266,12 @@ app.use((req, res, next) => {
       console.log('Received SIGTERM, shutting down gracefully');
 
       // Stop background jobs
+      const backgroundJobs = await import('./background-jobs.js');
       if (process.env.BEESTAT_API_KEY) {
-        const { stopThermostatUpdateJob } = await import('./background-jobs.js');
-        stopThermostatUpdateJob();
+        backgroundJobs.stopThermostatUpdateJob();
+      }
+      if (process.env.DATABASE_URL) {
+        backgroundJobs.stopCleanupJob();
       }
 
       server.close(() => {
@@ -274,9 +284,12 @@ app.use((req, res, next) => {
       console.log('Received SIGINT, shutting down gracefully');
 
       // Stop background jobs
+      const backgroundJobs = await import('./background-jobs.js');
       if (process.env.BEESTAT_API_KEY) {
-        const { stopThermostatUpdateJob } = await import('./background-jobs.js');
-        stopThermostatUpdateJob();
+        backgroundJobs.stopThermostatUpdateJob();
+      }
+      if (process.env.DATABASE_URL) {
+        backgroundJobs.stopCleanupJob();
       }
 
       server.close(() => {

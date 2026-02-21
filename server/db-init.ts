@@ -130,7 +130,49 @@ export async function initializeDatabase(): Promise<boolean> {
         CREATE INDEX IF NOT EXISTS IDX_session_expire ON session (expire)
       `);
 
-      console.log("Database tables initialized successfully");
+      // Create performance indexes for frequently queried columns
+      console.log("Creating database indexes for performance...");
+
+      // Weather observations indexes (used for daily high/low calculations and history queries)
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_weather_obs_station_timestamp
+        ON weather_observations(station_id, timestamp DESC)
+      `);
+
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_weather_obs_timestamp
+        ON weather_observations(timestamp DESC)
+      `);
+
+      // Weather data indexes (used for recent history and trend analysis)
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_weather_data_station_timestamp
+        ON weather_data(station_id, timestamp DESC)
+      `);
+
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_weather_data_timestamp
+        ON weather_data(timestamp DESC)
+      `);
+
+      // Thermostat data indexes (used for latest data queries)
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_thermostat_id_timestamp
+        ON thermostat_data(thermostat_id, last_updated DESC)
+      `);
+
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_thermostat_timestamp
+        ON thermostat_data(timestamp DESC)
+      `);
+
+      // Beestat raw data indexes (used for debugging queries)
+      await pool.query(`
+        CREATE INDEX IF NOT EXISTS idx_beestat_timestamp
+        ON beestat_raw_data(timestamp DESC)
+      `);
+
+      console.log("✓ Database tables and indexes initialized successfully");
       return true;
     } catch (tableError) {
       console.error("Error creating database tables:", tableError);

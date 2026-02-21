@@ -1,5 +1,7 @@
 import type { ThermostatData, InsertBeestatRawData } from '../shared/schema.ts';
 import { storage } from './storage.ts';
+import { BeestatResponseSchema, type BeestatResponse, type BeestatThermostat } from './api-validation.ts';
+import { ZodError } from 'zod';
 
 /**
  * Beestat API Integration
@@ -25,52 +27,6 @@ import { storage } from './storage.ts';
 
 const BEESTAT_API_BASE = 'https://api.beestat.io/';
 
-interface BeestatThermostat {
-  // Core thermostat identification
-  ecobee_thermostat_id: number;
-  identifier: string;
-  name: string;
-
-  // Temperature data - directly from Beestat API (already in Fahrenheit)
-  temperature: number;          // Current temperature in °F
-  setpoint_heat?: number;       // Heat setpoint in °F
-  setpoint_cool?: number;       // Cool setpoint in °F
-  humidity?: number;            // Current humidity in %
-
-  // Note: hvac_mode is NOT provided by Beestat API - must be inferred
-  hvac_mode?: string;           // Usually null/undefined
-
-  // System settings (usually empty)
-  settings?: {
-    hvacMode?: string;          // Usually null/undefined
-    differential_cool?: number;
-    differential_heat?: number;
-  };
-
-  // Current equipment status - THIS is what we use to determine mode
-  running_equipment: string[];  // Array of currently running equipment (e.g., ['compCool1'], ['fan'], [])
-
-  // Program/schedule info (optional - used as fallback for setpoints and occupancy)
-  program?: {
-    currentClimateRef?: string;
-    climates?: Array<{
-      name?: string;
-      climateRef?: string;
-      heatTemp?: number;     // Heat setpoint in tenths of degrees
-      coolTemp?: number;     // Cool setpoint in tenths of degrees
-      isOccupied?: boolean;  // Whether this comfort setting indicates occupancy
-    }>;
-  };
-}
-
-interface BeestatResponse {
-  data?: {
-    [key: string]: BeestatThermostat;
-  };
-  success?: boolean;
-  message?: string;
-}
-
 export async function fetchBeestatThermostats(): Promise<ThermostatData[]> {
   const apiKey = process.env.BEESTAT_API_KEY;
 
@@ -95,14 +51,27 @@ export async function fetchBeestatThermostats(): Promise<ThermostatData[]> {
       throw new Error(`Beestat API error ${response.status}: ${errorText.substring(0, 100)}`);
     }
 
-    const data: BeestatResponse = await response.json();
+    const rawData = await response.json();
+
+    // Validate API response with Zod schema
+    let data: BeestatResponse;
+    try {
+      data = BeestatResponseSchema.parse(rawData);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        console.error(`Beestat API response validation failed:`, error.errors);
+        console.error(`Raw response (first 500 chars):`, JSON.stringify(rawData).substring(0, 500));
+        throw new Error(`Beestat API returned invalid data format: ${error.errors.map(e => e.message).join(', ')}`);
+      }
+      throw error;
+    }
 
     if (!data || (!data.success && !data.data)) {
       console.error(`Unexpected Beestat response format:`, data);
       throw new Error(`Beestat API returned unexpected format`);
     }
 
-    console.log(`✓ Successfully retrieved data for ${Object.keys(data.data || {}).length} thermostat(s)`);
+    console.log(`✓ Successfully retrieved and validated data for ${Object.keys(data.data || {}).length} thermostat(s)`);
 
     // Process and return thermostat data
     return await processBeestatResponse(data);

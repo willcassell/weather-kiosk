@@ -1,11 +1,21 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertWeatherDataSchema, insertWeatherObservationSchema, insertThermostatDataSchema, type WeatherFlowStation, type WeatherFlowObservation, type WeatherFlowForecast, type ThermostatData, type WeatherData } from "@shared/schema";
+import { insertWeatherDataSchema, insertWeatherObservationSchema, insertThermostatDataSchema, type ThermostatData, type WeatherData } from "@shared/schema";
 import { EcobeeAPI, convertEcobeeToThermostatData } from "./ecobee-api";
 
 import { fetchBeestatThermostats } from './beestat-api';
-import { z } from "zod";
+import {
+  WeatherFlowStationSchema,
+  WeatherFlowForecastSchema,
+  WeatherFlowObservationSchema,
+  validateWeatherDataQuality,
+  detectTemperatureSpike,
+  type WeatherFlowStation,
+  type WeatherFlowForecast,
+  type WeatherFlowObservation
+} from './api-validation';
+import { z, ZodError } from "zod";
 
 // Import cache for data optimization
 let dataCache: any = null;
@@ -86,14 +96,24 @@ async function fetchStationInfo(): Promise<string> {
 
   try {
     const response = await fetch(`${WEATHERFLOW_API_BASE}/stations/${STATION_ID}?token=${token}`);
-    
+
     if (!response.ok) {
       console.warn(`WeatherFlow station API error: ${response.status}, using fallback name`);
       return "Corner Rock Wx";
     }
-    
-    const stationData: WeatherFlowStation = await response.json();
-    return stationData.name || "Corner Rock Wx";
+
+    const rawData = await response.json();
+
+    // Validate API response
+    try {
+      const stationData = WeatherFlowStationSchema.parse(rawData);
+      return stationData.name || "Corner Rock Wx";
+    } catch (error) {
+      if (error instanceof ZodError) {
+        console.warn(`WeatherFlow station data validation failed, using fallback:`, error.errors);
+      }
+      return "Corner Rock Wx";
+    }
   } catch (error) {
     console.warn("Error fetching station info, using fallback name:", error);
     return "Corner Rock Wx";
@@ -117,8 +137,20 @@ async function fetchWeatherFlowData(): Promise<any> {
       throw new Error(`WeatherFlow forecast API error: ${forecastResponse.status} ${forecastResponse.statusText}`);
     }
 
-    const forecastData: WeatherFlowForecast = await forecastResponse.json();
-    
+    const rawForecastData = await forecastResponse.json();
+
+    // Validate forecast API response
+    let forecastData: WeatherFlowForecast;
+    try {
+      forecastData = WeatherFlowForecastSchema.parse(rawForecastData);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        console.error(`WeatherFlow forecast data validation failed:`, error.errors);
+        throw new Error(`WeatherFlow forecast API returned invalid data: ${error.errors.map(e => e.message).join(', ')}`);
+      }
+      throw error;
+    }
+
     // Get precipitation data from forecast if available
     const apiRainToday = forecastData.current_conditions ? millimetersToInches((forecastData.current_conditions as any).precip_accum_local_day || 0) : 0;
     const apiRainYesterday = forecastData.current_conditions ? millimetersToInches((forecastData.current_conditions as any).precip_accum_local_yesterday || 0) : 0;
@@ -130,8 +162,20 @@ async function fetchWeatherFlowData(): Promise<any> {
     let latestObs = null;
     
     if (observationsResponse.ok) {
-      const observationsData = await observationsResponse.json();
-      if (observationsData.obs && observationsData.obs.length > 0) {
+      const rawObservationsData = await observationsResponse.json();
+
+      // Validate observations API response
+      let observationsData: WeatherFlowObservation | null = null;
+      try {
+        observationsData = WeatherFlowObservationSchema.parse(rawObservationsData);
+      } catch (error) {
+        if (error instanceof ZodError) {
+          console.warn(`WeatherFlow observations data validation failed, using forecast data:`, error.errors);
+          observationsData = null;
+        }
+      }
+
+      if (observationsData && observationsData.obs && observationsData.obs.length > 0) {
         // Use the most recent observation for temperature
         latestObs = observationsData.obs[0];
         console.log(`Using latest observation data (timestamp: ${new Date(latestObs.timestamp * 1000).toISOString()})`);
@@ -139,24 +183,42 @@ async function fetchWeatherFlowData(): Promise<any> {
         
         // Store this observation in our database
         try {
+          const temperature = celsiusToFahrenheit(latestObs.air_temperature);
+          const windSpeed = latestObs.wind_avg ? latestObs.wind_avg * 2.237 : null;
+          const pressure = latestObs.station_pressure ? millibarsToInchesHg(latestObs.station_pressure) : null;
+          const humidity = latestObs.relative_humidity || null;
+
+          // Validate data quality before storing
+          const qualityWarnings = validateWeatherDataQuality({
+            temperature,
+            windSpeed,
+            pressure,
+            humidity,
+          });
+
+          if (qualityWarnings.length > 0) {
+            console.warn('⚠️  Data quality warnings detected:');
+            qualityWarnings.forEach(warning => console.warn(`  - ${warning}`));
+          }
+
           await storage.saveWeatherObservation({
             stationId: STATION_ID,
             timestamp: new Date(latestObs.timestamp * 1000),
-            temperature: celsiusToFahrenheit(latestObs.air_temperature),
+            temperature,
             feelsLike: latestObs.feels_like ? celsiusToFahrenheit(latestObs.feels_like) : null,
-            windSpeed: latestObs.wind_avg ? latestObs.wind_avg * 2.237 : null, // Convert m/s to mph
+            windSpeed,
             windGust: latestObs.wind_gust ? latestObs.wind_gust * 2.237 : null,
             windDirection: latestObs.wind_direction || null,
-            pressure: latestObs.station_pressure ? millibarsToInchesHg(latestObs.station_pressure) : null,
-            humidity: latestObs.relative_humidity || null,
+            pressure,
+            humidity,
             uvIndex: latestObs.uv || null,
             dewPoint: latestObs.dew_point ? celsiusToFahrenheit(latestObs.dew_point) : null,
             rainAccumulation: latestObs.rain_accumulation ? millimetersToInches(latestObs.rain_accumulation) : null,
             lightningStrikeCount: latestObs.lightning_strike_count || null,
-            lightningStrikeDistance: latestObs.lightning_strike_avg_distance ? 
+            lightningStrikeDistance: latestObs.lightning_strike_avg_distance ?
               latestObs.lightning_strike_avg_distance * 0.621371 : null // Convert km to miles
           });
-          console.log("Stored weather observation in database");
+          console.log("✓ Stored weather observation in database");
         } catch (obsError) {
           console.warn("Failed to store weather observation:", obsError);
         }
@@ -273,31 +335,102 @@ async function fetchWeatherFlowData(): Promise<any> {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Health check endpoint for deployment monitoring
+  // Enhanced health check endpoint for deployment monitoring
   app.get("/api/health", async (req, res) => {
     try {
-      const healthStatus = {
+      const healthStatus: any = {
         status: "healthy",
         timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
+        uptime: Math.floor(process.uptime()),
+        uptimeFormatted: `${Math.floor(process.uptime() / 3600)}h ${Math.floor((process.uptime() % 3600) / 60)}m`,
         environment: process.env.NODE_ENV || "development",
-        database: !!process.env.DATABASE_URL,
-        memory: process.memoryUsage(),
         version: process.version,
         port: process.env.PORT || "5000"
       };
 
-      // Test database connection if available
+      // Database health check
       if (process.env.DATABASE_URL) {
+        const dbStartTime = Date.now();
         try {
-          const latestData = await storage.getLatestWeatherData("38335");
-          healthStatus.database = true;
-          (healthStatus as any).lastWeatherUpdate = latestData?.lastUpdated || null;
+          const latestData = await storage.getLatestWeatherData(STATION_ID);
+          const dbLatency = Date.now() - dbStartTime;
+
+          healthStatus.database = {
+            connected: true,
+            latency: `${dbLatency}ms`,
+            lastWeatherUpdate: latestData?.lastUpdated || null
+          };
         } catch (error) {
-          healthStatus.database = false;
-          (healthStatus as any).databaseError = "Connection failed";
+          healthStatus.database = {
+            connected: false,
+            error: error instanceof Error ? error.message : "Connection failed"
+          };
+          healthStatus.status = "degraded";
         }
+      } else {
+        healthStatus.database = {
+          connected: false,
+          message: "Using in-memory storage (DATABASE_URL not configured)"
+        };
       }
+
+      // WeatherFlow API health check
+      try {
+        const cache = await initializeCache();
+        const cacheKey = `weather:${STATION_ID}`;
+        const cachedWeather = cache.get(cacheKey);
+
+        healthStatus.weatherFlowAPI = {
+          configured: !!getApiToken(),
+          lastFetch: cachedWeather?.lastUpdated || null,
+          status: cachedWeather ? "ok" : "no recent data"
+        };
+      } catch (error) {
+        healthStatus.weatherFlowAPI = {
+          configured: !!getApiToken(),
+          status: "error",
+          error: error instanceof Error ? error.message : "Unknown error"
+        };
+      }
+
+      // Beestat API health check
+      if (process.env.BEESTAT_API_KEY) {
+        try {
+          const thermostatData = await storage.getLatestThermostatData();
+          healthStatus.beestatAPI = {
+            configured: true,
+            status: thermostatData.length > 0 ? "ok" : "no data",
+            lastFetch: thermostatData[0]?.lastUpdated || null,
+            thermostatCount: thermostatData.length
+          };
+        } catch (error) {
+          healthStatus.beestatAPI = {
+            configured: true,
+            status: "error",
+            error: error instanceof Error ? error.message : "Unknown error"
+          };
+          healthStatus.status = "degraded";
+        }
+      } else {
+        healthStatus.beestatAPI = {
+          configured: false,
+          status: "disabled"
+        };
+      }
+
+      // Memory usage
+      const memUsage = process.memoryUsage();
+      healthStatus.memory = {
+        heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+        heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)}MB`,
+        rss: `${Math.round(memUsage.rss / 1024 / 1024)}MB`
+      };
+
+      // Background jobs status
+      healthStatus.backgroundJobs = {
+        thermostatSync: process.env.BEESTAT_API_KEY ? "running" : "disabled",
+        databaseCleanup: process.env.DATABASE_URL ? "scheduled" : "disabled"
+      };
 
       res.status(200).json(healthStatus);
     } catch (error) {

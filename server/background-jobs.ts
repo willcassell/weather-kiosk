@@ -12,6 +12,7 @@ import { storage } from './storage.js';
  */
 
 let thermostatUpdateInterval: NodeJS.Timeout | null = null;
+let cleanupInterval: NodeJS.Timeout | null = null;
 
 /**
  * Trigger Beestat sync using official API methods
@@ -129,5 +130,89 @@ export function stopThermostatUpdateJob() {
     clearInterval(thermostatUpdateInterval);
     thermostatUpdateInterval = null;
     console.log('✓ Thermostat background job stopped');
+  }
+}
+
+/**
+ * Database cleanup job to remove old data according to retention policies
+ * Configurable via environment variables:
+ * - RETENTION_WEATHER_OBSERVATIONS_DAYS (default: 7)
+ * - RETENTION_WEATHER_DATA_DAYS (default: 2)
+ * - RETENTION_THERMOSTAT_DATA_DAYS (default: 90)
+ * - RETENTION_BEESTAT_RAW_DAYS (default: 7)
+ */
+async function cleanupOldData() {
+  try {
+    console.log('🧹 Background job: Starting database cleanup...');
+    const deletedCounts = await storage.cleanupOldData();
+
+    const totalDeleted = deletedCounts.weatherObservations + deletedCounts.weatherData +
+                        deletedCounts.thermostatData + deletedCounts.beestatRawData;
+
+    if (totalDeleted > 0) {
+      console.log(`✓ Background job: Cleanup complete - removed ${totalDeleted} total records`);
+    } else {
+      console.log('✓ Background job: Cleanup complete - no old records to remove');
+    }
+  } catch (error) {
+    console.error('✗ Background job: Database cleanup failed:', error);
+  }
+}
+
+/**
+ * Start the database cleanup background job
+ * Runs daily at 3 AM local time, or immediately if CLEANUP_INTERVAL_HOURS is set
+ */
+export function startCleanupJob() {
+  // Check if custom cleanup interval is configured (in hours)
+  const customIntervalHours = process.env.CLEANUP_INTERVAL_HOURS;
+
+  if (customIntervalHours) {
+    // Use custom interval if specified
+    const interval = parseInt(customIntervalHours) * 60 * 60 * 1000;
+
+    // Run immediately on startup
+    cleanupOldData();
+
+    // Then run at specified interval
+    cleanupInterval = setInterval(cleanupOldData, interval);
+    console.log(`✓ Database cleanup job started (runs every ${customIntervalHours} hours)`);
+  } else {
+    // Default: Run daily at 3 AM local time
+    const scheduleNextCleanup = () => {
+      const now = new Date();
+      const next3AM = new Date();
+      next3AM.setHours(3, 0, 0, 0);
+
+      // If it's past 3 AM today, schedule for 3 AM tomorrow
+      if (now >= next3AM) {
+        next3AM.setDate(next3AM.getDate() + 1);
+      }
+
+      const msUntil3AM = next3AM.getTime() - now.getTime();
+
+      console.log(`✓ Database cleanup job scheduled for ${next3AM.toLocaleString()}`);
+
+      // Schedule the cleanup
+      cleanupInterval = setTimeout(() => {
+        cleanupOldData();
+        // Reschedule for next day
+        scheduleNextCleanup();
+      }, msUntil3AM);
+    };
+
+    scheduleNextCleanup();
+  }
+}
+
+/**
+ * Stop the cleanup background job (useful for graceful shutdown)
+ */
+export function stopCleanupJob() {
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    clearTimeout(cleanupInterval);
+    cleanupInterval = null;
+    console.log('✓ Database cleanup job stopped');
   }
 }

@@ -9,17 +9,25 @@ export interface IStorage {
   saveWeatherData(data: InsertWeatherData): Promise<WeatherData>;
   getWeatherHistory(stationId: string, hours: number): Promise<WeatherData[]>;
   getWeatherHistorySince(stationId: string, since: Date): Promise<WeatherData[]>;
-  
+
   // Weather observations methods
   saveWeatherObservation(data: InsertWeatherObservation): Promise<WeatherObservation>;
   getWeatherObservations(stationId: string, hours: number): Promise<WeatherObservation[]>;
   getWeatherObservationsSince(stationId: string, since: Date): Promise<WeatherObservation[]>;
   getDailyTemperatureExtremes(stationId: string, date: Date): Promise<{ high: number; low: number; highTime: Date; lowTime: Date } | null>;
   getRecentLightningData(stationId: string, since: Date): Promise<{ timestamp: Date; distance: number } | null>;
-  
+
   getLatestThermostatData(): Promise<ThermostatData[]>;
   saveThermostatData(data: InsertThermostatData): Promise<ThermostatData>;
   saveBeestatRawData(data: InsertBeestatRawData): Promise<BeestatRawData>;
+
+  // Cleanup methods for data retention
+  cleanupOldData(): Promise<{
+    weatherObservations: number;
+    weatherData: number;
+    thermostatData: number;
+    beestatRawData: number;
+  }>;
 }
 
 export class MemStorage implements IStorage {
@@ -116,6 +124,7 @@ export class MemStorage implements IStorage {
       lastUpdated: new Date(),
       humidity: insertData.humidity ?? null, // Fix undefined to null conversion
       hvacState: insertData.hvacState ?? null, // Fix undefined to null conversion
+      occupied: insertData.occupied ?? null, // Fix undefined to null conversion
     };
 
     // Remove existing data for this thermostat
@@ -250,22 +259,33 @@ export class MemStorage implements IStorage {
 
   async getRecentLightningData(stationId: string, since: Date): Promise<{ timestamp: Date; distance: number } | null> {
     const observations = this.weatherObservations.get(stationId) || [];
-    const recentObservations = observations.filter(obs => 
-      obs.timestamp.getTime() >= since.getTime() && 
+    const recentObservations = observations.filter(obs =>
+      obs.timestamp.getTime() >= since.getTime() &&
       obs.lightningStrikeCount && obs.lightningStrikeCount > 0 &&
       obs.lightningStrikeDistance !== null
     );
-    
+
     if (recentObservations.length === 0) return null;
-    
+
     // Return the most recent lightning strike
-    const mostRecent = recentObservations.reduce((latest, obs) => 
+    const mostRecent = recentObservations.reduce((latest, obs) =>
       obs.timestamp.getTime() > latest.timestamp.getTime() ? obs : latest
     );
-    
+
     return {
       timestamp: mostRecent.timestamp,
       distance: mostRecent.lightningStrikeDistance!
+    };
+  }
+
+  async cleanupOldData(): Promise<{ weatherObservations: number; weatherData: number; thermostatData: number; beestatRawData: number }> {
+    // MemStorage has auto-cleanup built into save methods
+    // This method is a no-op for MemStorage but required for interface
+    return {
+      weatherObservations: 0,
+      weatherData: 0,
+      thermostatData: 0,
+      beestatRawData: 0
     };
   }
 
@@ -597,11 +617,11 @@ export class PostgreSQLStorage implements IStorage {
         )
         .orderBy(desc(weatherObservations.timestamp))
         .limit(1);
-      
+
       if (!result[0] || !result[0].lightningStrikeDistance) {
         return null;
       }
-      
+
       return {
         timestamp: result[0].timestamp,
         distance: result[0].lightningStrikeDistance
@@ -609,6 +629,61 @@ export class PostgreSQLStorage implements IStorage {
     } catch (error) {
       console.error("Error getting recent lightning data:", error);
       throw new Error("Failed to retrieve recent lightning data from database");
+    }
+  }
+
+  /**
+   * Clean up old data according to retention policies configured via environment variables
+   * Default retention periods:
+   * - weather_observations: 7 days (needed for accurate daily calculations)
+   * - weather_data: 48 hours (summary/cache data)
+   * - thermostat_data: 90 days (historical analysis)
+   * - beestat_raw_data: 7 days (debug data, aggressive pruning)
+   */
+  async cleanupOldData(): Promise<{ weatherObservations: number; weatherData: number; thermostatData: number; beestatRawData: number }> {
+    try {
+      // Get retention periods from environment variables (in days)
+      const retentionDays = {
+        weatherObservations: parseInt(process.env.RETENTION_WEATHER_OBSERVATIONS_DAYS || '7'),
+        weatherData: parseInt(process.env.RETENTION_WEATHER_DATA_DAYS || '2'),
+        thermostatData: parseInt(process.env.RETENTION_THERMOSTAT_DATA_DAYS || '90'),
+        beestatRawData: parseInt(process.env.RETENTION_BEESTAT_RAW_DAYS || '7'),
+      };
+
+      const now = new Date();
+      const cutoffs = {
+        weatherObservations: new Date(now.getTime() - retentionDays.weatherObservations * 24 * 60 * 60 * 1000),
+        weatherData: new Date(now.getTime() - retentionDays.weatherData * 24 * 60 * 60 * 1000),
+        thermostatData: new Date(now.getTime() - retentionDays.thermostatData * 24 * 60 * 60 * 1000),
+        beestatRawData: new Date(now.getTime() - retentionDays.beestatRawData * 24 * 60 * 60 * 1000),
+      };
+
+      // Delete old records from each table
+      const [obsResult, dataResult, thermostatResult, beestatResult] = await Promise.all([
+        this.db.delete(weatherObservations).where(sql`${weatherObservations.timestamp} < ${cutoffs.weatherObservations}`),
+        this.db.delete(weatherData).where(sql`${weatherData.timestamp} < ${cutoffs.weatherData}`),
+        this.db.delete(thermostatData).where(sql`${thermostatData.timestamp} < ${cutoffs.thermostatData}`),
+        this.db.delete(beestatRawData).where(sql`${beestatRawData.timestamp} < ${cutoffs.beestatRawData}`),
+      ]);
+
+      const deletedCounts = {
+        weatherObservations: obsResult.rowCount || 0,
+        weatherData: dataResult.rowCount || 0,
+        thermostatData: thermostatResult.rowCount || 0,
+        beestatRawData: beestatResult.rowCount || 0,
+      };
+
+      console.log('🧹 Database cleanup completed:', {
+        weatherObservations: `${deletedCounts.weatherObservations} records deleted (retention: ${retentionDays.weatherObservations} days)`,
+        weatherData: `${deletedCounts.weatherData} records deleted (retention: ${retentionDays.weatherData} days)`,
+        thermostatData: `${deletedCounts.thermostatData} records deleted (retention: ${retentionDays.thermostatData} days)`,
+        beestatRawData: `${deletedCounts.beestatRawData} records deleted (retention: ${retentionDays.beestatRawData} days)`,
+      });
+
+      return deletedCounts;
+    } catch (error) {
+      console.error("Error cleaning up old data:", error);
+      throw new Error("Failed to cleanup old data from database");
     }
   }
 }
