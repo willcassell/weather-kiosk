@@ -114,6 +114,40 @@ export type ThermostatData = typeof thermostatData.$inferSelect;
 export type InsertBeestatRawData = z.infer<typeof insertBeestatRawDataSchema>;
 export type BeestatRawData = typeof beestatRawData.$inferSelect;
 
+// Application Settings for Web UI Configuration
+export const appSettings = pgTable("app_settings", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertAppSettingsSchema = createInsertSchema(appSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type AppSetting = typeof appSettings.$inferSelect;
+export type InsertAppSetting = z.infer<typeof insertAppSettingsSchema>;
+
+// Telemetry & Performance Metrics
+export const apiMetrics = pgTable("api_metrics", {
+  id: serial("id").primaryKey(),
+  service: text("service").notNull(), // e.g. 'weatherflow', 'beestat'
+  success: boolean("success").notNull(),
+  durationMs: integer("duration_ms").notNull(),
+  error: text("error"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const backgroundJobMetrics = pgTable("background_job_metrics", {
+  id: serial("id").primaryKey(),
+  jobName: text("job_name").notNull(), // e.g. 'thermostat_sync', 'cleanup'
+  success: boolean("success").notNull(),
+  durationMs: integer("duration_ms").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
 // WeatherFlow API response types
 export interface WeatherFlowStation {
   station_id: number;

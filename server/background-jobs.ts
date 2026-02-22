@@ -1,5 +1,6 @@
 import { fetchBeestatThermostats } from './beestat-api.js';
 import { storage } from './storage.js';
+import { metrics } from './metrics.js';
 
 /**
  * Background job to periodically fetch thermostat data from Beestat API
@@ -25,6 +26,7 @@ async function syncBeestatData() {
 
   try {
     console.log('🔄 Triggering Beestat sync (thermostat + sensor)...');
+    const startTime = Date.now();
 
     // Use Beestat's batch API to sync thermostats and sensors together
     // This is more efficient than separate calls
@@ -44,11 +46,14 @@ async function syncBeestatData() {
       if (result.thermostat_sync?.error_code || result.sensor_sync?.error_code) {
         console.warn('⚠️  Sync completed with warnings:', result);
       }
+      metrics.recordJobExecution({ jobName: 'beestat_sync', success: true, durationMs: Date.now() - startTime });
     } else {
       console.warn(`⚠️  Beestat sync returned status ${response.status}`);
+      metrics.recordJobExecution({ jobName: 'beestat_sync', success: false, durationMs: Date.now() - startTime });
     }
   } catch (error) {
     console.error('✗ Failed to trigger Beestat sync:', error);
+    metrics.recordJobExecution({ jobName: 'beestat_sync', success: false, durationMs: 0 });
   }
 }
 
@@ -60,7 +65,9 @@ export async function updateThermostatData() {
 
   try {
     console.log('🔄 Background job: Fetching thermostat data from Beestat API');
+    const startTime = Date.now();
     const thermostatData = await fetchBeestatThermostats();
+    metrics.recordApiCall({ service: 'beestat_fetch', success: true, durationMs: Date.now() - startTime });
 
     // Save each thermostat to database
     for (const thermostat of thermostatData) {
@@ -83,6 +90,7 @@ export async function updateThermostatData() {
     console.log(`✓ Background job: Successfully updated ${thermostatData.length} thermostat(s)`);
   } catch (error) {
     console.error('✗ Background job: Failed to update thermostat data:', error);
+    metrics.recordApiCall({ service: 'beestat_fetch', success: false, durationMs: 0, error: error instanceof Error ? error.message : String(error) });
   }
 }
 
@@ -142,20 +150,23 @@ export function stopThermostatUpdateJob() {
  * - RETENTION_BEESTAT_RAW_DAYS (default: 7)
  */
 async function cleanupOldData() {
+  const startTime = Date.now();
   try {
     console.log('🧹 Background job: Starting database cleanup...');
     const deletedCounts = await storage.cleanupOldData();
 
     const totalDeleted = deletedCounts.weatherObservations + deletedCounts.weatherData +
-                        deletedCounts.thermostatData + deletedCounts.beestatRawData;
+      deletedCounts.thermostatData + deletedCounts.beestatRawData;
 
     if (totalDeleted > 0) {
       console.log(`✓ Background job: Cleanup complete - removed ${totalDeleted} total records`);
     } else {
       console.log('✓ Background job: Cleanup complete - no old records to remove');
     }
+    metrics.recordJobExecution({ jobName: 'database_cleanup', success: true, durationMs: Date.now() - startTime });
   } catch (error) {
     console.error('✗ Background job: Database cleanup failed:', error);
+    metrics.recordJobExecution({ jobName: 'database_cleanup', success: false, durationMs: Date.now() - startTime });
   }
 }
 

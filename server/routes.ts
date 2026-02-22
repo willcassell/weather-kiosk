@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { metrics } from "./metrics.js";
 import { insertWeatherDataSchema, insertWeatherObservationSchema, insertThermostatDataSchema, type ThermostatData, type WeatherData } from "@shared/schema";
 import { EcobeeAPI, convertEcobeeToThermostatData } from "./ecobee-api";
 
@@ -41,10 +42,10 @@ const STATION_ID = process.env.WEATHERFLOW_STATION_ID || "38335";
 
 // Get API token from environment variables
 const getApiToken = () => {
-  return process.env.WEATHERFLOW_API_TOKEN || 
-         process.env.TEMPEST_API_TOKEN || 
-         process.env.API_TOKEN ||
-         process.env.WEATHERFLOW_ACCESS_TOKEN;
+  return process.env.WEATHERFLOW_API_TOKEN ||
+    process.env.TEMPEST_API_TOKEN ||
+    process.env.API_TOKEN ||
+    process.env.WEATHERFLOW_ACCESS_TOKEN;
 };
 
 // Get Ecobee API key
@@ -61,7 +62,7 @@ function degreesToCardinal(degrees: number): string {
 
 // Helper function to convert Celsius to Fahrenheit
 function celsiusToFahrenheit(celsius: number): number {
-  return (celsius * 9/5) + 32;
+  return (celsius * 9 / 5) + 32;
 }
 
 // Helper function to convert millibars to inches of mercury
@@ -79,10 +80,10 @@ function millimetersToInches(millimeters: number): number {
 // Helper function to determine pressure trend
 function determinePressureTrend(currentPressure: number, historicalData: any[]): string {
   if (historicalData.length < 2) return "Steady";
-  
+
   const previousPressure = historicalData[historicalData.length - 2]?.pressure;
   if (!previousPressure) return "Steady";
-  
+
   const diff = currentPressure - previousPressure;
   if (diff > 0.03) return "Rising";
   if (diff < -0.03) return "Falling";
@@ -126,6 +127,7 @@ async function fetchWeatherFlowData(): Promise<any> {
     throw new Error("WeatherFlow API token not found in environment variables");
   }
 
+  const startTime = Date.now();
   try {
     // Fetch both recent observations and forecast for most current data
     const [observationsResponse, forecastResponse] = await Promise.all([
@@ -154,13 +156,13 @@ async function fetchWeatherFlowData(): Promise<any> {
     // Get precipitation data from forecast if available
     const apiRainToday = forecastData.current_conditions ? millimetersToInches((forecastData.current_conditions as any).precip_accum_local_day || 0) : 0;
     const apiRainYesterday = forecastData.current_conditions ? millimetersToInches((forecastData.current_conditions as any).precip_accum_local_yesterday || 0) : 0;
-    
+
     console.log(`API Precipitation: Today ${apiRainToday.toFixed(2)}", Yesterday ${apiRainYesterday.toFixed(2)}" (from WeatherFlow processed data)`);
-    
+
     // Use most recent observation if available, otherwise fall back to forecast current conditions
     let currentConditions = forecastData.current_conditions as any;
     let latestObs = null;
-    
+
     if (observationsResponse.ok) {
       const rawObservationsData = await observationsResponse.json();
 
@@ -180,7 +182,7 @@ async function fetchWeatherFlowData(): Promise<any> {
         latestObs = observationsData.obs[0];
         console.log(`Using latest observation data (timestamp: ${new Date(latestObs.timestamp * 1000).toISOString()})`);
         console.log(`Lightning data: strikes=${latestObs.lightning_strike_count}, avg_distance=${latestObs.lightning_strike_avg_distance}`);
-        
+
         // Store this observation in our database
         try {
           const temperature = celsiusToFahrenheit(latestObs.air_temperature);
@@ -222,7 +224,7 @@ async function fetchWeatherFlowData(): Promise<any> {
         } catch (obsError) {
           console.warn("Failed to store weather observation:", obsError);
         }
-        
+
         currentConditions = {
           ...currentConditions,
           air_temperature: latestObs.air_temperature,
@@ -241,34 +243,34 @@ async function fetchWeatherFlowData(): Promise<any> {
     } else {
       console.log("Observations API not available, using forecast current conditions");
     }
-    
 
-    
 
-    
+
+
+
     // Get historical data for pressure trend calculation
     const historicalData = await storage.getWeatherHistory(STATION_ID, 6);
-    
+
     // Calculate daily high/low from our stored observations (observed data only)
     const rawTempC = currentConditions.air_temperature;
     const currentTemp = Math.round(celsiusToFahrenheit(rawTempC) * 10) / 10; // Round to 1 decimal place
     console.log(`Raw temperature from WeatherFlow: ${rawTempC}°C = ${celsiusToFahrenheit(rawTempC)}°F, rounded to: ${currentTemp}°F`);
-    
+
     const today = new Date();
     const todayExtremes = await storage.getDailyTemperatureExtremes(STATION_ID, today);
-    
+
     let actualHigh = currentTemp;
     let actualLow = currentTemp;
     let highTime = new Date();
     let lowTime = new Date();
-    
+
     if (todayExtremes) {
       // Use database-calculated extremes
       actualHigh = Math.max(todayExtremes.high, currentTemp);
       actualLow = Math.min(todayExtremes.low, currentTemp);
       highTime = todayExtremes.high >= currentTemp ? todayExtremes.highTime : new Date();
       lowTime = todayExtremes.low <= currentTemp ? todayExtremes.lowTime : new Date();
-      
+
       console.log(`Daily temps from observations database: High ${actualHigh.toFixed(1)}°F at ${highTime.toLocaleString()}, Low ${actualLow.toFixed(1)}°F at ${lowTime.toLocaleString()}`);
     } else {
       console.log("No observations found for today, using current temperature as baseline");
@@ -276,14 +278,14 @@ async function fetchWeatherFlowData(): Promise<any> {
 
     // Get station name
     const stationName = await fetchStationInfo();
-    
+
 
 
     // Get recent lightning data from database if available (within last 30 minutes)
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
     let lightningStrikeTime = null;
     let lightningStrikeDistance = null;
-    
+
     try {
       const recentLightning = await storage.getRecentLightningData(STATION_ID, thirtyMinutesAgo);
       if (recentLightning) {
@@ -296,7 +298,7 @@ async function fetchWeatherFlowData(): Promise<any> {
       // Fallback to current observation data if database query fails
       if (currentConditions.lightning_strike_count > 0 && latestObs) {
         lightningStrikeTime = new Date(latestObs.timestamp * 1000);
-        lightningStrikeDistance = currentConditions.lightning_strike_avg_distance ? 
+        lightningStrikeDistance = currentConditions.lightning_strike_avg_distance ?
           Math.round(currentConditions.lightning_strike_avg_distance * 0.621371 * 10) / 10 : null;
         console.log(`Using observation lightning data: ${lightningStrikeDistance} mi at ${lightningStrikeTime.toISOString()}`);
       }
@@ -327,9 +329,11 @@ async function fetchWeatherFlowData(): Promise<any> {
       rainYesterday: Math.round(millimetersToInches(currentConditions.precip_accum_local_yesterday || 0) * 100) / 100
     };
 
+    metrics.recordApiCall({ service: 'weatherflow_fetch', success: true, durationMs: Date.now() - startTime });
     return weatherData;
   } catch (error) {
     console.error("Error fetching WeatherFlow data:", error);
+    metrics.recordApiCall({ service: 'weatherflow_fetch', success: false, durationMs: Date.now() - startTime, error: error instanceof Error ? error.message : String(error) });
     throw error;
   }
 }
@@ -512,10 +516,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(savedData);
     } catch (error) {
       console.error("Error refreshing weather data:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to refresh weather data",
         message: error instanceof Error ? error.message : "Unknown error"
       });
+    }
+  });
+
+  // Get weather alerts
+  app.get("/api/weather/alerts", async (req, res) => {
+    try {
+      const { fetchActiveAlerts } = await import("./noaa-api.js");
+      const dbSettings = await storage.getAllSettings();
+      // Use config radar center or fallback env variables
+      const lat = dbSettings.radarCenterLat || process.env.VITE_RADAR_CENTER_LAT;
+      const lon = dbSettings.radarCenterLon || process.env.VITE_RADAR_CENTER_LON;
+
+      const alerts = await fetchActiveAlerts(lat, lon);
+      res.json({ alerts });
+    } catch (error) {
+      console.error("Error fetching weather alerts:", error);
+      res.status(500).json({ error: "Failed to fetch weather alerts" });
+    }
+  });
+
+  // Analytics/Metrics endpoint
+  app.get("/api/metrics", async (req, res) => {
+    try {
+      const summary = await storage.getMetricsSummary(100);
+      res.json(summary);
+    } catch (error) {
+      console.error("Error fetching metrics:", error);
+      res.status(500).json({ error: "Failed to fetch performance metrics" });
     }
   });
 
@@ -527,10 +559,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(history);
     } catch (error) {
       console.error("Error getting weather history:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to fetch weather history",
         message: error instanceof Error ? error.message : "Unknown error"
       });
+    }
+  });
+
+  // Configuration UI endpoints
+  app.get("/api/config", async (req, res) => {
+    try {
+      const dbSettings = await storage.getAllSettings();
+      // Merge with environment variable defaults
+      const config = {
+        displayName: dbSettings.displayName || process.env.VITE_STATION_DISPLAY_NAME || "Corner Rock Wx",
+        unitSystem: dbSettings.unitSystem || process.env.VITE_UNIT_SYSTEM || "imperial",
+        timezone: dbSettings.timezone || process.env.TIMEZONE || "America/New_York",
+        weatherRefreshInterval: dbSettings.weatherRefreshInterval || "3",
+        thermostatRefreshInterval: dbSettings.thermostatRefreshInterval || "3",
+        healthCheckInterval: dbSettings.healthCheckInterval || "1",
+        radarCenterLat: dbSettings.radarCenterLat || process.env.VITE_RADAR_CENTER_LAT || "37.000",
+        radarCenterLon: dbSettings.radarCenterLon || process.env.VITE_RADAR_CENTER_LON || "-78.415",
+        radarZoomLevel: dbSettings.radarZoomLevel || process.env.VITE_RADAR_ZOOM_LEVEL || "7.25",
+        retentionWeatherObservations: dbSettings.retentionWeatherObservations || process.env.RETENTION_WEATHER_OBSERVATIONS_DAYS || "7",
+        retentionWeatherData: dbSettings.retentionWeatherData || process.env.RETENTION_WEATHER_DATA_DAYS || "2",
+        retentionThermostatData: dbSettings.retentionThermostatData || process.env.RETENTION_THERMOSTAT_DATA_DAYS || "90",
+        retentionBeestatRaw: dbSettings.retentionBeestatRaw || process.env.RETENTION_BEESTAT_RAW_DAYS || "7",
+        cleanupSchedule: dbSettings.cleanupSchedule || "03:00",
+        hasPassword: !!dbSettings.adminPassword,
+        ...Object.fromEntries(Object.entries(dbSettings).filter(([k]) => k !== 'adminPassword'))
+      };
+
+      // Ensure no secrets are leaked
+      const envSecrets = {
+        weatherFlowTokenMasked: getApiToken() ? `****-****-****-${getApiToken()!.slice(-3)}` : null,
+        beestatKeyMasked: process.env.BEESTAT_API_KEY ? `****-****-****-${process.env.BEESTAT_API_KEY.slice(-3)}` : null,
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
+      };
+
+      res.json({ config, secrets: envSecrets });
+    } catch (error) {
+      console.error("Error getting config:", error);
+      res.status(500).json({ error: "Failed to fetch configuration" });
+    }
+  });
+
+  app.post("/api/config", async (req, res) => {
+    try {
+      const currentSettings = await storage.getAllSettings();
+
+      // If a password is set, require it
+      if (currentSettings.adminPassword && req.body.password !== currentSettings.adminPassword) {
+        return res.status(401).json({ error: "Incorrect password" });
+      }
+
+      // Filter out password from plain settings map
+      const { password, ...settingsToSave } = req.body;
+
+      if (req.body.newPassword && typeof req.body.newPassword === 'string') {
+        settingsToSave.adminPassword = req.body.newPassword;
+      }
+
+      // Convert everything to string for Postgres storage
+      const finalSettings: Record<string, string> = {};
+      for (const [k, v] of Object.entries(settingsToSave)) {
+        if (v !== undefined && v !== null) {
+          finalSettings[k] = String(v);
+        }
+      }
+
+      await storage.updateSettings(finalSettings);
+      res.json({ success: true, message: "Configuration saved successfully" });
+    } catch (error) {
+      console.error("Error updating config:", error);
+      res.status(500).json({ error: "Failed to update configuration" });
     }
   });
 
@@ -593,16 +695,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Force refreshing thermostat data from Beestat API");
       const thermostatData = await fetchBeestatThermostats();
-      
+
       // Clear cache and set fresh data
       await initializeCache();
       const cacheKey = `thermostats:current`;
       dataCache.set(cacheKey, thermostatData, 2); // Short cache after manual refresh
-      
+
       res.json({ success: true, message: "Thermostat data refreshed", thermostats: thermostatData });
     } catch (error) {
       console.error("Error refreshing thermostat data:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to refresh thermostat data",
         message: error instanceof Error ? error.message : "Unknown error"
       });
@@ -613,9 +715,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/thermostats/auth/start", async (req, res) => {
     try {
       const apiKey = getEcobeeApiKey();
-      
+
       if (!apiKey) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "No Ecobee API key configured",
           message: "Please add ECOBEE_API_KEY to environment variables"
         });
@@ -623,7 +725,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const ecobeeApi = new EcobeeAPI(apiKey);
       const authData = await ecobeeApi.initiateAuth();
-      
+
       res.json({
         message: "Please go to ecobee.com, log in, and enter this PIN in My Apps section",
         pin: authData.pin,
@@ -632,7 +734,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         instructions: [
           "1. Go to ecobee.com and log in",
           "2. Click 'My Apps' in the menu",
-          "3. Click 'Add Application'", 
+          "3. Click 'Add Application'",
           "4. Enter PIN: " + authData.pin,
           "5. Click 'Authorize'",
           "6. Then call POST /api/thermostats/auth/complete with the authorizationCode"
@@ -640,7 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error starting Ecobee auth:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to start authentication",
         message: error instanceof Error ? error.message : "Unknown error"
       });
@@ -650,9 +752,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/thermostats/auth/complete", async (req, res) => {
     try {
       const { authorizationCode } = req.body;
-      
+
       if (!authorizationCode) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "Authorization code required",
           message: "Please provide the authorizationCode from the auth/start response"
         });
@@ -660,14 +762,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const apiKey = getEcobeeApiKey();
       if (!apiKey) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "No Ecobee API key configured"
         });
       }
 
       const ecobeeApi = new EcobeeAPI(apiKey);
       const tokens = await ecobeeApi.completeAuth(authorizationCode);
-      
+
       res.json({
         message: "Authentication successful! You can now fetch thermostat data.",
         expiresIn: tokens.expires_in,
@@ -675,7 +777,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error completing Ecobee auth:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to complete authentication",
         message: error instanceof Error ? error.message : "Unknown error"
       });
@@ -685,9 +787,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/thermostats/auth/status", async (req, res) => {
     try {
       const apiKey = getEcobeeApiKey();
-      
+
       if (!apiKey) {
-        return res.json({ 
+        return res.json({
           hasApiKey: false,
           message: "No Ecobee API key configured"
         });
@@ -695,19 +797,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const ecobeeApi = new EcobeeAPI(apiKey);
       const status = ecobeeApi.getTokenStatus();
-      
+
       res.json({
         hasApiKey: true,
         ...status,
-        message: status.hasTokens 
-          ? status.isExpired 
+        message: status.hasTokens
+          ? status.isExpired
             ? "Authentication expired. Tokens need refresh."
             : "Authentication active"
           : "No authentication tokens. Please authenticate first."
       });
     } catch (error) {
       console.error("Error checking auth status:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: "Failed to check authentication status",
         message: error instanceof Error ? error.message : "Unknown error"
       });

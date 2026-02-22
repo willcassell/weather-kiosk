@@ -1,4 +1,4 @@
-import { weatherData, weatherObservations, thermostatData, beestatRawData, type WeatherData, type WeatherObservation, type ThermostatData, type InsertWeatherData, type InsertWeatherObservation, type InsertThermostatData, type InsertBeestatRawData, type BeestatRawData, type WeatherFlowStation, type WeatherFlowObservation, type WeatherFlowForecast } from "@shared/schema";
+import { weatherData, weatherObservations, thermostatData, beestatRawData, appSettings, apiMetrics, backgroundJobMetrics, type WeatherData, type WeatherObservation, type ThermostatData, type InsertWeatherData, type InsertWeatherObservation, type InsertThermostatData, type InsertBeestatRawData, type BeestatRawData, type AppSetting, type InsertAppSetting, type WeatherFlowStation, type WeatherFlowObservation, type WeatherFlowForecast } from "@shared/schema";
 import pkg from "pg";
 const { Pool } = pkg;
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -28,6 +28,15 @@ export interface IStorage {
     thermostatData: number;
     beestatRawData: number;
   }>;
+
+  // Configuration UI
+  getAllSettings(): Promise<Record<string, string>>;
+  updateSettings(settings: Record<string, string>): Promise<void>;
+
+  // Performance Metrics
+  saveApiMetrics(metrics: any[]): Promise<void>;
+  saveBackgroundJobMetrics(metrics: any[]): Promise<void>;
+  getMetricsSummary(limit?: number): Promise<{ api: any[]; jobs: any[] }>;
 }
 
 export class MemStorage implements IStorage {
@@ -36,6 +45,7 @@ export class MemStorage implements IStorage {
   private weatherObservations: Map<string, WeatherObservation[]>;
   private thermostatData: ThermostatData[];
   private beestatRawData: BeestatRawData[];
+  private appSettings: Map<string, string>;
   currentId: number;
   currentObservationId: number;
   currentThermostatId: number;
@@ -47,10 +57,33 @@ export class MemStorage implements IStorage {
     this.weatherObservations = new Map();
     this.thermostatData = [];
     this.beestatRawData = [];
+    this.appSettings = new Map();
     this.currentId = 1;
     this.currentObservationId = 1;
     this.currentThermostatId = 1;
     this.currentBeestatId = 1;
+  }
+
+  async getAllSettings(): Promise<Record<string, string>> {
+    return Object.fromEntries(this.appSettings);
+  }
+
+  async updateSettings(settings: Record<string, string>): Promise<void> {
+    for (const [key, value] of Object.entries(settings)) {
+      this.appSettings.set(key, value);
+    }
+  }
+
+  async saveApiMetrics(metrics: any[]): Promise<void> {
+    // No-op for memory storage to prevent leaks, or just drop them
+  }
+
+  async saveBackgroundJobMetrics(metrics: any[]): Promise<void> {
+    // No-op for memory storage
+  }
+
+  async getMetricsSummary(limit: number = 50): Promise<{ api: any[]; jobs: any[] }> {
+    return { api: [], jobs: [] };
   }
 
   async getLatestWeatherData(stationId: string): Promise<WeatherData | undefined> {
@@ -59,8 +92,8 @@ export class MemStorage implements IStorage {
 
   async saveWeatherData(insertData: InsertWeatherData): Promise<WeatherData> {
     const id = this.currentId++;
-    const weatherDataRecord: WeatherData = { 
-      ...insertData, 
+    const weatherDataRecord: WeatherData = {
+      ...insertData,
       id,
       timestamp: new Date(),
       lastUpdated: new Date(),
@@ -86,9 +119,9 @@ export class MemStorage implements IStorage {
       lightningStrikeDistance: insertData.lightningStrikeDistance ?? null,
       lightningStrikeTime: insertData.lightningStrikeTime ?? null,
     };
-    
+
     this.weatherData.set(insertData.stationId, weatherDataRecord);
-    
+
     // Add to history
     const history = this.weatherHistory.get(insertData.stationId) || [];
     history.push(weatherDataRecord);
@@ -96,7 +129,7 @@ export class MemStorage implements IStorage {
     const cutoffTime = Date.now() - (48 * 60 * 60 * 1000);
     const filteredHistory = history.filter(record => record.timestamp && record.timestamp.getTime() > cutoffTime);
     this.weatherHistory.set(insertData.stationId, filteredHistory);
-    
+
     return weatherDataRecord;
   }
 
@@ -185,15 +218,15 @@ export class MemStorage implements IStorage {
       lightningStrikeCount: data.lightningStrikeCount ?? null,
       lightningStrikeDistance: data.lightningStrikeDistance ?? null,
     };
-    
+
     const observations = this.weatherObservations.get(data.stationId) || [];
     observations.push(observation);
-    
+
     // Keep only last 7 days of observations
     const cutoffTime = Date.now() - (7 * 24 * 60 * 60 * 1000);
     const filteredObservations = observations.filter(obs => obs.timestamp.getTime() > cutoffTime);
     this.weatherObservations.set(data.stationId, filteredObservations);
-    
+
     return observation;
   }
 
@@ -243,12 +276,12 @@ export class MemStorage implements IStorage {
     const dayObservations = observations.filter(obs =>
       obs.timestamp.getTime() >= startOfDay.getTime() && obs.timestamp.getTime() < endOfDay.getTime()
     );
-    
+
     if (dayObservations.length === 0) return null;
-    
+
     const highRecord = dayObservations.reduce((max, obs) => obs.temperature > max.temperature ? obs : max);
     const lowRecord = dayObservations.reduce((min, obs) => obs.temperature < min.temperature ? obs : min);
-    
+
     return {
       high: highRecord.temperature,
       low: lowRecord.temperature,
@@ -320,7 +353,7 @@ export class PostgreSQLStorage implements IStorage {
         .where(eq(weatherData.stationId, stationId))
         .orderBy(desc(weatherData.lastUpdated))
         .limit(1);
-      
+
       return result[0] || undefined;
     } catch (error) {
       console.error("Error getting latest weather data:", error);
@@ -334,11 +367,11 @@ export class PostgreSQLStorage implements IStorage {
         .insert(weatherData)
         .values(insertData)
         .returning();
-      
+
       if (!result[0]) {
         throw new Error("Failed to save weather data to database");
       }
-      
+
       return result[0];
     } catch (error) {
       console.error("Error saving weather data:", error);
@@ -349,7 +382,7 @@ export class PostgreSQLStorage implements IStorage {
   async getWeatherHistory(stationId: string, hours: number): Promise<WeatherData[]> {
     try {
       const cutoffTime = new Date(Date.now() - (hours * 60 * 60 * 1000));
-      
+
       const result = await this.db
         .select()
         .from(weatherData)
@@ -360,7 +393,7 @@ export class PostgreSQLStorage implements IStorage {
           )
         )
         .orderBy(desc(weatherData.timestamp));
-      
+
       return result;
     } catch (error) {
       console.error("Error getting weather history:", error);
@@ -380,7 +413,7 @@ export class PostgreSQLStorage implements IStorage {
           )
         )
         .orderBy(desc(weatherData.timestamp));
-      
+
       return result;
     } catch (error) {
       console.error("Error getting weather history since date:", error);
@@ -402,7 +435,7 @@ export class PostgreSQLStorage implements IStorage {
           )`
         )
         .orderBy(desc(thermostatData.lastUpdated));
-      
+
       return result;
     } catch (error) {
       console.error("Error getting latest thermostat data:", error);
@@ -459,11 +492,11 @@ export class PostgreSQLStorage implements IStorage {
         .insert(weatherObservations)
         .values(data)
         .returning();
-      
+
       if (!result[0]) {
         throw new Error("Failed to save weather observation to database");
       }
-      
+
       return result[0];
     } catch (error) {
       console.error("Error saving weather observation:", error);
@@ -474,7 +507,7 @@ export class PostgreSQLStorage implements IStorage {
   async getWeatherObservations(stationId: string, hours: number): Promise<WeatherObservation[]> {
     try {
       const cutoffTime = new Date(Date.now() - (hours * 60 * 60 * 1000));
-      
+
       const result = await this.db
         .select()
         .from(weatherObservations)
@@ -485,7 +518,7 @@ export class PostgreSQLStorage implements IStorage {
           )
         )
         .orderBy(desc(weatherObservations.timestamp));
-      
+
       return result;
     } catch (error) {
       console.error("Error getting weather observations:", error);
@@ -505,7 +538,7 @@ export class PostgreSQLStorage implements IStorage {
           )
         )
         .orderBy(desc(weatherObservations.timestamp));
-      
+
       return result;
     } catch (error) {
       console.error("Error getting weather observations since date:", error);
@@ -557,11 +590,11 @@ export class PostgreSQLStorage implements IStorage {
             sql`${weatherObservations.timestamp} < ${endOfDayUTC}`
           )
         );
-      
+
       if (!result[0] || result[0].maxTemp === null || result[0].minTemp === null) {
         return null;
       }
-      
+
       // Get the actual records for the high and low temperatures to get timestamps
       const [highRecord, lowRecord] = await Promise.all([
         this.db
@@ -589,7 +622,7 @@ export class PostgreSQLStorage implements IStorage {
           )
           .limit(1)
       ]);
-      
+
       return {
         high: result[0].maxTemp,
         low: result[0].minTemp,
@@ -684,6 +717,66 @@ export class PostgreSQLStorage implements IStorage {
     } catch (error) {
       console.error("Error cleaning up old data:", error);
       throw new Error("Failed to cleanup old data from database");
+    }
+  }
+
+  async getAllSettings(): Promise<Record<string, string>> {
+    try {
+      const records = await this.db.select().from(appSettings);
+      const settings: Record<string, string> = {};
+      for (const record of records) {
+        settings[record.key] = record.value;
+      }
+      return settings;
+    } catch (error) {
+      console.error("Error getting settings:", error);
+      throw new Error("Failed to retrieve settings from database");
+    }
+  }
+
+  async updateSettings(settings: Record<string, string>): Promise<void> {
+    try {
+      for (const [key, value] of Object.entries(settings)) {
+        await this.db
+          .insert(appSettings)
+          .values({ key, value })
+          .onConflictDoUpdate({
+            target: appSettings.key,
+            set: { value, updatedAt: new Date() }
+          });
+      }
+    } catch (error) {
+      console.error("Error updating settings:", error);
+      throw new Error("Failed to update settings in database");
+    }
+  }
+
+  async saveApiMetrics(metrics: any[]): Promise<void> {
+    if (!metrics || metrics.length === 0) return;
+    try {
+      await this.db.insert(apiMetrics).values(metrics);
+    } catch (error) {
+      console.error("Failed to persist API metrics to DB:", error);
+    }
+  }
+
+  async saveBackgroundJobMetrics(metrics: any[]): Promise<void> {
+    if (!metrics || metrics.length === 0) return;
+    try {
+      await this.db.insert(backgroundJobMetrics).values(metrics);
+    } catch (error) {
+      console.error("Failed to persist Job metrics to DB:", error);
+    }
+  }
+
+  async getMetricsSummary(limit: number = 50): Promise<{ api: any[]; jobs: any[] }> {
+    try {
+      const api = await this.db.select().from(apiMetrics).orderBy(desc(apiMetrics.id)).limit(limit);
+      const jobs = await this.db.select().from(backgroundJobMetrics).orderBy(desc(backgroundJobMetrics.id)).limit(limit);
+      return { api, jobs };
+    } catch (error) {
+      console.error("Failed to get metrics summary:", error);
+      return { api: [], jobs: [] };
     }
   }
 }

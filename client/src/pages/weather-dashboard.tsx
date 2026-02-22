@@ -49,28 +49,43 @@ interface HealthCheckResponse {
 export default function WeatherDashboard() {
   const { preferences, isLoaded } = useUnitPreferences();
 
-  // Fixed 3-minute refresh interval for all data
-  const refreshInterval = 3 * 60 * 1000; // 3 minutes
+  // Fetch configuration
+  const { data: configData } = useQuery({
+    queryKey: ['/api/config'],
+    staleTime: 60 * 1000,
+  });
 
-  // Health check query - check every 1 minute
+  const config = configData?.config || {};
+
+  const weatherRefreshInterval = (parseInt(config.weatherRefreshInterval) || 3) * 60 * 1000;
+  const thermostatRefreshInterval = (parseInt(config.thermostatRefreshInterval) || 3) * 60 * 1000;
+  const healthCheckInterval = (parseInt(config.healthCheckInterval) || 1) * 60 * 1000;
+
+  // Health check query
   const { data: healthData } = useQuery<HealthCheckResponse>({
     queryKey: ['/api/health'],
-    refetchInterval: 60 * 1000, // 1 minute
+    refetchInterval: healthCheckInterval,
     retry: 1,
     staleTime: 30 * 1000, // Consider stale after 30 seconds
   });
 
   const { data: weatherData, isLoading, error, isError } = useQuery<WeatherData>({
     queryKey: ['/api/weather/current'],
-    refetchInterval: refreshInterval,
+    refetchInterval: weatherRefreshInterval,
     refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: 5000,
   });
 
+  const { data: alertsData } = useQuery({
+    queryKey: ['/api/weather/alerts'],
+    refetchInterval: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
+  });
+
   const { data: thermostatResponse, isLoading: thermostatLoading, error: thermostatError } = useQuery<ThermostatResponse>({
     queryKey: ['/api/thermostats/current'],
-    refetchInterval: refreshInterval,
+    refetchInterval: thermostatRefreshInterval,
     refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: 5000,
@@ -115,13 +130,12 @@ export default function WeatherDashboard() {
       {/* Top Banner */}
       <TopBanner
         stationId={import.meta.env.VITE_WEATHERFLOW_STATION_ID || "Unknown"}
-        stationName={weatherData?.stationName || undefined}
+        stationName={config.displayName || weatherData?.stationName || undefined}
         lastUpdated={weatherData?.lastUpdated}
         isLoading={isLoading}
         healthStatus={healthData?.status}
+        alerts={alertsData?.alerts}
       />
-
-
 
       {/* Main Content - Orientation-based Layout */}
       <main className="flex flex-col orientation-landscape:flex-row flex-1 orientation-landscape:overflow-hidden">
@@ -142,7 +156,7 @@ export default function WeatherDashboard() {
             <>
               {/* Temperature Card - Medium size for main reading + high/low with times */}
               <div className="flex-[1.5]">
-                <TemperatureCard 
+                <TemperatureCard
                   currentTemp={weatherData.temperature ?? 0}
                   feelsLike={weatherData.feelsLike ?? 0}
                   highTemp={weatherData.temperatureHigh ?? 0}
@@ -152,11 +166,11 @@ export default function WeatherDashboard() {
                   preferences={preferences}
                 />
               </div>
-              
+
               {/* Wind and Rain on the same row - 60/40 split */}
               <div className="flex gap-2 flex-[0.9]">
                 <div className="w-3/5">
-                  <WindCard 
+                  <WindCard
                     windSpeed={weatherData.windSpeed ?? 0}
                     windGust={weatherData.windGust ?? 0}
                     windDirection={weatherData.windDirection ?? 0}
@@ -165,33 +179,33 @@ export default function WeatherDashboard() {
                   />
                 </div>
                 <div className="w-2/5">
-                  <RainfallCard 
+                  <RainfallCard
                     todayRain={weatherData.rainToday ?? 0}
                     yesterdayRain={weatherData.rainYesterday ?? 0}
                     preferences={preferences}
                   />
                 </div>
               </div>
-              
+
               {/* Pressure Card - Standard size for pressure + trend */}
               <div className="flex-1">
-                <PressureCard 
+                <PressureCard
                   pressure={weatherData.pressure ?? 0}
                   trend={weatherData.pressureTrend ?? "Steady"}
                   preferences={preferences}
                 />
               </div>
-              
+
               {/* Lightning and Humidity/Dew Point row - Split 50/50 */}
               <div className="flex gap-2 flex-[0.8]">
                 <div className="w-1/2">
-                  <LightningCard 
+                  <LightningCard
                     strikeDistance={weatherData.lightningStrikeDistance}
                     strikeTime={weatherData.lightningStrikeTime ? new Date(weatherData.lightningStrikeTime) : null}
                   />
                 </div>
                 <div className="w-1/2">
-                  <HumidityDewPointCard 
+                  <HumidityDewPointCard
                     humidity={weatherData.humidity ?? undefined}
                     dewPoint={weatherData.dewPoint ?? undefined}
                     preferences={preferences}

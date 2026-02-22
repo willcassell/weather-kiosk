@@ -316,3 +316,15 @@
     text-shadow: 0 0 2px currentColor, 0 0 5px currentColor, 0 0 8px currentColor;
   }
 }
+
+/* Marquee animation for severe weather alerts */
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.animate-marquee {
+  display: inline-block;
+  animation: marquee 25s linear infinite;
+  padding-left: 100%;
+}
