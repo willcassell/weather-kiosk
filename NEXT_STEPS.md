@@ -8,18 +8,31 @@ This document outlines the prioritized enhancements for the weather kiosk projec
 
 ---
 
-## Priority 1: Unit Tests 🧪
+## Completed Features 🎉
+
+The following major priorities have been fully implemented and deployed:
+
+1. **Unit Tests**: Full Vitest suite covering data validations, conversions, schema rules, and DB mock logic.
+2. **Configuration UI**: Complete database-backed UI for configuring display, refresh rates, radar coordinates, and data retention dynamically without touching `.env`.
+3. **Severe Weather Alerts**: Live background syncing with the NOAA NWS API seamlessly driving a red scrolling marquee banner whenever warnings apply to the local coordinates.
+4. **Performance Metrics**: Telemetry buffering API durations and Background Job success latencies directly into PostgreSQL for monitoring (`/api/metrics`).
+
+---
+
+## Priority 1: Historical Data Visualization 📊
 
 **Status**: Not Started
-**Estimated Effort**: 2-3 days
-**Framework**: Vitest (already compatible with Vite)
+**Estimated Effort**: 3-4 days
+**Libraries**: Recharts (React charting library)
 
 ### What to Test
 
 #### 1. Unit Conversion Functions
+
 Create a new file: `shared/conversions.test.ts`
 
 **Test Cases**:
+
 - Temperature conversions:
   - `celsiusToFahrenheit(0)` → `32`
   - `celsiusToFahrenheit(100)` → `212`
@@ -39,9 +52,11 @@ Create a new file: `shared/conversions.test.ts`
   - `inchesToMillimeters(1)` → `25.4`
 
 #### 2. Data Validation Functions
+
 Create: `server/api-validation.test.ts`
 
 **Test Cases**:
+
 - `validateWeatherDataQuality()`:
   - Normal temperature (70°F) → no warnings
   - Extreme cold (-100°F) → warning
@@ -59,9 +74,11 @@ Create: `server/api-validation.test.ts`
   - Custom threshold test
 
 #### 3. API Schema Validation
+
 Create: `server/api-validation.schema.test.ts`
 
 **Test Cases**:
+
 - Valid WeatherFlow response → passes
 - Missing optional fields → passes
 - Missing required fields → fails
@@ -71,9 +88,11 @@ Create: `server/api-validation.schema.test.ts`
 - Invalid thermostat data → fails
 
 #### 4. Database Operations
+
 Create: `server/storage.test.ts`
 
 **Test Cases** (use in-memory SQLite or test database):
+
 - `saveWeatherObservation()` → inserts correctly
 - `saveWeatherData()` → inserts correctly
 - `getLatestWeatherData()` → returns most recent
@@ -84,11 +103,13 @@ Create: `server/storage.test.ts`
 ### Setup Steps
 
 1. **Install Vitest**:
+
    ```bash
    npm install -D vitest @vitest/ui
    ```
 
 2. **Update package.json**:
+
    ```json
    {
      "scripts": {
@@ -100,6 +121,7 @@ Create: `server/storage.test.ts`
    ```
 
 3. **Create vitest.config.ts**:
+
    ```typescript
    import { defineConfig } from 'vitest/config';
    import path from 'path';
@@ -125,11 +147,13 @@ Create: `server/storage.test.ts`
 4. **Create test files** in the locations mentioned above
 
 5. **Run tests**:
+
    ```bash
    npm test
    ```
 
 ### Success Criteria
+
 - ✅ All unit conversions accurate to 3 decimal places
 - ✅ Data validation catches all edge cases
 - ✅ Schema validation handles API variations
@@ -138,86 +162,7 @@ Create: `server/storage.test.ts`
 
 ---
 
-## Priority 2: Historical Data Visualization & Severe Weather Alerts 📊🚨
-
-**Status**: Not Started
-**Estimated Effort**: 3-4 days
-**Libraries**: Recharts (React charting library)
-
-### Part A: Severe Weather Alerts in Header
-
-**Goal**: Display active NOAA weather alerts in the top banner with red background
-
-#### Implementation Plan
-
-1. **Add WeatherFlow Alerts API Integration**
-
-   WeatherFlow provides weather alerts via their API:
-   ```
-   GET https://swd.weatherflow.com/swd/rest/better_forecast?station_id={STATION_ID}&token={TOKEN}
-   ```
-
-   Response includes `current_conditions.alert` field with active alerts.
-
-2. **Create Alert Data Types** (`shared/schema.ts`):
-   ```typescript
-   export interface WeatherAlert {
-     id: string;
-     severity: 'extreme' | 'severe' | 'moderate' | 'minor';
-     certainty: 'observed' | 'likely' | 'possible' | 'unlikely';
-     event: string; // "Tornado Warning", "Severe Thunderstorm Watch", etc.
-     headline: string;
-     description: string;
-     instruction?: string;
-     onset: Date;
-     expires: Date;
-     affectedZones: string[];
-   }
-   ```
-
-3. **Add Alert Endpoint** (`server/routes.ts`):
-   ```typescript
-   app.get("/api/weather/alerts", async (req, res) => {
-     // Fetch from WeatherFlow API
-     // Parse and validate alerts
-     // Return active alerts (not expired)
-   });
-   ```
-
-4. **Update TopBanner Component** (`client/src/components/weather/top-banner.tsx`):
-
-   **Changes**:
-   - Add `activeAlerts?: WeatherAlert[]` prop
-   - Conditionally render alert banner above station name
-   - Red background for severe/extreme alerts
-   - Yellow/orange for moderate alerts
-   - Scrolling text for long alert messages
-   - Click to expand for full details
-
-   **Visual Design**:
-   ```
-   ┌─────────────────────────────────────────────────────────────┐
-   │ 🚨 SEVERE THUNDERSTORM WARNING until 11:30 PM - Click for... │ ← Red bg
-   ├─────────────────────────────────────────────────────────────┤
-   │ 📻 Corner Rock Wx  ● Healthy     🕐 Last updated: 6:00 PM   │
-   └─────────────────────────────────────────────────────────────┘
-   ```
-
-5. **Add Alert Query** (`client/src/pages/weather-dashboard.tsx`):
-   ```typescript
-   const { data: alerts } = useQuery<WeatherAlert[]>({
-     queryKey: ['/api/weather/alerts'],
-     refetchInterval: 5 * 60 * 1000, // 5 minutes
-   });
-   ```
-
-6. **Alert Priority Logic**:
-   - Show highest severity alert only (don't stack multiple alerts)
-   - Priority: extreme > severe > moderate > minor
-   - Auto-dismiss when expired
-   - Flash/pulse animation for extreme alerts
-
-### Part B: Historical Charts
+### Historical Charts
 
 **Goal**: Add expandable charts showing 24-hour and 7-day trends
 
@@ -255,11 +200,13 @@ Create: `server/storage.test.ts`
 #### Implementation Plan
 
 1. **Install Recharts**:
+
    ```bash
    npm install recharts
    ```
 
 2. **Create API Endpoints** (`server/routes.ts`):
+
    ```typescript
    // Get 24-hour temperature history
    app.get("/api/weather/history/temperature", async (req, res) => {
@@ -336,9 +283,7 @@ async getHVACRuntimeByDay(days: number = 7): Promise<HVACRuntimePoint[]> {
 ```
 
 ### Success Criteria
-- ✅ Severe weather alerts display in red banner at top
-- ✅ Alerts auto-refresh every 5 minutes
-- ✅ Expired alerts automatically dismissed
+
 - ✅ Temperature chart shows 24-hour trend
 - ✅ Pressure chart shows 24-hour trend
 - ✅ Rainfall chart shows 7-day totals
@@ -347,460 +292,39 @@ async getHVACRuntimeByDay(days: number = 7): Promise<HVACRuntimePoint[]> {
 
 ---
 
-## Priority 3: Configuration UI ⚙️
+## Priority 2: Progressive Web App (PWA) 📱
 
 **Status**: Not Started
-**Estimated Effort**: 2-3 days
+**Estimated Effort**: 2 days
 
-### Proposed Design
-
-**Goal**: Web-based settings page to adjust configuration without editing `.env` file or restarting server
-
-#### Configuration Categories
-
-##### 1. Display Settings
-- **Station Display Name**: Text input
-  - Current: `VITE_STATION_DISPLAY_NAME`
-  - Default: Station name from API
-  - Example: "Corner Rock Wx", "Home Weather", "Farm Station"
-
-- **Unit System**: Toggle switch
-  - Current: `VITE_UNIT_SYSTEM`
-  - Options: Imperial (°F, mph, inHg) / Metric (°C, m/s, mb)
-  - Live preview of conversion
-
-- **Timezone**: Dropdown
-  - Current: `TIMEZONE`
-  - Options: All standard timezones
-  - Example: America/New_York, America/Chicago, America/Los_Angeles
-
-##### 2. Refresh Intervals
-- **Weather Data Refresh**: Slider (1-15 minutes)
-  - Current: Hardcoded to 3 minutes
-  - Add: `WEATHER_REFRESH_INTERVAL_MINUTES` env var
-  - Default: 3 minutes
-  - Note: WeatherFlow rate limits apply
-
-- **Thermostat Data Refresh**: Slider (1-30 minutes)
-  - Current: Hardcoded to 3 minutes
-  - Add: `THERMOSTAT_REFRESH_INTERVAL_MINUTES` env var
-  - Default: 3 minutes
-  - Note: Beestat sync interval (currently 3 min)
-
-- **Health Check Interval**: Slider (30 sec - 5 minutes)
-  - Current: Hardcoded to 1 minute
-  - Default: 1 minute
-
-##### 3. Radar Settings
-- **Center Latitude**: Number input
-  - Current: `VITE_RADAR_CENTER_LAT`
-  - Default: Station location
-  - Range: -90 to 90
-
-- **Center Longitude**: Number input
-  - Current: `VITE_RADAR_CENTER_LON`
-  - Default: Station location
-  - Range: -180 to 180
-
-- **Zoom Level**: Slider
-  - Current: `VITE_RADAR_ZOOM_LEVEL`
-  - Default: 7.25
-  - Range: 4 (wide area) to 12 (close zoom)
-  - Live preview on mini map
-
-##### 4. Data Retention Policies
-- **Weather Observations**: Slider (1-30 days)
-  - Current: `RETENTION_WEATHER_OBSERVATIONS_DAYS`
-  - Default: 7 days
-  - Shows estimated database size
-
-- **Weather Data**: Slider (1-7 days)
-  - Current: `RETENTION_WEATHER_DATA_DAYS`
-  - Default: 2 days
-
-- **Thermostat Data**: Slider (7-365 days)
-  - Current: `RETENTION_THERMOSTAT_DATA_DAYS`
-  - Default: 90 days
-
-- **Beestat Raw Data**: Slider (1-30 days)
-  - Current: `RETENTION_BEESTAT_RAW_DAYS`
-  - Default: 7 days
-
-- **Cleanup Schedule**: Dropdown
-  - Current: Daily at 3 AM (or custom interval)
-  - Options: Daily at [time picker], Every N hours
-  - Show next scheduled cleanup time
-
-##### 5. Thermostat Display
-- **Show Thermostats**: Checkbox list
-  - Current: Shows all configured thermostats
-  - Options: Show/hide each thermostat individually
-  - Example: ☑ Downstairs, ☑ 809 Sailors Cove
-
-- **Thermostat Card Size**: Dropdown per thermostat
-  - Options: Compact, Standard, Detailed
-  - Affects vertical space in dashboard
-
-##### 6. Advanced Settings
-- **Session Secret**: Read-only display (masked)
-  - Security: Don't allow editing via UI
-
-- **API Tokens**: Read-only display (masked)
-  - Security: Don't allow editing via UI
-  - Show last 4 characters only
-  - Example: "WeatherFlow: ****-****-****-92e"
-
-- **Database URL**: Read-only display (masked)
-  - Security: Don't allow editing via UI
-
-#### Implementation Approach
-
-##### Option A: Environment Variable Based (Recommended)
-
-**How It Works**:
-1. UI sends configuration changes to backend
-2. Backend updates `.env` file on disk
-3. Backend restarts relevant services (NOT full server restart)
-4. Configuration persists across server restarts
-
-**Pros**:
-- Simple implementation
-- Configuration persists in `.env` file (version control friendly)
-- No new database tables needed
-- Familiar pattern (already using `.env`)
-
-**Cons**:
-- Requires file system write access
-- Some settings require service restart to apply
-
-**Code Structure**:
-```typescript
-// server/routes.ts
-app.get("/api/config", async (req, res) => {
-  // Read current .env values
-  const config = {
-    displayName: process.env.VITE_STATION_DISPLAY_NAME,
-    unitSystem: process.env.VITE_UNIT_SYSTEM,
-    timezone: process.env.TIMEZONE,
-    // ... all configurable settings
-  };
-  res.json(config);
-});
-
-app.post("/api/config", async (req, res) => {
-  // Validate incoming config
-  // Update .env file using dotenv-expand or custom parser
-  // Reload environment variables
-  // Restart affected services (background jobs, etc.)
-  // Return success
-});
-```
-
-##### Option B: Database-Based Configuration
-
-**How It Works**:
-1. Create new `app_settings` table in database
-2. UI sends configuration changes to backend
-3. Backend saves to database
-4. Application reads from database on startup and periodically
-
-**Pros**:
-- No file system writes needed
-- Instant updates (no restart required)
-- Can track configuration history
-- Multiple instances can share config
-
-**Cons**:
-- More complex implementation
-- New database table and migrations
-- `.env` file still needed for initial bootstrap
-- Configuration split across two locations
-
-**Code Structure**:
-```typescript
-// server/db/schema.ts
-export const appSettings = pgTable('app_settings', {
-  id: serial('id').primaryKey(),
-  key: varchar('key', { length: 255 }).notNull().unique(),
-  value: text('value').notNull(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
-
-// server/routes.ts
-app.get("/api/config", async (req, res) => {
-  const settings = await storage.getAllSettings();
-  res.json(settings);
-});
-
-app.post("/api/config", async (req, res) => {
-  await storage.updateSettings(req.body);
-  // Emit event to reload config in background jobs
-  res.json({ success: true });
-});
-```
-
-#### UI Design (React Component)
-
-**Route**: `/settings` (accessible via gear icon in top banner)
-
-**Layout**:
-```
-┌────────────────────────────────────────────────────────┐
-│ ⚙️ Settings                                    [Save]  │
-├────────────────────────────────────────────────────────┤
-│                                                        │
-│ 📺 Display Settings                                    │
-│   Station Name: [Corner Rock Wx            ]          │
-│   Unit System:  Imperial ⚫──○ Metric                  │
-│   Timezone:     [America/New_York ▼]                  │
-│                                                        │
-│ ⏱️ Refresh Intervals                                   │
-│   Weather Data:    ──●─────  3 minutes                │
-│   Thermostat Data: ──●─────  3 minutes                │
-│   Health Check:    ──●─────  1 minute                 │
-│                                                        │
-│ 🗺️ Radar Settings                                      │
-│   Center Latitude:  [37.000    ]                      │
-│   Center Longitude: [-78.415   ]                      │
-│   Zoom Level:       ──────●───  7.25                  │
-│   [Preview Map]                                        │
-│                                                        │
-│ 💾 Data Retention                                      │
-│   Weather Observations: ───●────  7 days              │
-│   Weather Data:         ─●──────  2 days              │
-│   Thermostat Data:      ────────●  90 days            │
-│   Beestat Raw Data:     ───●────  7 days              │
-│   Cleanup Schedule:     [Daily at 3:00 AM ▼]          │
-│   Next Cleanup:         Feb 22, 2026 at 3:00 AM       │
-│                                                        │
-│ 🌡️ Thermostat Display                                 │
-│   ☑ Downstairs         Size: [Standard ▼]            │
-│   ☑ 809 Sailors Cove   Size: [Standard ▼]            │
-│                                                        │
-│ 🔒 Advanced (Read-Only)                                │
-│   WeatherFlow Token: ****-****-****-92e               │
-│   Beestat API Key:   ****-****-****-c16               │
-│   Database:          postgres://***@postgres:5432/*** │
-│                                                        │
-│                          [Reset to Defaults] [Cancel] │
-└────────────────────────────────────────────────────────┘
-```
-
-**Features**:
-- Real-time validation (show errors before saving)
-- Unsaved changes warning ("You have unsaved changes")
-- Reset to defaults button
-- Export/import configuration (JSON file)
-- Loading state while saving
-- Success/error toast notifications
-- Responsive design (works on tablet in landscape)
-
-#### Files to Create/Modify
-
-1. **New Route**: `client/src/pages/settings.tsx`
-2. **New Component**: `client/src/components/settings/`
-   - `DisplaySettings.tsx`
-   - `RefreshIntervals.tsx`
-   - `RadarSettings.tsx`
-   - `RetentionSettings.tsx`
-   - `ThermostatSettings.tsx`
-3. **Backend**: `server/routes.ts` (add `/api/config` GET/POST)
-4. **Backend**: `server/config-manager.ts` (new file for .env manipulation)
-5. **Update**: `client/src/components/weather/top-banner.tsx` (add gear icon link)
-
-#### Security Considerations
-
-- **Authentication**: Since this is a private kiosk, no auth needed (but could add basic auth)
-- **Validation**: Validate all inputs server-side (prevent injection, out-of-range values)
-- **Read-Only Secrets**: Never expose full API tokens or database passwords
-- **File Permissions**: Ensure `.env` file has correct permissions (600) after write
-- **Backup**: Create `.env.backup` before modifying `.env` file
-
-### Success Criteria
-- ✅ Settings page accessible via UI
-- ✅ All display settings can be changed without editing files
-- ✅ Changes persist across server restarts
-- ✅ Settings apply immediately (or with clear "restart required" message)
-- ✅ No accidental exposure of secrets
-- ✅ Validation prevents invalid configurations
-- ✅ Mobile-friendly settings page
-
-### Recommendation: Option A (Environment Variable Based)
-
-**Why**: Simpler to implement, configuration stays in version control, no schema changes needed. The slight inconvenience of service restarts is acceptable for a private kiosk that's configured infrequently.
-
----
-
-## Priority 4: Performance Metrics & Analytics 📈
-
-**Status**: Not Started
-**Estimated Effort**: 1-2 days
-
-### What to Track
-
-#### 1. API Performance Metrics
-- **WeatherFlow API**:
-  - Response time (p50, p95, p99)
-  - Success rate (%)
-  - Error rate (%)
-  - Rate limit hits
-  - Last successful fetch timestamp
-  - Consecutive failures count
-
-- **Beestat API**:
-  - Same metrics as WeatherFlow
-  - Sync trigger success rate
-  - Time since last thermostat data update
-
-#### 2. Database Performance
-- **Query Performance**:
-  - Average query time by operation
-  - Slow query log (queries > 100ms)
-  - Connection pool usage
-
-- **Data Freshness**:
-  - Time since last weather observation
-  - Time since last weather data insert
-  - Time since last thermostat update
-  - Gaps in data (missing intervals)
-
-#### 3. Background Job Metrics
-- **Thermostat Sync Job**:
-  - Execution count
-  - Success rate
-  - Average duration
-  - Last run timestamp
-  - Next scheduled run
-
-- **Database Cleanup Job**:
-  - Execution count
-  - Records deleted per run
-  - Average duration
-  - Disk space recovered
-  - Last run timestamp
-
-#### 4. System Health Metrics
-- **Uptime**: Already tracked in `/api/health`
-- **Memory Usage**: Process memory, heap usage
-- **CPU Usage**: If available
-- **Disk Space**: Database size, available space
+**Goal**: Make the dashboard installable as a native-feeling app on iOS and Android devices, complete with offline capabilities for cached data.
 
 ### Implementation Plan
 
-#### 1. Add Metrics Collection
+1. Add `manifest.json` with appropriate app icons, colors, and display modes.
+2. Implement a `service-worker.js` to cache static assets and latest API responses.
+3. Update Vite config with `vite-plugin-pwa`.
+4. Add visual offline indicators to the UI.
 
-Create `server/metrics.ts`:
+---
 
-```typescript
-interface APIMetrics {
-  totalRequests: number;
-  successfulRequests: number;
-  failedRequests: number;
-  totalResponseTime: number;
-  lastSuccessTimestamp?: Date;
-  lastErrorTimestamp?: Date;
-  lastError?: string;
-  consecutiveFailures: number;
-}
+## Priority 3: Additional Data Sources 🌍
 
-interface BackgroundJobMetrics {
-  totalRuns: number;
-  successfulRuns: number;
-  failedRuns: number;
-  totalDuration: number;
-  lastRunTimestamp?: Date;
-  lastRunDuration?: number;
-  lastRunStatus?: 'success' | 'failure';
-}
+**Status**: Not Started
+**Estimated Effort**: 3-5 days
 
-class MetricsCollector {
-  private weatherFlowMetrics: APIMetrics;
-  private beestatMetrics: APIMetrics;
-  private thermostatJobMetrics: BackgroundJobMetrics;
-  private cleanupJobMetrics: BackgroundJobMetrics;
+**Goal**: Allow users without a WeatherFlow device to use the kiosk by integrating public weather APIs (e.g., OpenWeatherMap, Apple WeatherKit).
 
-  recordAPICall(service: 'weatherflow' | 'beestat', success: boolean, duration: number, error?: string) {
-    // Update metrics
-  }
+### Implementation Plan
 
-  recordBackgroundJob(job: 'thermostat' | 'cleanup', success: boolean, duration: number) {
-    // Update metrics
-  }
-
-  getMetrics() {
-    return {
-      weatherFlow: this.calculateStats(this.weatherFlowMetrics),
-      beestat: this.calculateStats(this.beestatMetrics),
-      backgroundJobs: {
-        thermostatSync: this.calculateJobStats(this.thermostatJobMetrics),
-        cleanup: this.calculateJobStats(this.cleanupJobMetrics),
-      },
-    };
-  }
-
-  private calculateStats(metrics: APIMetrics) {
-    return {
-      totalRequests: metrics.totalRequests,
-      successRate: metrics.totalRequests > 0
-        ? (metrics.successfulRequests / metrics.totalRequests) * 100
-        : 0,
-      averageResponseTime: metrics.totalRequests > 0
-        ? metrics.totalResponseTime / metrics.totalRequests
-        : 0,
-      consecutiveFailures: metrics.consecutiveFailures,
-      lastSuccess: metrics.lastSuccessTimestamp,
-      lastError: metrics.lastError,
-    };
-  }
-}
-
-export const metricsCollector = new MetricsCollector();
-```
-
-#### 2. Instrument Existing Code
-
-**Modify `server/routes.ts`**:
-```typescript
-// Wrap WeatherFlow API calls
-const startTime = Date.now();
-try {
-  const data = await fetchWeatherFlowData();
-  metricsCollector.recordAPICall('weatherflow', true, Date.now() - startTime);
-  // ... rest of handler
-} catch (error) {
-  metricsCollector.recordAPICall('weatherflow', false, Date.now() - startTime, error.message);
-  throw error;
-}
-```
-
-**Modify `server/beestat-api.ts`**:
-```typescript
-// Similar instrumentation for Beestat calls
-```
-
-**Modify `server/background-jobs.ts`**:
-```typescript
-async function syncThermostatData() {
-  const startTime = Date.now();
-  try {
-    // ... existing sync logic
-    metricsCollector.recordBackgroundJob('thermostat', true, Date.now() - startTime);
-  } catch (error) {
-    metricsCollector.recordBackgroundJob('thermostat', false, Date.now() - startTime);
+1. Abstract the weather fetching logic into an interface (e.g., `IWeatherProvider`).
+2. Add OpenWeatherMap as a supported provider.
+3. Add API key fields for providers in the Configuration UI.
+4. Seamlessly integrate the `shared/schema.ts` mappings.
     throw error;
   }
 }
 
-async function cleanupOldData() {
-  const startTime = Date.now();
-  try {
-    // ... existing cleanup logic
-    metricsCollector.recordBackgroundJob('cleanup', true, Date.now() - startTime);
-  } catch (error) {
-    metricsCollector.recordBackgroundJob('cleanup', false, Date.now() - startTime);
-    throw error;
-  }
-}
 ```
 
 #### 3. Add Metrics Endpoint
@@ -837,22 +361,26 @@ app.get("/api/metrics", async (req, res) => {
 #### 4. Add Metrics Display to Health Indicator
 
 **Option 1: Metrics Page**
+
 - Add new route `/metrics` with detailed dashboard
 - Show charts for API response times over time
 - Show success rates as pie charts
 - Show background job history
 
 **Option 2: Enhance Health Endpoint**
+
 - Add metrics summary to existing `/api/health` response
 - Display in expandable section on dashboard
 
 **Option 3: Both**
+
 - Basic metrics in health check
 - Detailed metrics page accessible via link
 
 #### 5. Add Database Helper Methods
 
 **Add to `server/storage.ts`**:
+
 ```typescript
 async getDatabaseSize(): Promise<number> {
   const result = await this.db.execute(sql`
@@ -984,6 +512,7 @@ export default function MetricsPage() {
 ```
 
 ### Success Criteria
+
 - ✅ API response times tracked and reported
 - ✅ Success rates visible for all external APIs
 - ✅ Background job execution tracked
@@ -999,9 +528,11 @@ export default function MetricsPage() {
 These items are lower priority and can be implemented later:
 
 ### 1. Progressive Web App (PWA) Features
+
 **Reason to Punt**: This is a kiosk display, not a mobile app. PWA features like offline mode and "Add to Home Screen" aren't relevant for a fixed kiosk installation.
 
 ### 2. Alerting & Monitoring Integration
+
 - Email/SMS notifications on health degradation
 - Slack/Discord webhooks
 - PagerDuty integration
@@ -1010,6 +541,7 @@ These items are lower priority and can be implemented later:
 **Reason to Punt**: Can be added once the system has been running reliably for a while. Current health indicator provides visual feedback on the kiosk itself.
 
 ### 3. Backup & Restore
+
 - Automated PostgreSQL backups
 - S3/cloud storage integration
 - Configuration export/import
@@ -1017,6 +549,7 @@ These items are lower priority and can be implemented later:
 **Reason to Punt**: Weather data is not critical (it's replaceable from APIs). Database is small after cleanup. Nice to have but not urgent.
 
 ### 4. Additional Data Sources
+
 - Additional weather stations
 - Indoor air quality sensors
 - Smart home integrations
@@ -1026,6 +559,7 @@ These items are lower priority and can be implemented later:
 **Reason to Punt**: Would require new hardware or accounts. Can be added as you expand your monitoring infrastructure.
 
 ### 5. UI Enhancements
+
 - Dark mode toggle
 - Color theme customization
 - Drag & drop card layout
@@ -1035,12 +569,14 @@ These items are lower priority and can be implemented later:
 **Reason to Punt**: Current UI is functional and looks good. Polish can come later once core features are solid.
 
 ### 6. Multi-Language Support
+
 - Internationalization (i18n)
 - Spanish, French, German translations
 
 **Reason to Punt**: Single-user kiosk in English-speaking household.
 
 ### 7. User Authentication
+
 - Login system
 - Multiple user profiles
 - Role-based access control
@@ -1048,6 +584,7 @@ These items are lower priority and can be implemented later:
 **Reason to Punt**: Private kiosk on local network. Not publicly accessible.
 
 ### 8. Mobile App
+
 - React Native mobile app
 - Push notifications
 - Remote monitoring
@@ -1061,6 +598,7 @@ These items are lower priority and can be implemented later:
 Recommended sequence to tackle these priorities:
 
 ### Week 1: Foundation
+
 1. **Day 1-2**: Unit Tests
    - Set up Vitest
    - Write conversion tests
@@ -1073,25 +611,27 @@ Recommended sequence to tackle these priorities:
    - Create metrics endpoint
 
 ### Week 2: Features
+
 3. **Day 4-5**: Severe Weather Alerts
    - Integrate WeatherFlow alerts API
    - Add alert banner to header
    - Test with historical alerts
 
-4. **Day 6-7**: Historical Charts (Part 1)
+2. **Day 6-7**: Historical Charts (Part 1)
    - Install Recharts
    - Create temperature chart
    - Create pressure chart
    - Add API endpoints
 
 ### Week 3: More Features
+
 5. **Day 8-9**: Historical Charts (Part 2)
    - Create wind chart
    - Create rainfall chart
    - Create HVAC runtime chart
    - Add chart modal/expansion
 
-6. **Day 10-12**: Configuration UI
+2. **Day 10-12**: Configuration UI
    - Create settings page
    - Implement .env updater
    - Add all configuration sections

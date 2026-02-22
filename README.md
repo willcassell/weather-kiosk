@@ -17,16 +17,20 @@ A modern, secure weather monitoring application that displays real-time data fro
 ## Features
 
 ### Weather Monitoring
+
 - **Real-time Weather Data**: Live observations from WeatherFlow Tempest station (updated every 3 minutes)
+- **NOAA Severe Weather Alerts**: Live scrolling danger banner synchronized natively against the official National Weather Service API.
 - **Accurate Daily Temperatures**: Database-driven calculations using actual observed data for precise daily high/low temperatures with exact timestamps
 - **Comprehensive Metrics**: Temperature, wind speed/direction, barometric pressure, rainfall, humidity, UV index, lightning detection
 - **Visual Indicators**: Animated wind compass with directional colors and speed-based effects
-- **Live Weather Radar**: Embedded radar from Windy.com centered on your location
+- **Live Weather Radar**: Embedded radar from Windy.com centered on your location (configurable via UI)
 - **Lightning Detection**: Real-time lightning strike distance and timing alerts
 - **International Support**: Full metric/imperial unit conversion (Celsius/Fahrenheit, km/h/mph, etc.)
 - **Timezone-Aware**: Accurate daily high/low calculations for any timezone worldwide
+- **Performance Diagnostics**: Native telemetries tracking API latency alongside background execution drops.
 
 ### Indoor Climate Control (Optional)
+
 - **Multi-Thermostat Support**: Monitor multiple Ecobee thermostats via Beestat API
 - **Real-time HVAC Status**: Live equipment state detection (heating/cooling/idle) with visual indicators
 - **Smart Temperature Display**: Color-coded temperatures with pulsing animation during HVAC operation
@@ -35,6 +39,7 @@ A modern, secure weather monitoring application that displays real-time data fro
 - **PostgreSQL Storage**: Reliable thermostat data storage with duplicate prevention
 
 ### Kiosk Optimization
+
 - **Adaptive Layout**: Weather cards on left, live radar on right in landscape; stacked vertically in portrait
 - **Auto-refresh**: Synchronized 3-minute updates for all data sources
 - **Dark Theme**: Optimized for continuous display with minimal eye strain
@@ -42,6 +47,7 @@ A modern, secure weather monitoring application that displays real-time data fro
 - **No User Interaction Required**: Designed for hands-off kiosk display
 
 ### Security & Privacy
+
 - **Cloudflare Tunnel**: Secure internet access without opening firewall ports
 - **Zero Trust Architecture**: Outbound-only connections, no public IP exposure
 - **Automatic HTTPS**: SSL/TLS encryption managed by Cloudflare
@@ -56,6 +62,7 @@ A modern, secure weather monitoring application that displays real-time data fro
 ## Technology Stack
 
 ### Frontend
+
 - **React 18** with TypeScript
 - **Tailwind CSS** for styling
 - **shadcn/ui** component library
@@ -64,6 +71,7 @@ A modern, secure weather monitoring application that displays real-time data fro
 - **Vite** for development and building
 
 ### Backend
+
 - **Node.js** with Express.js
 - **TypeScript** with ESM modules
 - **Drizzle ORM** with PostgreSQL
@@ -71,6 +79,7 @@ A modern, secure weather monitoring application that displays real-time data fro
 - **Beestat API** for Ecobee thermostat data
 
 ### Infrastructure
+
 - **Docker & Docker Compose**: Containerized deployment
 - **PostgreSQL 16**: Database for weather observations and thermostat data
 - **Cloudflare Tunnel (cloudflared)**: Secure internet exposure
@@ -79,6 +88,7 @@ A modern, secure weather monitoring application that displays real-time data fro
 ## Quick Start with Docker
 
 ### Prerequisites
+
 - **Docker & Docker Compose** installed
 - **WeatherFlow Tempest Station** with active data
 - **WeatherFlow API Token** ([Get one here](https://tempestwx.com/settings/tokens))
@@ -88,27 +98,25 @@ A modern, secure weather monitoring application that displays real-time data fro
 ### Setup Steps
 
 1. **Clone the Repository**
+
    ```bash
    git clone https://github.com/willcassell/weather-kiosk.git
    cd weather-kiosk
    ```
 
 2. **Configure Environment Variables**
+
    ```bash
    cp .env.example .env
    # Edit .env with your configuration
    ```
 
    Required variables:
+
    ```bash
    # WeatherFlow Configuration
    WEATHERFLOW_API_TOKEN=your_token_here
    WEATHERFLOW_STATION_ID=your_station_id
-
-   # Radar Configuration
-   VITE_RADAR_CENTER_LAT=37.000
-   VITE_RADAR_CENTER_LON=-78.415
-   VITE_RADAR_ZOOM_LEVEL=7.25
 
    # Security (REQUIRED in production)
    SESSION_SECRET=generate_with_openssl_rand_hex_32
@@ -118,8 +126,14 @@ A modern, secure weather monitoring application that displays real-time data fro
    DATABASE_URL=postgresql://weather_user:${POSTGRES_PASSWORD}@postgres:5432/weather_kiosk
    ```
 
-   Optional variables:
+   Optional variables (All configurable directly from the live Web UI Settings Dashboard after startup):
+
    ```bash
+   # Radar Configuration (Defaults to generic coords if unset)
+   VITE_RADAR_CENTER_LAT=37.000
+   VITE_RADAR_CENTER_LON=-78.415
+   VITE_RADAR_ZOOM_LEVEL=7.25
+
    # Unit System (for international users)
    VITE_UNIT_SYSTEM=imperial  # or "metric" for Celsius, km/h, mm, hPa
 
@@ -135,6 +149,7 @@ A modern, secure weather monitoring application that displays real-time data fro
    ```
 
 3. **Start the Application**
+
    ```bash
    docker compose up -d
    ```
@@ -144,6 +159,7 @@ A modern, secure weather monitoring application that displays real-time data fro
    - **Over Internet** (if Cloudflare Tunnel configured): `https://your-domain.com`
 
 5. **View Logs**
+
    ```bash
    docker compose logs -f app
    ```
@@ -165,7 +181,7 @@ A modern, secure weather monitoring application that displays real-time data fro
 - **grafana** (optional): Grafana Analytics & Dashboards
   - Data visualization and analytics platform
   - Pre-configured PostgreSQL datasource
-  - Access at http://localhost:3000
+  - Access at <http://localhost:3000>
   - Persistent dashboards and settings
   - Auto-restarts on failure
 
@@ -211,6 +227,7 @@ Cloudflare Edge → Tunnel → App Container → User
    - URL: `app:5000`
 
 4. **Restart Services**
+
    ```bash
    docker compose up -d
    ```
@@ -261,18 +278,20 @@ The pre-configured Weather Kiosk Overview dashboard includes:
 1. **Grafana is already configured in `docker-compose.yml`** - no additional setup needed!
 
 2. **Set credentials in `.env`** (optional, defaults to admin/admin):
+
    ```bash
    GRAFANA_ADMIN_USER=admin
    GRAFANA_ADMIN_PASSWORD=your_secure_password
    ```
 
 3. **Start Grafana with your stack**:
+
    ```bash
    docker compose up -d
    ```
 
 4. **Access Grafana**:
-   - Open: http://localhost:3000
+   - Open: <http://localhost:3000>
    - Login with your credentials (default: admin/admin)
    - Navigate to **Dashboards** → **Weather Kiosk Overview**
 
@@ -281,6 +300,7 @@ The pre-configured Weather Kiosk Overview dashboard includes:
 Grafana queries your PostgreSQL database tables:
 
 **weather_observations** (7 days of raw data):
+
 - Temperature, feels like, dew point, UV index
 - Wind speed, gust, direction
 - Humidity, barometric pressure
@@ -289,12 +309,14 @@ Grafana queries your PostgreSQL database tables:
 - Individual timestamps for all measurements
 
 **weather_data** (48 hours of processed data):
+
 - Daily high/low temperatures with exact times
 - Pressure trends (rising/falling/steady)
 - Aggregated rain totals (today/yesterday)
 - Wind direction in cardinal format (N, NE, etc.)
 
 **thermostat_data** (unlimited history):
+
 - Indoor temperature, target temperature
 - HVAC mode (heat/cool/auto/off)
 - HVAC state (heating/cooling/idle)
@@ -306,6 +328,7 @@ Grafana queries your PostgreSQL database tables:
 Grafana uses standard SQL to query your data. Here are some example queries you can use:
 
 **Average temperature by hour over last 7 days:**
+
 ```sql
 SELECT
   DATE_TRUNC('hour', timestamp) as time,
@@ -317,6 +340,7 @@ ORDER BY time;
 ```
 
 **Total rainfall per day:**
+
 ```sql
 SELECT
   DATE_TRUNC('day', timestamp) as time,
@@ -328,6 +352,7 @@ ORDER BY time;
 ```
 
 **HVAC runtime percentage:**
+
 ```sql
 SELECT
   mode,
@@ -367,14 +392,17 @@ grafana/
 ### Troubleshooting Grafana
 
 **Can't access Grafana at localhost:3000:**
+
 - Check if container is running: `docker ps | grep grafana`
 - View logs: `docker compose logs grafana`
 
 **No data showing in panels:**
+
 - Verify PostgreSQL has data: `docker compose exec postgres psql -U weather_user -d weather_kiosk -c "SELECT COUNT(*) FROM weather_observations;"`
 - Check datasource connection: Grafana → Configuration → Data Sources → Test
 
 **Dashboard not loading:**
+
 - Check provisioning files exist in `grafana/provisioning/`
 - Restart Grafana: `docker compose restart grafana`
 - View provisioning logs: `docker compose logs grafana | grep provision`
@@ -382,11 +410,13 @@ grafana/
 ## API Endpoints
 
 ### Weather Data
+
 - `GET /api/weather/current` - Current weather conditions with daily extremes
 - `GET /api/weather/history` - Historical weather data (48 hours)
 - `GET /api/weather/observations` - Individual weather observations
 
 ### Thermostat Data
+
 - `GET /api/thermostats/current` - Current thermostat readings
   - Returns: `{ thermostats: [], cached: boolean, stale: boolean, lastUpdated: string }`
   - Stale flag indicates data older than 5 minutes
@@ -429,15 +459,16 @@ All services have `restart: unless-stopped` for automatic recovery.
 
 ## Weather Card Components
 
-1. **Top Banner**: Station information and last update timestamp
-2. **Temperature Card**: Current, high, low with daily trends and times
-3. **Wind Card**: Speed, direction with animated compass
-4. **Pressure Card**: Barometric pressure with trend analysis
-5. **Rainfall Card**: Today's and yesterday's precipitation
-6. **Lightning Card**: Real-time lightning strike detection
-7. **Humidity & Dew Point Card**: Atmospheric moisture data
-8. **Thermostat Card**: Multi-location indoor climate with HVAC status and intelligent color-coding
-9. **Live Radar**: Embedded weather radar
+1. **Top Banner**: Station information, NOAA live alerts, and last update timestamp
+2. **Settings Web Interface**: Access via the cog gear in Top Banner to set dynamic retention intervals, layout settings, radar lat/lon overrides securely.
+3. **Temperature Card**: Current, high, low with daily trends and times
+4. **Wind Card**: Speed, direction with animated compass
+5. **Pressure Card**: Barometric pressure with trend analysis
+6. **Rainfall Card**: Today's and yesterday's precipitation
+7. **Lightning Card**: Real-time lightning strike detection
+8. **Humidity & Dew Point Card**: Atmospheric moisture data
+9. **Thermostat Card**: Multi-location indoor climate with HVAC status and intelligent color-coding
+10. **Live Radar**: Embedded weather radar
 
 ### Thermostat Card Color Coding
 
@@ -446,23 +477,27 @@ The thermostat card uses intelligent color-coding to provide at-a-glance status 
 #### Current Temperature Colors
 
 **When HVAC is Active** (>1°F difference from target):
+
 - 🔵 **Blue** - Actively cooling OR auto mode when temperature is above target
 - 🔴 **Red** - Actively heating OR auto mode when temperature is below target
 - Temperature will pulse to indicate active HVAC operation
 
 **When HVAC is Idle** (<1°F difference):
+
 - 🟢 **Green** - At target temperature (within 0.5°F)
 - 🟠 **Orange** - Too warm (>1°F above target, needs cooling)
 - 🔵 **Cyan** - Too cool (>1°F below target, needs heating)
 - ⚪ **White** - Close to target (within 1°F range)
 
 #### HVAC Status Indicators
+
 - **Cooling**: Snowflake icon with activity indicator (blue, animated)
 - **Heating**: Flame icon with activity indicator (red, animated)
 - **Idle**: Pause icon (gray, static)
 - **Delayed**: Yellow badge when data is stale (>5 minutes old)
 
 This color-coding provides immediate visual feedback about:
+
 - How close each thermostat is to its target temperature
 - Whether the HVAC system is actively working
 - Which direction adjustment is needed (warmer or cooler)
@@ -510,19 +545,23 @@ docker compose logs -f
 ## Troubleshooting
 
 ### Port 5000 Already in Use
+
 macOS AirPlay Receiver uses port 5000. The app is mapped to port 5001 externally.
 
 ### Tunnel Not Connecting
+
 - Verify `CLOUDFLARE_TUNNEL_TOKEN` in `.env`
 - Check logs: `docker compose logs cloudflared`
 - Ensure public hostname is configured in Cloudflare dashboard
 
 ### Database Connection Issues
+
 - Check PostgreSQL is running: `docker compose ps postgres`
 - Verify health: `docker compose logs postgres`
 - Check `DATABASE_URL` in `.env`
 
 ### Thermostat Data Stale
+
 - Verify `BEESTAT_API_KEY` is valid
 - Check target thermostat names match exactly
 - Review logs: `docker compose logs app | grep thermostat`
