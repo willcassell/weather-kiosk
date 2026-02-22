@@ -17,7 +17,7 @@ export default function SettingsPage() {
     const [newPassword, setNewPassword] = useState("");
     const [formData, setFormData] = useState<Record<string, any>>({});
 
-    const { data, isLoading } = useQuery({
+    const { data, isLoading } = useQuery<any>({
         queryKey: ['/api/config'],
     });
 
@@ -111,7 +111,19 @@ export default function SettingsPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Timezone</Label>
-                                <Input value={formData.timezone || ""} onChange={(e) => handleChange('timezone', e.target.value)} />
+                                <Select value={formData.timezone} onValueChange={(v) => handleChange('timezone', v)}>
+                                    <SelectTrigger><SelectValue placeholder="Select a timezone" /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="America/New_York">Eastern Time (ET - New York)</SelectItem>
+                                        <SelectItem value="America/Chicago">Central Time (CT - Chicago)</SelectItem>
+                                        <SelectItem value="America/Denver">Mountain Time (MT - Denver)</SelectItem>
+                                        <SelectItem value="America/Phoenix">Mountain Time (Arizona - No DST)</SelectItem>
+                                        <SelectItem value="America/Los_Angeles">Pacific Time (PT - Los Angeles)</SelectItem>
+                                        <SelectItem value="America/Anchorage">Alaska Time (AKT - Anchorage)</SelectItem>
+                                        <SelectItem value="America/Honolulu">Hawaii-Aleutian Time (HAT - Honolulu)</SelectItem>
+                                        <SelectItem value="UTC">Coordinated Universal Time (UTC)</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </CardContent>
                     </Card>
