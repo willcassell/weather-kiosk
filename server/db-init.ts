@@ -11,7 +11,7 @@ export async function initializeDatabase(): Promise<boolean> {
     return false;
   }
 
-  let pool: Pool | null = null;
+  let pool: pkg.Pool | null = null;
 
   try {
     console.log("Initializing database connection...");
@@ -105,6 +105,39 @@ export async function initializeDatabase(): Promise<boolean> {
           effective_mode TEXT,
           target_temp REAL,
           raw_response TEXT,
+          timestamp TIMESTAMP DEFAULT NOW() NOT NULL
+        )
+      `);
+
+      // Create app_settings table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS app_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL,
+          updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+        )
+      `);
+
+      // Create api_metrics table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS api_metrics (
+          id SERIAL PRIMARY KEY,
+          service TEXT NOT NULL,
+          duration_ms INTEGER NOT NULL,
+          success BOOLEAN NOT NULL,
+          error TEXT,
+          timestamp TIMESTAMP DEFAULT NOW() NOT NULL
+        )
+      `);
+
+      // Create background_job_metrics table
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS background_job_metrics (
+          id SERIAL PRIMARY KEY,
+          job_name TEXT NOT NULL,
+          duration_ms INTEGER NOT NULL,
+          success BOOLEAN NOT NULL,
+          error TEXT,
           timestamp TIMESTAMP DEFAULT NOW() NOT NULL
         )
       `);
