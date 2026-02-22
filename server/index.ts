@@ -1,41 +1,15 @@
+console.log("SERVER BOOTING...");
+
+console.log("SERVER STARTING INITIALIZATION...");
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import * as backgroundJobs from "./background-jobs.js";
 
-// Simple in-memory cache for cost optimization
-class SimpleCache {
-  private cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
 
-  set(key: string, data: any, ttlMinutes: number = 5): void {
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-      ttl: ttlMinutes * 60 * 1000
-    });
-  }
-
-  get(key: string): any | null {
-    const entry = this.cache.get(key);
-    if (!entry) return null;
-    
-    if (Date.now() - entry.timestamp > entry.ttl) {
-      this.cache.delete(key);
-      return null;
-    }
-    
-    return entry.data;
-  }
-
-  clear(): void {
-    this.cache.clear();
-  }
-}
-
-// Export cache instance for use in routes
-export const dataCache = new SimpleCache();
 
 const app = express();
 
@@ -52,6 +26,9 @@ app.use(helmet({
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   frameguard: false, // Disabled to allow DakBoard iframe embedding
 }));
+
+// Trust the Cloudflare Tunnel reverse proxy (essential for WebSockets passing through Cloudflared)
+app.set("trust proxy", 1);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -105,11 +82,13 @@ app.use((req, res, next) => {
   next();
 });
 
+console.log("-> Starting IIFE...");
 (async () => {
   // Initialize session store
   let sessionStore;
   try {
     if (process.env.DATABASE_URL && isProduction) {
+      console.log("-> Loading pg-simple...");
       // Use PostgreSQL session store in production
       const connectPgSimple = await import("connect-pg-simple");
       const pgSession = connectPgSimple.default(session);
@@ -120,8 +99,10 @@ app.use((req, res, next) => {
       });
       log("Using PostgreSQL session store");
     } else {
+      console.log("-> Loading memorystore...");
       // Use memory store in development
       const MemoryStore = await import("memorystore");
+      console.log("-> Loaded memorystore!");
       const MemStoreClass = MemoryStore.default(session);
       sessionStore = new MemStoreClass({
         checkPeriod: 86400000, // prune expired entries every 24h
@@ -129,10 +110,10 @@ app.use((req, res, next) => {
       log("Using memory session store");
     }
 
-    // Configure session middleware
+    console.log("-> Applying session middleware");
     app.use(
       session({
-        secret: sessionSecret,
+        secret: sessionSecret as string,
         store: sessionStore,
         resave: false,
         saveUninitialized: false,
@@ -182,9 +163,8 @@ app.use((req, res, next) => {
       } else {
         log("Warning: Database initialization failed, using fallback storage");
       }
-      
-      // Test database connection by attempting to import storage
-      await import("./storage.js");
+
+      // Test database connection by attempting to import storage for memory cache
       log("Database connection verified");
     } catch (error) {
       log("Warning: Database connection failed, using fallback storage");
@@ -218,13 +198,12 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  
+
   // Enhanced server startup with error handling for deployment
   try {
     server.listen({
       port,
       host: "0.0.0.0",
-      reusePort: true,
     }, async () => {
       log(`serving on port ${port}`);
       console.log(`Weather kiosk server started successfully on port ${port}`);
@@ -232,12 +211,12 @@ app.use((req, res, next) => {
       console.log(`Database URL configured: ${!!process.env.DATABASE_URL}`);
       console.log(`Session secret configured: ${!!process.env.SESSION_SECRET}`);
 
-      // Start background jobs
-      const backgroundJobs = await import('./background-jobs.js');
+      // Start weather update job (will poll NOAA/WeatherFlow & emit WS events)
+      await backgroundJobs.startWeatherUpdateJob();
 
       // Start thermostat update job if Beestat API key is configured
       if (process.env.BEESTAT_API_KEY) {
-        backgroundJobs.startThermostatUpdateJob();
+        await backgroundJobs.startThermostatUpdateJob();
       }
 
       // Start database cleanup job if using PostgreSQL
@@ -266,13 +245,13 @@ app.use((req, res, next) => {
       console.log('Received SIGTERM, shutting down gracefully');
 
       // Stop background jobs
-      const backgroundJobs = await import('./background-jobs.js');
       if (process.env.BEESTAT_API_KEY) {
         backgroundJobs.stopThermostatUpdateJob();
       }
       if (process.env.DATABASE_URL) {
         backgroundJobs.stopCleanupJob();
       }
+      backgroundJobs.stopWeatherUpdateJob();
 
       server.close(() => {
         console.log('Server closed');

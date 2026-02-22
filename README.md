@@ -18,7 +18,7 @@ A modern, secure weather monitoring application that displays real-time data fro
 
 ### Weather Monitoring
 
-- **Real-time Weather Data**: Live observations from WeatherFlow Tempest station (updated every 3 minutes)
+- **True Real-time Weather**: Live WebSocket push observations from WeatherFlow Tempest station (sub-second latency)
 - **NOAA Severe Weather Alerts**: Live scrolling danger banner synchronized natively against the official National Weather Service API.
 - **Accurate Daily Temperatures**: Database-driven calculations using actual observed data for precise daily high/low temperatures with exact timestamps
 - **Comprehensive Metrics**: Temperature, wind speed/direction, barometric pressure, rainfall, humidity, UV index, lightning detection
@@ -34,6 +34,7 @@ A modern, secure weather monitoring application that displays real-time data fro
 - **Multi-Thermostat Support**: Monitor multiple Ecobee thermostats via Beestat API
 - **Real-time HVAC Status**: Live equipment state detection (heating/cooling/idle) with visual indicators
 - **Smart Temperature Display**: Color-coded temperatures with pulsing animation during HVAC operation
+- **Physical Hardware Occupancy**: Scans all remote Ecobee hardware sensors per zone to determine true physical occupancy instead of relying on schedule defaults
 - **Stale Data Detection**: "Delayed" indicator when thermostat data hasn't updated recently
 - **Auto-Hide When Disabled**: Thermostat card automatically hides if no Beestat API key is configured
 - **PostgreSQL Storage**: Reliable thermostat data storage with duplicate prevention
@@ -41,7 +42,7 @@ A modern, secure weather monitoring application that displays real-time data fro
 ### Kiosk Optimization
 
 - **Adaptive Layout**: Weather cards on left, live radar on right in landscape; stacked vertically in portrait
-- **Auto-refresh**: Synchronized 3-minute updates for all data sources
+- **True Push Updates**: Native WebSockets entirely replace traditional HTTP short-polling.
 - **Dark Theme**: Optimized for continuous display with minimal eye strain
 - **Responsive Design**: Works from mobile phones to large displays
 - **No User Interaction Required**: Designed for hands-off kiosk display
@@ -174,7 +175,8 @@ A modern, secure weather monitoring application that displays real-time data fro
   - Health checks for reliable startup
 
 - **app**: Weather Kiosk application
-  - Node.js Express backend + React frontend
+  - Node.js Express backend with distinct `server/controllers/` routing architecture
+  - React frontend powered by TanStack Query and WebSockets
   - Listens on port 5000 (mapped to 5001 externally)
   - Auto-restarts on failure
 
@@ -502,12 +504,13 @@ This color-coding provides immediate visual feedback about:
 - Whether the HVAC system is actively working
 - Which direction adjustment is needed (warmer or cooler)
 
-## Data Refresh & Caching
+## Data Fetching & Caching Architecture
 
-- **Weather Data**: Fetches every 3 minutes, cached for 2 minutes
-- **Thermostat Data**: Fetches every 3 minutes, cached for 2 minutes
-- **Stale Detection**: Thermostat data marked as "Delayed" if older than 5 minutes
-- **Database Storage**: 7 days of observations, 48 hours of processed data
+- **True Real-time WebSockets**: The React client establishes a permanent `wss://` pipeline on load. The Node backend broadcasts instantaneous JSON payloads downwards the exact millisecond background workers resolve a Beestat or Tempest change, entirely removing the need for 3-minute HTTP `refetchInterval` polling.
+- **Dynamic Scheduler**: External API background fetch intervals are driven natively by PostgreSQL configuration and are modifiable in real-time via the UI sliders.
+- **Strict SWR Caching**: Native responses utilize a custom `StrictCache<T>` enforcing correct typings and a **Stale-While-Revalidate** methodology. API requests return stale records within 1ms while silently resolving the upstream database fetch asynchronously.
+- **Stale Detection**: Thermostat data marked as "Delayed" visually if older than 5 minutes.
+- **Database Storage**: Programmable retention periods for weather observations and data arrays (Default: 7 days and 48 hours).
 
 ## Development
 
@@ -612,5 +615,5 @@ MIT License - see [LICENSE](./LICENSE) for details.
 
 **Built with** ❤️ **for WeatherFlow Tempest enthusiasts**
 **Secure internet access powered by Cloudflare Tunnel**
-**Last Updated**: October 12, 2025
-**Version**: 3.0.0 - Docker Deployment with Cloudflare Tunnel
+**Last Updated**: February 22, 2026
+**Version**: 3.1.0 - Real-time WebSockets & Controller Architecture

@@ -5,6 +5,7 @@ Deploy your own weather kiosk display in 5 minutes using Docker.
 ## What You Need
 
 ### Required
+
 - ✅ Docker & Docker Compose ([Download](https://docs.docker.com/get-docker/))
 - ✅ WeatherFlow Tempest Station with active data
 - ✅ WeatherFlow API Token ([Get yours](https://tempestwx.com/settings/tokens))
@@ -12,6 +13,7 @@ Deploy your own weather kiosk display in 5 minutes using Docker.
 - ✅ Your Location Coordinates ([Find them](https://www.latlong.net/))
 
 ### Optional
+
 - 🔹 Ecobee Thermostat + Beestat Account (for indoor climate)
 - 🔹 Cloudflare Account (for secure internet access)
 
@@ -57,15 +59,18 @@ SESSION_SECRET=paste_generated_secret_here
 ```
 
 **Optional: Custom Station Name**
+
 ```bash
 VITE_STATION_DISPLAY_NAME=My Home Weather Station
 ```
 
 **Optional: Indoor Climate (Ecobee Thermostats)**
+
 ```bash
 BEESTAT_API_KEY=your_beestat_api_key
 TARGET_THERMOSTAT_NAMES=Downstairs,Upstairs
 ```
+
 *Leave blank to disable the thermostat card*
 
 ### 3. Launch
@@ -76,7 +81,7 @@ docker compose up -d
 
 ### 4. Access
 
-Open your browser to: **http://localhost:5001**
+Open your browser to: **<http://localhost:5001>**
 
 Done! Your weather data will appear within 3 minutes.
 
@@ -87,18 +92,22 @@ Done! Your weather data will appear within 3 minutes.
 ### Unit Systems
 
 **Imperial (US Standard)**
+
 ```bash
 VITE_UNIT_SYSTEM=imperial
 ```
+
 - Fahrenheit (°F)
 - Miles per hour (MPH)
 - Inches (in)
 - Inches of mercury (inHg)
 
 **Metric**
+
 ```bash
 VITE_UNIT_SYSTEM=metric
 ```
+
 - Celsius (°C)
 - Kilometers per hour (km/h)
 - Millimeters (mm)
@@ -110,14 +119,17 @@ The thermostat card **automatically hides** if you don't configure a Beestat API
 
 **To enable indoor climate monitoring:**
 
-1. Link your Ecobee account to Beestat at https://beestat.io
-2. Get your API key at https://beestat.io/account
+1. Link your Ecobee account to Beestat at <https://beestat.io>
+2. Get your API key at <https://beestat.io/account>
 3. Add to `.env`:
+
    ```bash
    BEESTAT_API_KEY=your_api_key_here
    TARGET_THERMOSTAT_NAMES=Downstairs,Upstairs
    ```
+
 4. Rebuild:
+
    ```bash
    docker compose down
    docker compose build
@@ -128,12 +140,14 @@ The thermostat card **automatically hides** if you don't configure a Beestat API
 
 Access your kiosk from anywhere using Cloudflare Tunnel (no open ports needed):
 
-1. Create tunnel at https://one.dash.cloudflare.com/ → Networks → Tunnels
+1. Create tunnel at <https://one.dash.cloudflare.com/> → Networks → Tunnels
 2. Get your tunnel token
 3. Add to `.env`:
+
    ```bash
    CLOUDFLARE_TUNNEL_TOKEN=your_token_here
    ```
+
 4. Configure public hostname:
    - Service: `app`
    - Port: `5000`
@@ -147,17 +161,21 @@ Access at: `https://weather.your-domain.com`
 ## Common Issues
 
 ### "Port 5000 already in use"
+
 This is normal on macOS (AirPlay uses port 5000). The app uses port 5001 externally.
 
 ### "No weather data"
+
 1. Check your WeatherFlow API token and station ID
 2. View logs: `docker compose logs app`
 3. Restart: `docker compose restart app`
 
 ### "Thermostat card not showing"
+
 This is normal if you haven't set a Beestat API key. The card auto-hides when disabled.
 
 ### "Database connection failed"
+
 ```bash
 docker compose down
 docker compose up -d
@@ -195,11 +213,13 @@ docker compose up -d
 ## Displaying on a Kiosk Device
 
 ### Chrome Kiosk Mode
+
 ```bash
 chromium-browser --kiosk http://localhost:5001
 ```
 
 ### Firefox Kiosk Mode
+
 ```bash
 firefox --kiosk http://localhost:5001
 ```
@@ -243,7 +263,7 @@ echo "@/home/pi/start-kiosk.sh" >> ~/.config/lxsession/LXDE-pi/autostart
 ✅ Automatic unit conversion
 ✅ Dark theme optimized for 24/7 display
 ✅ Responsive (mobile to large displays)
-✅ Auto-refresh every 3 minutes
+✅ True Real-time WebSockets Push Updates
 
 ---
 
@@ -261,11 +281,11 @@ echo "@/home/pi/start-kiosk.sh" >> ~/.config/lxsession/LXDE-pi/autostart
 
 - **Full Documentation**: [README.md](./README.md)
 - **Issues**: [GitHub Issues](https://github.com/willcassell/weather-kiosk/issues)
-- **WeatherFlow Support**: https://help.weatherflow.com/
-- **Beestat Support**: https://beestat.io/
+- **WeatherFlow Support**: <https://help.weatherflow.com/>
+- **Beestat Support**: <https://beestat.io/>
 
 ---
 
-**Version**: 3.0.0
-**Last Updated**: October 12, 2025
+**Version**: 3.1.0
+**Last Updated**: February 22, 2026
 **Built for**: WeatherFlow Tempest enthusiasts

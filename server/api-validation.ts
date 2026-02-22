@@ -48,8 +48,28 @@ export const BeestatResponseSchema = z.object({
   message: z.string().optional(),
 }).passthrough();
 
+export const BeestatSensorSchema = z.object({
+  sensor_id: z.number(),
+  thermostat_id: z.number(),
+  ecobee_sensor_id: z.number(),
+  identifier: z.string(),
+  name: z.string(),
+  type: z.string(),
+  in_use: z.boolean(),
+  temperature: z.number().nullable().optional(),
+  humidity: z.number().nullable().optional(),
+  occupancy: z.boolean(),
+}).passthrough();
+
+export const BeestatSensorResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.record(z.string(), BeestatSensorSchema),
+});
+
 export type BeestatThermostat = z.infer<typeof BeestatThermostatSchema>;
 export type BeestatResponse = z.infer<typeof BeestatResponseSchema>;
+export type BeestatSensor = z.infer<typeof BeestatSensorSchema>;
+export type BeestatSensorResponse = z.infer<typeof BeestatSensorResponseSchema>;
 
 // ============================================================================
 // WEATHERFLOW API VALIDATION SCHEMAS
@@ -85,11 +105,12 @@ const WeatherFlowObsDataSchema = z.object({
   solar_radiation: z.number(),
   uv: z.number(),
   rain_accumulation: z.number().optional(),
-  precipitation_type: z.number(),
+  precipitation_type: z.number().optional(),
   lightning_strike_avg_distance: z.number().optional(),
   lightning_strike_count: z.number().optional(),
-  battery: z.number(),
+  battery: z.number().optional(),
   feels_like: z.number().optional(),
+  dew_point: z.number().optional(),
 }).passthrough();
 
 export const WeatherFlowObservationSchema = z.object({

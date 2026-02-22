@@ -1,7 +1,8 @@
 import { fetchBeestatThermostats } from './beestat-api.js';
 import { storage } from './storage.js';
 import { metrics } from './metrics.js';
-
+import { broadcastWeatherUpdate, broadcastThermostatUpdate } from './ws.js';
+import { fetchWeatherFlowData } from './controllers/weather.js';
 /**
  * Background job to periodically fetch thermostat data from Beestat API
  * and store it in the database
@@ -87,6 +88,9 @@ export async function updateThermostatData() {
       }
     }
 
+    // Broadcast the updated thermostat data to connected WebSocket clients
+    broadcastThermostatUpdate({ thermostats: thermostatData });
+
     console.log(`✓ Background job: Successfully updated ${thermostatData.length} thermostat(s)`);
   } catch (error) {
     console.error('✗ Background job: Failed to update thermostat data:', error);
@@ -114,24 +118,32 @@ async function updateCycleWithSync() {
 }
 
 /**
- * Start the background job to update thermostat data every 3 minutes
- * Uses Beestat's official sync API to ensure fresh data from Ecobee
- * Rate limited to once per 3 minutes by Beestat (we match this limit)
+ * Start the background job to update thermostat data using dynamic DB configuration
  */
-export function startThermostatUpdateJob() {
+export async function startThermostatUpdateJob() {
+  // Clear any existing interval in case of a restart
+  stopThermostatUpdateJob();
+
   // Run immediately on startup
   updateCycleWithSync();
 
-  // Then run every 3 minutes (matching Beestat's rate limit)
-  const interval = 3 * 60 * 1000; // 3 minutes
-  thermostatUpdateInterval = setInterval(updateCycleWithSync, interval);
+  // Fetch configured interval from DB (fallback to 3 minutes)
+  let refreshMinutes = 3;
+  try {
+    const settings = await storage.getAllSettings();
+    refreshMinutes = parseInt(settings.thermostatRefreshInterval || "3");
+  } catch (err) {
+    console.log("Using fallback thermostat refresh interval (3 min) due to missing DB settings.");
+  }
+  const intervalMs = refreshMinutes * 60 * 1000;
 
-  console.log(`✓ Thermostat background job started (runs every ${interval / (60 * 1000)} minutes)`);
-  console.log(`  Strategy: Trigger sync (official API) → Wait 30s → Fetch fresh data`);
+  thermostatUpdateInterval = setInterval(updateCycleWithSync, intervalMs);
+
+  console.log(`✓ Thermostat background job started (runs every ${refreshMinutes} minutes)`);
 }
 
 /**
- * Stop the background job (useful for graceful shutdown)
+ * Stop the background job (useful for graceful shutdown or restarts)
  */
 export function stopThermostatUpdateJob() {
   if (thermostatUpdateInterval) {
@@ -225,5 +237,68 @@ export function stopCleanupJob() {
     clearTimeout(cleanupInterval);
     cleanupInterval = null;
     console.log('✓ Database cleanup job stopped');
+  }
+}
+
+let weatherUpdateInterval: NodeJS.Timeout | null = null;
+
+export async function updateWeatherData() {
+  try {
+    const freshData = await fetchWeatherFlowData();
+    console.log(`[BACKGROUND] updateWeatherData fetched Tempest: ${freshData.temperature}°F. Saving to DB...`);
+    const savedData = await storage.saveWeatherData(freshData);
+
+    // Broadcast the fresh data to WebSocket clients
+    broadcastWeatherUpdate(savedData);
+  } catch (error) {
+    console.error('✗ Background job: Failed to fetch weather data:', error);
+  }
+}
+
+/**
+ * Start the background job to update weather data using dynamic DB configuration
+ */
+export async function startWeatherUpdateJob() {
+  stopWeatherUpdateJob();
+
+  // Run immediately on startup
+  updateWeatherData();
+
+  // Fetch configured interval from DB (fallback to 3 minutes)
+  let refreshMinutes = 3;
+  try {
+    const settings = await storage.getAllSettings();
+    refreshMinutes = parseInt(settings.weatherRefreshInterval || "3");
+  } catch (err) {
+    console.log("Using fallback weather refresh interval (3 min) due to missing DB settings.");
+  }
+  const intervalMs = refreshMinutes * 60 * 1000;
+
+  weatherUpdateInterval = setInterval(updateWeatherData, intervalMs);
+
+  console.log(`✓ Weather background job started (runs every ${refreshMinutes} minutes)`);
+}
+
+/**
+ * Stop the weather update job
+ */
+export function stopWeatherUpdateJob() {
+  if (weatherUpdateInterval) {
+    clearInterval(weatherUpdateInterval);
+    weatherUpdateInterval = null;
+    console.log('✓ Weather background job stopped');
+  }
+}
+
+/**
+ * Dynamically restarts all background polling jobs using the latest configuration.
+ * Called when settings are updated via the UI.
+ */
+export async function restartAllJobs() {
+  console.log('🔄 Restarting background polling jobs with fresh configuration...');
+  await startWeatherUpdateJob();
+
+  if (process.env.BEESTAT_API_KEY) {
+    await startThermostatUpdateJob();
   }
 }

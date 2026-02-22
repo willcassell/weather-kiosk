@@ -356,8 +356,8 @@ export class PostgreSQLStorage implements IStorage {
 
       return result[0] || undefined;
     } catch (error) {
-      console.error("Error getting latest weather data:", error);
-      throw new Error("Failed to retrieve weather data from database");
+      console.error("Error getting latest weather data:", error instanceof Error ? error.message : error);
+      throw new Error(`Failed to retrieve weather data from database: ${error instanceof Error ? error.message : "Unknown DB query error"}`);
     }
   }
 
@@ -374,8 +374,8 @@ export class PostgreSQLStorage implements IStorage {
 
       return result[0];
     } catch (error) {
-      console.error("Error saving weather data:", error);
-      throw new Error("Failed to save weather data to database");
+      console.error("Error saving weather data:", error instanceof Error ? error.message : error);
+      throw new Error(`Failed to save weather data to database: ${error instanceof Error ? error.message : "Unknown DB query error"}`);
     }
   }
 

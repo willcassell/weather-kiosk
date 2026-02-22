@@ -50,7 +50,7 @@ export default function WeatherDashboard() {
   const { preferences, isLoaded } = useUnitPreferences();
 
   // Fetch configuration
-  const { data: configData } = useQuery({
+  const { data: configData } = useQuery<any>({
     queryKey: ['/api/config'],
     staleTime: 60 * 1000,
   });
@@ -69,34 +69,81 @@ export default function WeatherDashboard() {
     staleTime: 30 * 1000, // Consider stale after 30 seconds
   });
 
-  const { data: weatherData, isLoading, error, isError } = useQuery<WeatherData>({
+  const { data: weatherData, isLoading, error, isError } = useQuery<WeatherData, Error>({
     queryKey: ['/api/weather/current'],
-    refetchInterval: weatherRefreshInterval,
+    refetchInterval: false,
     refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: 5000,
   });
 
-  const { data: alertsData } = useQuery({
+  const { data: alertsData } = useQuery<any>({
     queryKey: ['/api/weather/alerts'],
     refetchInterval: 5 * 60 * 1000, // 5 minutes
     retry: 2,
   });
 
-  const { data: thermostatResponse, isLoading: thermostatLoading, error: thermostatError } = useQuery<ThermostatResponse>({
+  const { data: thermostatResponse, isLoading: thermostatLoading, error: thermostatError } = useQuery<ThermostatResponse, Error>({
     queryKey: ['/api/thermostats/current'],
-    refetchInterval: thermostatRefreshInterval,
+    refetchInterval: false,
     refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: 5000,
     staleTime: 0, // Always consider data stale
-    cacheTime: 0, // Don't cache data at all
+    gcTime: 0, // Don't cache data at all
     refetchOnMount: 'always', // Always refetch when component mounts
   });
 
   // Extract thermostat data and stale flag
   const thermostatData = thermostatResponse?.thermostats;
   const thermostatDataIsStale = thermostatResponse?.stale || false;
+
+  // Subscribe to WebSockets for real-time pushed updates
+  useEffect(() => {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+    let ws: WebSocket;
+    let reconnectTimeout: NodeJS.Timeout;
+
+    const connect = () => {
+      ws = new WebSocket(wsUrl);
+
+      ws.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+
+          if (payload.type === 'weather_update' && payload.data) {
+            queryClient.setQueryData(['/api/weather/current'], payload.data);
+
+            // Also invalidate alerts to trigger a refetch just in case
+            queryClient.invalidateQueries({ queryKey: ['/api/weather/alerts'] });
+          } else if (payload.type === 'thermostat_update' && payload.data) {
+            queryClient.setQueryData(['/api/thermostats/current'], (oldData: any) => ({
+              ...(oldData || {}),
+              thermostats: payload.data.thermostats,
+              cached: true,
+              stale: false,
+              lastUpdated: new Date().toISOString()
+            }));
+          }
+        } catch (err) {
+          console.error('WebSocket payload error:', err);
+        }
+      };
+
+      ws.onclose = () => {
+        reconnectTimeout = setTimeout(connect, 5000);
+      };
+    };
+
+    connect();
+
+    return () => {
+      clearTimeout(reconnectTimeout);
+      if (ws) ws.close();
+    };
+  }, []);
 
   // Auto-detect if thermostats are enabled based on whether we have data
   const thermostatEnabled = !thermostatError && thermostatData && thermostatData.length > 0;
@@ -218,16 +265,18 @@ export default function WeatherDashboard() {
               {thermostatEnabled && (
                 <div className="flex-[2.3]">
                   <ThermostatCard
-                    thermostats={thermostatData?.map(t => ({
+                    thermostats={(thermostatData as any[])?.map((t: any) => ({
                       ...t,
                       temperature: t.temperature ?? 0,
                       targetTemp: t.targetTemp ?? 0,
                       humidity: t.humidity ?? undefined,
-                      mode: (t.mode as 'heat' | 'cool' | 'auto' | 'off') ?? 'off'
-                    }))}
+                      mode: (t.mode as 'heat' | 'cool' | 'auto' | 'off') ?? 'off',
+                      occupied: t.occupied ?? undefined,
+                      hvacState: t.hvacState ?? undefined
+                    })) as ThermostatData[]}
                     isLoading={thermostatLoading}
                     isStale={thermostatDataIsStale}
-                    error={thermostatError instanceof Error ? thermostatError.message : undefined}
+                    error={thermostatError ? String(thermostatError) : undefined}
                     preferences={preferences}
                   />
                 </div>
