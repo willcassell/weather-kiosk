@@ -109,10 +109,28 @@ export async function initializeDatabase(): Promise<boolean> {
         )
       `);
 
+      // Fix: Drop incorrect app_settings table created by previous pushed code
+      try {
+        const res = await pool.query(`
+          SELECT column_name 
+          FROM information_schema.columns 
+          WHERE table_name='app_settings' and column_name='id';
+        `);
+
+        // If the table exists but doesn't have an 'id' column, it was created with the old schema. Drop it.
+        if (res.rows.length === 0) {
+          console.log("Dropping malformed app_settings table lacking 'id' column...");
+          await pool.query('DROP TABLE IF EXISTS app_settings;');
+        }
+      } catch (e) {
+        console.error("Error checking app_settings schema:", e);
+      }
+
       // Create app_settings table
       await pool.query(`
         CREATE TABLE IF NOT EXISTS app_settings (
-          key TEXT PRIMARY KEY,
+          id SERIAL PRIMARY KEY,
+          key TEXT UNIQUE NOT NULL,
           value TEXT NOT NULL,
           updated_at TIMESTAMP DEFAULT NOW() NOT NULL
         )
