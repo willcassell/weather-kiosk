@@ -125,7 +125,7 @@ const WeatherFlowCurrentConditionsSchema = z.object({
   air_temperature: z.number(),
   feels_like: z.number().optional(),
   sea_level_pressure: z.number().optional(),
-  station_pressure: z.number(),
+  station_pressure: z.number().optional(),
   pressure_trend: z.string().optional(),
   relative_humidity: z.number(),
   wind_avg: z.number(),
@@ -158,8 +158,8 @@ const WeatherFlowDailyForecastSchema = z.object({
   air_temp_high: z.number(),
   air_temp_low: z.number(),
   precip_probability: z.number(),
-  precip_type: z.string(),
-  precip_icon: z.string(),
+  precip_type: z.string().optional(),
+  precip_icon: z.string().optional(),
 });
 
 export const WeatherFlowForecastSchema = z.object({
