@@ -148,7 +148,7 @@ export default function WeatherDashboard() {
   // Auto-detect if thermostats are enabled based on whether we have data
   const thermostatEnabled = !thermostatError && thermostatData && thermostatData.length > 0;
 
-  if (isError) {
+  if (isError && !weatherData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">

@@ -299,11 +299,23 @@ weatherRouter.get("/current", async (req, res) => {
         console.log(`[WEATHER API] forceRefresh: ${forceRefresh}, timeSinceUpdateMs: ${timeSinceUpdate}, shouldRefresh: ${shouldRefresh}`);
 
         if (shouldRefresh) {
-            const freshData = await fetchWeatherFlowData();
-            const savedData = await storage.saveWeatherData(freshData);
+            if (currentData) {
+                // Return existing data immediately; refresh in background
+                cache.set(cacheKey, currentData, 2);
+                res.json(currentData);
 
-            cache.set(cacheKey, savedData, 2);
-            res.json(savedData);
+                // Fire-and-forget refresh
+                fetchWeatherFlowData()
+                    .then(fresh => storage.saveWeatherData(fresh))
+                    .then(saved => cache.set(cacheKey, saved, 2))
+                    .catch(err => console.error("[WEATHER API] Background refresh failed:", err));
+            } else {
+                // No existing data at all — must wait for API (cold start)
+                const freshData = await fetchWeatherFlowData();
+                const savedData = await storage.saveWeatherData(freshData);
+                cache.set(cacheKey, savedData, 2);
+                res.json(savedData);
+            }
         } else {
             cache.set(cacheKey, currentData, 2);
             res.json(currentData);
@@ -316,6 +328,12 @@ weatherRouter.get("/current", async (req, res) => {
             const fallbackCached = cache.get(`weather:${STATION_ID}`);
             if (fallbackCached) {
                 return res.json({ ...fallbackCached, stale: true, cached: true });
+            }
+
+            // Try DB as secondary fallback
+            const dbFallback = await storage.getLatestWeatherData(STATION_ID);
+            if (dbFallback) {
+                return res.json({ ...dbFallback, stale: true, cached: true });
             }
         } catch (cacheError) { }
 

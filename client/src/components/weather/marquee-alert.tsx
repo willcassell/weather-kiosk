@@ -5,6 +5,7 @@ interface WeatherAlert {
     event: string;
     severity: string;
     headline: string;
+    expires?: string;
 }
 
 interface MarqueeAlertProps {
