@@ -215,12 +215,12 @@ export async function fetchWeatherFlowData(): Promise<any> {
 
         const stationName = await fetchStationInfo();
 
-        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         let lightningStrikeTime = null;
         let lightningStrikeDistance = null;
 
         try {
-            const recentLightning = await storage.getRecentLightningData(STATION_ID, thirtyMinutesAgo);
+            const recentLightning = await storage.getRecentLightningData(STATION_ID, twentyFourHoursAgo);
             if (recentLightning) {
                 lightningStrikeTime = recentLightning.timestamp;
                 lightningStrikeDistance = recentLightning.distance;
