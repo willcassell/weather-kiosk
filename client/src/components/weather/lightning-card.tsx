@@ -1,23 +1,9 @@
 import { Zap, ZapOff } from "lucide-react";
+import { isLightningRecent, getLightningSeverity } from "@shared/lightning";
 
 interface LightningCardProps {
   strikeDistance?: number | null;
   strikeTime?: Date | null;
-}
-
-const LIGHTNING_RECENT_HOURS = 3;
-
-function isRecent(time?: Date | null): boolean {
-  if (!time) return false;
-  const diffMs = Date.now() - new Date(time).getTime();
-  return diffMs < LIGHTNING_RECENT_HOURS * 60 * 60 * 1000;
-}
-
-function getLightningSeverity(distance?: number | null): string {
-  if (distance == null) return "text-yellow-400";
-  if (distance <= 5) return "text-red-400";
-  if (distance <= 10) return "text-orange-400";
-  return "text-yellow-400";
 }
 
 export default function LightningCard({
@@ -45,7 +31,7 @@ export default function LightningCard({
     }
   };
 
-  const hasRecentLightning = isRecent(strikeTime);
+  const hasRecentLightning = isLightningRecent(strikeTime);
   const severityColor = getLightningSeverity(strikeDistance);
 
   return (

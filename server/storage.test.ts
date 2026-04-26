@@ -60,4 +60,82 @@ describe('Storage Operations (MemStorage)', () => {
         // MemStorage cleanup is a no-op but returns 0s
         expect(result.weatherObservations).toBe(0);
     });
+
+    describe('getRecentLightningData', () => {
+        test('returns lightning even without distance', async () => {
+            const now = new Date();
+            await storage.saveWeatherObservation({
+                stationId: 'station-1',
+                timestamp: now,
+                temperature: 70,
+                lightningStrikeCount: 1,
+                lightningStrikeDistance: null,
+            });
+
+            const since = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
+            const result = await storage.getRecentLightningData('station-1', since);
+            expect(result).not.toBeNull();
+            expect(result!.distance).toBeNull();
+            expect(result!.timestamp.getTime()).toBe(now.getTime());
+        });
+
+        test('ignores lightning older than cutoff', async () => {
+            const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
+            await storage.saveWeatherObservation({
+                stationId: 'station-1',
+                timestamp: fourHoursAgo,
+                temperature: 70,
+                lightningStrikeCount: 3,
+                lightningStrikeDistance: 5.2,
+            });
+
+            const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000);
+            const result = await storage.getRecentLightningData('station-1', threeHoursAgo);
+            expect(result).toBeNull();
+        });
+
+        test('returns newest lightning observation', async () => {
+            const now = new Date();
+            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+            const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+
+            await storage.saveWeatherObservation({
+                stationId: 'station-1',
+                timestamp: twoHoursAgo,
+                temperature: 70,
+                lightningStrikeCount: 1,
+                lightningStrikeDistance: 8.0,
+            });
+
+            await storage.saveWeatherObservation({
+                stationId: 'station-1',
+                timestamp: oneHourAgo,
+                temperature: 71,
+                lightningStrikeCount: 2,
+                lightningStrikeDistance: 3.5,
+            });
+
+            const since = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+            const result = await storage.getRecentLightningData('station-1', since);
+            expect(result).not.toBeNull();
+            expect(result!.timestamp.getTime()).toBe(oneHourAgo.getTime());
+            expect(result!.distance).toBe(3.5);
+        });
+
+        test('returns lightning with distance when present', async () => {
+            const now = new Date();
+            await storage.saveWeatherObservation({
+                stationId: 'station-1',
+                timestamp: now,
+                temperature: 70,
+                lightningStrikeCount: 5,
+                lightningStrikeDistance: 7.2,
+            });
+
+            const since = new Date(now.getTime() - 60 * 60 * 1000);
+            const result = await storage.getRecentLightningData('station-1', since);
+            expect(result).not.toBeNull();
+            expect(result!.distance).toBe(7.2);
+        });
+    });
 });

@@ -70,6 +70,49 @@ describe('WeatherFlow API Schemas', () => {
     });
 });
 
+describe('WeatherFlow observation edge cases', () => {
+    test('accepts observation without station_pressure', () => {
+        const payload = {
+            station_id: 12345,
+            obs: [{
+                timestamp: 1600000000,
+                air_temperature: 20,
+                relative_humidity: 50,
+                wind_avg: 5,
+                wind_direction: 180,
+                wind_gust: 10,
+                solar_radiation: 500,
+                uv: 5,
+                lightning_strike_count: 1
+            }]
+        };
+        const result = WeatherFlowObservationSchema.safeParse(payload);
+        expect(result.success).toBe(true);
+    });
+
+    test('accepts observation with lightning but no distance', () => {
+        const payload = {
+            station_id: 12345,
+            obs: [{
+                timestamp: 1600000000,
+                air_temperature: 20,
+                relative_humidity: 50,
+                wind_avg: 5,
+                wind_direction: 180,
+                wind_gust: 10,
+                solar_radiation: 500,
+                uv: 5,
+                lightning_strike_count: 3
+            }]
+        };
+        const result = WeatherFlowObservationSchema.safeParse(payload);
+        expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.obs[0].lightning_strike_count).toBe(3);
+        }
+    });
+});
+
 describe('Beestat API Schemas', () => {
     test('validates thermostat data', () => {
         const validThermostat = {

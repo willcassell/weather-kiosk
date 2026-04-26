@@ -97,7 +97,7 @@ const WeatherFlowObsDataSchema = z.object({
   timestamp: z.number(),
   air_temperature: z.number(),
   barometric_pressure: z.number().optional(),
-  station_pressure: z.number(),
+  station_pressure: z.number().optional(),
   relative_humidity: z.number(),
   wind_avg: z.number(),
   wind_direction: z.number(),
