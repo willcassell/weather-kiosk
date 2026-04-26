@@ -263,7 +263,7 @@ export default function WeatherDashboard() {
               {/* Thermostat Card - More space for detailed thermostat information */}
               {/* Only show if thermostats are enabled */}
               {thermostatEnabled && (
-                <div className="flex-[2.3]">
+                <div className="flex-[1.2]">
                   <ThermostatCard
                     thermostats={(thermostatData as any[])?.map((t: any) => ({
                       ...t,
