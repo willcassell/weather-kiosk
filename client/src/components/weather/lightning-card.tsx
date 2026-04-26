@@ -5,9 +5,24 @@ interface LightningCardProps {
   strikeTime?: Date | null;
 }
 
-export default function LightningCard({ 
-  strikeDistance, 
-  strikeTime 
+const LIGHTNING_RECENT_HOURS = 3;
+
+function isRecent(time?: Date | null): boolean {
+  if (!time) return false;
+  const diffMs = Date.now() - new Date(time).getTime();
+  return diffMs < LIGHTNING_RECENT_HOURS * 60 * 60 * 1000;
+}
+
+function getLightningSeverity(distance?: number | null): string {
+  if (distance == null) return "text-yellow-400";
+  if (distance <= 5) return "text-red-400";
+  if (distance <= 10) return "text-orange-400";
+  return "text-yellow-400";
+}
+
+export default function LightningCard({
+  strikeDistance,
+  strikeTime
 }: LightningCardProps) {
   const formatDistance = (distance?: number | null) => {
     if (distance === undefined || distance === null) return "--";
@@ -20,7 +35,7 @@ export default function LightningCard({
     const diffMs = now.getTime() - time.getTime();
     const diffMinutes = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMinutes / 60);
-    
+
     if (diffMinutes < 60) {
       return diffMinutes === 0 ? "just now" : `${diffMinutes}m ago`;
     } else if (diffHours < 24) {
@@ -30,14 +45,15 @@ export default function LightningCard({
     }
   };
 
-  const hasRecentLightning = strikeDistance !== null && strikeDistance !== undefined;
+  const hasRecentLightning = isRecent(strikeTime);
+  const severityColor = getLightningSeverity(strikeDistance);
 
   return (
     <div className="weather-card minimal-padding">
       <div className="weather-card-header">
         <h3 className="weather-card-title">Lightning</h3>
         {hasRecentLightning ? (
-          <Zap className="weather-card-icon text-yellow-400" />
+          <Zap className={`weather-card-icon ${severityColor}`} />
         ) : (
           <ZapOff className="weather-card-icon text-muted-foreground" />
         )}
@@ -46,20 +62,25 @@ export default function LightningCard({
         <div className="flex items-center justify-between space-x-3 w-full">
           {/* Left - Status */}
           <div className="text-left">
-            <div className={`text-responsive-lg font-bold ${hasRecentLightning ? 'text-yellow-400' : 'text-muted-foreground'}`}>
-              {hasRecentLightning ? 'Detected' : 'None'}
+            <div className={`text-responsive-lg font-bold ${hasRecentLightning ? severityColor : 'text-muted-foreground'}`}>
+              {hasRecentLightning ? 'Detected' : 'No recent strikes'}
             </div>
             <div className="text-responsive-sm text-muted-foreground">Activity</div>
           </div>
-          
-          {/* Center - Distance (Larger) */}
+
+          {/* Center - Distance */}
           <div className="text-center">
-            <div className={`text-responsive-3xl font-bold ${hasRecentLightning ? 'text-foreground' : 'text-muted-foreground'}`}>
-              {formatDistance(strikeDistance)}
-              {hasRecentLightning && <span className="text-sm lg:text-base"> mi</span>}
+            <div className={`text-responsive-xl font-bold ${hasRecentLightning ? severityColor : 'text-muted-foreground'}`}>
+              {hasRecentLightning ? (
+                <>
+                  {formatDistance(strikeDistance)}
+                  <span className="text-sm"> mi</span>
+                </>
+              ) : '--'}
             </div>
+            <div className="text-responsive-sm text-muted-foreground">Distance</div>
           </div>
-          
+
           {/* Right - Time */}
           <div className="text-right">
             <div className={`text-responsive-lg font-bold ${hasRecentLightning ? 'text-cyan-400' : 'text-muted-foreground'}`}>
