@@ -1,0 +1,34 @@
+# Weather Kiosk
+
+Real-time weather monitoring dashboard for WeatherFlow Tempest stations with Ecobee thermostat integration, designed for continuous kiosk display.
+
+## Tech Stack
+- **Frontend**: React + TypeScript + Vite + Tailwind CSS + TanStack Query
+- **Backend**: Express + Drizzle ORM + PostgreSQL (MemStorage fallback)
+- **Testing**: Vitest (45 tests across 5 files)
+- **Deploy**: Cloudflare Tunnel, DakBoard iframe compatible
+
+## Current State
+- All features working: weather data, thermostat, lightning detection, radar, NOAA alerts
+- `npm test` — 45 passing | `npm run check` — clean | `npm run build` — clean
+- 15 production dependency vulnerabilities (intentionally deferred)
+- Live at https://weather.dukestv.cc
+
+## Recent Changes
+- 2026-04-26: Complete lightning detection overhaul (time-based active state, severity colors, shared helpers)
+- 2026-04-26: Backend lightning: 3-hour window, no distance requirement, WeatherFlow forecast fields preferred
+- 2026-04-26: Radar fallback overlay ("Live radar temporarily unavailable" with glass morphism)
+- 2026-04-26: Layout polish: glass morphism cards, thermostat grid simplification, wind/rainfall cleanup
+- 2026-04-26: Fix TypeScript check (crypto import, thermostat null types)
+- 2026-04-26: Make station_pressure optional in WeatherFlowObsDataSchema
+- 2026-04-26: Add comprehensive lightning + schema tests (17 new tests)
+
+## Lessons
+- **WeatherFlow has separate schemas for obs vs forecast** — `station_pressure` was optional in CurrentConditions but required in ObsData. Both need to tolerate missing fields independently
+- **Lightning distance is unreliable** — Strike count/time can exist without distance. Never gate lightning detection on distance presence
+- **Cross-origin iframe errors are unreliable** — Windy radar embed won't fire `onerror` consistently. Use a 12s timeout fallback instead
+
+## Next Steps
+- Dependency audit (15 vulnerabilities, including 8 high severity)
+- Pressure gauge marker/spacing polish
+- Consider sharing `LIGHTNING_RECENT_HOURS` constant between server and client via shared/lightning.ts
