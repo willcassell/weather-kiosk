@@ -8,9 +8,10 @@ interface ThermostatData {
   name: string;
   temperature: number;
   targetTemp: number;
-  humidity?: number;
-  mode: 'heat' | 'cool' | 'auto' | 'off';
-  occupied?: boolean;
+  humidity?: number | null;
+  mode: string;
+  hvacState?: string | null;
+  occupied?: boolean | null;
   timestamp: Date;
   lastUpdated: Date;
 }
@@ -195,98 +196,41 @@ export default function ThermostatCard({ thermostats, isLoading, isStale, error,
       </div>
       
       <div className="weather-card-content">
-        <div className="flex items-stretch justify-between space-x-8 w-full">
-          {thermostats.map((thermostat, index) => {
-            const tempColor = getTemperatureColor(thermostat.temperature, thermostat.targetTemp, thermostat.mode);
-            const active = isHvacActive(thermostat);
-            
-            return (
-              <div key={thermostat.id} className="flex-1 relative flex flex-col justify-center space-y-2">
-                {/* Top Row - Location Name with Occupancy Badge and HVAC Status */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    {/* Occupancy Badge */}
-                    <div className={`
-                      flex items-center space-x-1.5 px-2 py-1 rounded-md
-                      ${thermostat.occupied
-                        ? 'bg-green-500/20 border border-green-500/40'
-                        : 'bg-gray-500/20 border border-gray-500/40'
-                      }
-                    `}>
-                      {/* Location Icon */}
-                      {thermostat.name.toLowerCase().includes('lake') ? (
-                        <svg className={`h-3 w-3 lg:h-4 lg:w-4 ${thermostat.occupied ? 'text-green-400' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9h10v2H7z"/>
-                          <path d="M7 13h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2z"/>
-                        </svg>
-                      ) : (
-                        <Home className={`h-3 w-3 lg:h-4 lg:w-4 ${thermostat.occupied ? 'text-green-400' : 'text-gray-400'}`} />
-                      )}
-
-                      {/* Thermostat Name */}
-                      <span className={`text-responsive-sm font-semibold ${thermostat.occupied ? 'text-green-300' : 'text-gray-300'}`}>
-                        {thermostat.name}
-                      </span>
-
-                      {/* Person Icon */}
-                      <User className={`h-3 w-3 lg:h-4 lg:w-4 ${thermostat.occupied ? 'text-green-400' : 'text-gray-400'}`} />
-                    </div>
-                  </div>
-                  {getHvacStatusIndicator(thermostat)}
+        <div className="grid grid-cols-2 gap-2 w-full">
+          {thermostats.map((thermostat) => (
+            <div key={thermostat.id} className="glass-l3 p-3 flex items-center gap-3">
+              <div>
+                <div className="text-[11px] text-muted-foreground font-medium tracking-wide mb-1">
+                  {thermostat.name.toLowerCase().includes('lake') ? '\u{1F30A}' : '\u{1F3E0}'} {thermostat.name}
                 </div>
-
-                {/* Bottom Row - Temperature and Humidity Info */}
-                <div className="flex items-center justify-between">
-                  {/* Current Temperature */}
-                  <div className="text-left">
-                    <div className={`text-responsive-lg font-bold ${tempColor} ${active ? 'animate-pulse' : ''}`}>
-                      {preferences ? (
-                        <TemperatureDisplay temperature={thermostat.temperature} preferences={preferences} decimals={1} />
-                      ) : (
-                        <>
-                          {thermostat.temperature.toFixed(1)}
-                          <sup className="text-[0.6em] ml-0.5">°F</sup>
-                        </>
-                      )}
-                    </div>
-                    <div className="text-responsive-xs text-muted-foreground">Current</div>
-                  </div>
-
-                  {/* Center - Humidity */}
-                  <div className="text-center">
-                    {thermostat.humidity && (
-                      <>
-                        <div className="text-responsive-sm font-normal text-blue-300">
-                          {thermostat.humidity}%
-                        </div>
-                        <div className="text-responsive-2xs text-muted-foreground opacity-70">Humidity</div>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Target Temperature */}
-                  <div className="text-right">
-                    <div className={`text-responsive-md font-medium ${getTargetTempColor(thermostat.mode)}`}>
-                      → {preferences ? (
-                        <TemperatureDisplay temperature={thermostat.targetTemp} preferences={preferences} decimals={0} />
-                      ) : (
-                        <>
-                          {thermostat.targetTemp}
-                          <sup className="text-[0.6em] ml-0.5">°F</sup>
-                        </>
-                      )}
-                    </div>
-                    <div className="text-responsive-xs text-muted-foreground">Target</div>
-                  </div>
+                <div className="text-[26px] font-normal text-foreground leading-none">
+                  {preferences ? (
+                    <TemperatureDisplay temperature={thermostat.temperature} preferences={preferences} decimals={1} />
+                  ) : (
+                    <>
+                      {thermostat.temperature.toFixed(1)}
+                      <sup className="text-[0.6em] ml-0.5">°F</sup>
+                    </>
+                  )}
                 </div>
-
-                {/* Add divider between thermostats with more spacing */}
-                {index < thermostats.length - 1 && (
-                  <div className="absolute -right-6 top-1/2 transform -translate-y-1/2 w-px h-8 lg:h-12 xl:h-16 2xl:h-20 bg-border"></div>
-                )}
               </div>
-            );
-          })}
+              <div className="flex flex-col gap-1">
+                <div className="text-[12px] text-muted-foreground">
+                  {thermostat.humidity}% <span className="opacity-70">humidity</span>
+                </div>
+                <div className="text-[12px] text-cyan-400">
+                  → {preferences ? (
+                    <TemperatureDisplay temperature={thermostat.targetTemp} preferences={preferences} decimals={0} />
+                  ) : (
+                    <>
+                      {thermostat.targetTemp}
+                      <sup className="text-[0.6em] ml-0.5">°F</sup>
+                    </>
+                  )} <span className="text-[10px] text-muted-foreground">target</span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

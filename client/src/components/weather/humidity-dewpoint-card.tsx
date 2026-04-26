@@ -1,4 +1,4 @@
-import { Droplets, Thermometer } from "lucide-react";
+import { Droplets } from "lucide-react";
 import { TemperatureDisplay } from "@/components/ui/temperature-display";
 import type { UnitPreferences } from "@shared/units";
 
@@ -21,7 +21,7 @@ export default function HumidityDewPointCard({
   return (
     <div className="weather-card minimal-padding">
       <div className="weather-card-header">
-        <h3 className="weather-card-title">Humidity & Dew Point</h3>
+        <h3 className="weather-card-title text-[10px]">Humidity & Dew Point</h3>
         <Droplets className="weather-card-icon text-blue-400" />
       </div>
       <div className="weather-card-content">
@@ -37,17 +37,12 @@ export default function HumidityDewPointCard({
           
           {/* Right - Dew Point */}
           <div className="text-right">
-            <div className="flex items-center justify-end space-x-1">
-              <Thermometer className="h-4 w-4 text-cyan-400" />
-              <div className="text-center">
-                <div className="text-responsive-lg font-bold text-cyan-400">
-                  {dewPoint !== undefined ? (
-                    <TemperatureDisplay temperature={dewPoint} preferences={preferences} decimals={1} />
-                  ) : "--"}
-                </div>
-                <div className="text-responsive-sm text-muted-foreground">Dew Point</div>
-              </div>
+            <div className="text-responsive-lg font-bold text-cyan-400">
+              {dewPoint !== undefined ? (
+                <TemperatureDisplay temperature={dewPoint} preferences={preferences} decimals={1} />
+              ) : "--"}
             </div>
+            <div className="text-responsive-sm text-muted-foreground">Dew Point</div>
           </div>
         </div>
       </div>

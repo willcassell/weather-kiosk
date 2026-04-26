@@ -53,8 +53,8 @@ export default function WindCard({
         <Wind className="weather-card-icon" />
       </div>
       <div className="weather-card-content">
-        <div className="flex items-center justify-between space-x-4 w-full">
-          {/* Left - Wind Speed and Gust compact for one-line display */}
+        <div className="flex items-center justify-between w-full">
+          {/* Left: Speed + Gust */}
           <div className="flex flex-col space-y-1">
             <div className="flex items-baseline space-x-1">
               <span className="text-responsive-lg font-bold text-cyan-400">
@@ -70,38 +70,25 @@ export default function WindCard({
               </span>
             </div>
           </div>
-          
-          {/* Center - Responsive Compass Display */}
-          <div className="flex-shrink-0">
-            <div className="relative w-16 h-16 lg:w-20 lg:h-20 xl:w-24 xl:h-24 2xl:w-28 2xl:h-28 rounded-full border-2 border-primary/30 bg-primary/10">
-              {/* Cardinal direction markers - positioned safely inside */}
-              <div className="absolute inset-2 flex items-center justify-center">
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 text-xs lg:text-sm font-bold text-muted-foreground">N</div>
-                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 text-xs lg:text-sm font-bold text-muted-foreground">E</div>
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-xs lg:text-sm font-bold text-muted-foreground">S</div>
-                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 text-xs lg:text-sm font-bold text-muted-foreground">W</div>
+          {/* Right: Direction label ABOVE compass, both centered */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="text-[18px] font-semibold text-cyan-400">
+              {windDirectionCardinal || "CALM"}
+            </div>
+            <div className="relative w-12 h-12 rounded-full border-2 border-primary/30 bg-primary/10">
+              <div className="absolute inset-1 flex items-center justify-center">
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 text-[8px] font-bold text-muted-foreground">N</div>
+                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 text-[8px] font-bold text-muted-foreground">E</div>
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-[8px] font-bold text-muted-foreground">S</div>
+                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 text-[8px] font-bold text-muted-foreground">W</div>
               </div>
-              {/* Wind direction arrow - larger and more prominent */}
               <Navigation
-                className="absolute inset-0 m-auto h-10 w-10 lg:h-12 lg:w-12 xl:h-16 xl:w-16 2xl:h-20 2xl:w-20 text-cyan-400 drop-shadow-lg"
+                className="absolute inset-0 m-auto h-6 w-6 text-cyan-400 drop-shadow-lg"
                 style={{
                   transform: `rotate(${(windDirection ?? 0) - 45}deg)`,
                   filter: 'drop-shadow(0 0 8px rgba(34, 211, 238, 0.6))'
                 }}
               />
-            </div>
-          </div>
-          
-          {/* Right - Direction and Details */}
-          <div className="text-right">
-            <div className="text-responsive-xl font-bold text-foreground">
-              {windDirectionCardinal || "CALM"}
-            </div>
-            <div className="text-responsive-md text-muted-foreground">
-              {formatDirection(windDirection)}
-            </div>
-            <div className="text-responsive-sm text-muted-foreground mt-1">
-              {getWindDescription(windSpeed || 0)}
             </div>
           </div>
         </div>

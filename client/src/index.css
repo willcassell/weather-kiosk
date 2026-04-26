@@ -70,8 +70,12 @@
 
 @layer components {
   .weather-card {
-    @apply bg-card rounded-lg border border-border p-2 h-full flex flex-col;
-    /* Vertical centering - header at top, content centered, grow to fill */
+    @apply rounded-lg p-2 h-full flex flex-col;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
   }
   
   .weather-card-content {
@@ -100,6 +104,30 @@
     @apply text-primary h-4 w-4;
   }
   
+  .glass-l1 {
+    background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+  }
+  .glass-l2 {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  }
+  .glass-l3 {
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  }
+
   /* Scale up icons for larger screens */
   @screen lg {
     .weather-card-icon {

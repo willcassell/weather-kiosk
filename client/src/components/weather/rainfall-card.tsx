@@ -29,7 +29,7 @@ export default function RainfallCard({ todayRain, yesterdayRain, preferences }: 
       <div className="weather-card-content">
         <div className="flex items-center justify-between space-x-2 w-full">
           {/* Today's rainfall */}
-          <div className="text-center flex-1">
+          <div className="text-left">
             <div className="text-responsive-xl font-bold text-cyan-400">
               {formatRainParts(todayRain).value}
               <sup className="text-[0.5em] ml-0.5">
@@ -39,10 +39,8 @@ export default function RainfallCard({ todayRain, yesterdayRain, preferences }: 
             <div className="text-responsive-sm text-muted-foreground">Today</div>
           </div>
 
-          <div className="w-px h-8 lg:h-10 xl:h-12 2xl:h-16 bg-border"></div>
-
           {/* Yesterday's rainfall */}
-          <div className="text-center flex-1">
+          <div className="text-right">
             <div className="text-responsive-xl font-bold text-blue-300">
               {formatRainParts(yesterdayRain).value}
               <sup className="text-[0.5em] ml-0.5">

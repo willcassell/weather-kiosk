@@ -7,6 +7,7 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { randomBytes } from "crypto";
 import * as backgroundJobs from "./background-jobs.js";
 
 
@@ -49,7 +50,7 @@ if (!sessionSecret || sessionSecret.length < 32) {
   // In development, generate a temporary random secret
   console.warn("⚠️  WARNING: Using auto-generated session secret for development only");
   console.warn("⚠️  Generate a permanent secret with: openssl rand -hex 32");
-  sessionSecret = require('crypto').randomBytes(32).toString('hex');
+  sessionSecret = randomBytes(32).toString('hex');
 }
 
 app.use((req, res, next) => {
