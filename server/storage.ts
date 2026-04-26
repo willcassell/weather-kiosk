@@ -15,7 +15,7 @@ export interface IStorage {
   getWeatherObservations(stationId: string, hours: number): Promise<WeatherObservation[]>;
   getWeatherObservationsSince(stationId: string, since: Date): Promise<WeatherObservation[]>;
   getDailyTemperatureExtremes(stationId: string, date: Date): Promise<{ high: number; low: number; highTime: Date; lowTime: Date } | null>;
-  getRecentLightningData(stationId: string, since: Date): Promise<{ timestamp: Date; distance: number } | null>;
+  getRecentLightningData(stationId: string, since: Date): Promise<{ timestamp: Date; distance: number | null } | null>;
 
   getLatestThermostatData(): Promise<ThermostatData[]>;
   saveThermostatData(data: InsertThermostatData): Promise<ThermostatData>;
@@ -290,12 +290,11 @@ export class MemStorage implements IStorage {
     };
   }
 
-  async getRecentLightningData(stationId: string, since: Date): Promise<{ timestamp: Date; distance: number } | null> {
+  async getRecentLightningData(stationId: string, since: Date): Promise<{ timestamp: Date; distance: number | null } | null> {
     const observations = this.weatherObservations.get(stationId) || [];
     const recentObservations = observations.filter(obs =>
       obs.timestamp.getTime() >= since.getTime() &&
-      obs.lightningStrikeCount && obs.lightningStrikeCount > 0 &&
-      obs.lightningStrikeDistance !== null
+      obs.lightningStrikeCount && obs.lightningStrikeCount > 0
     );
 
     if (recentObservations.length === 0) return null;
@@ -307,7 +306,7 @@ export class MemStorage implements IStorage {
 
     return {
       timestamp: mostRecent.timestamp,
-      distance: mostRecent.lightningStrikeDistance!
+      distance: mostRecent.lightningStrikeDistance ?? null
     };
   }
 
@@ -635,7 +634,7 @@ export class PostgreSQLStorage implements IStorage {
     }
   }
 
-  async getRecentLightningData(stationId: string, since: Date): Promise<{ timestamp: Date; distance: number } | null> {
+  async getRecentLightningData(stationId: string, since: Date): Promise<{ timestamp: Date; distance: number | null } | null> {
     try {
       const result = await this.db
         .select()
@@ -644,20 +643,19 @@ export class PostgreSQLStorage implements IStorage {
           and(
             eq(weatherObservations.stationId, stationId),
             gte(weatherObservations.timestamp, since),
-            sql`${weatherObservations.lightningStrikeCount} > 0`,
-            sql`${weatherObservations.lightningStrikeDistance} IS NOT NULL`
+            sql`${weatherObservations.lightningStrikeCount} > 0`
           )
         )
         .orderBy(desc(weatherObservations.timestamp))
         .limit(1);
 
-      if (!result[0] || !result[0].lightningStrikeDistance) {
+      if (!result[0]) {
         return null;
       }
 
       return {
         timestamp: result[0].timestamp,
-        distance: result[0].lightningStrikeDistance
+        distance: result[0].lightningStrikeDistance ?? null
       };
     } catch (error) {
       console.error("Error getting recent lightning data:", error);

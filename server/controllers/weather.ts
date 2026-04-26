@@ -215,12 +215,14 @@ export async function fetchWeatherFlowData(): Promise<any> {
 
         const stationName = await fetchStationInfo();
 
-        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const LIGHTNING_RECENT_WINDOW_HOURS = 3;
+        const LIGHTNING_RECENT_WINDOW_MS = LIGHTNING_RECENT_WINDOW_HOURS * 60 * 60 * 1000;
+        const lightningCutoff = new Date(Date.now() - LIGHTNING_RECENT_WINDOW_MS);
         let lightningStrikeTime = null;
         let lightningStrikeDistance = null;
 
         try {
-            const recentLightning = await storage.getRecentLightningData(STATION_ID, twentyFourHoursAgo);
+            const recentLightning = await storage.getRecentLightningData(STATION_ID, lightningCutoff);
             if (recentLightning) {
                 lightningStrikeTime = recentLightning.timestamp;
                 lightningStrikeDistance = recentLightning.distance;
@@ -230,6 +232,27 @@ export async function fetchWeatherFlowData(): Promise<any> {
                 lightningStrikeTime = new Date(latestObs.timestamp * 1000);
                 lightningStrikeDistance = currentConditions.lightning_strike_avg_distance ?
                     Math.round(currentConditions.lightning_strike_avg_distance * 0.621371 * 10) / 10 : null;
+            }
+        }
+
+        // Prefer WeatherFlow current_conditions lightning data
+        if (currentConditions.lightning_strike_count_last_3hr > 0) {
+            if (currentConditions.lightning_strike_last_epoch) {
+                const lastEpoch = new Date(currentConditions.lightning_strike_last_epoch * 1000);
+                if (lastEpoch.getTime() >= lightningCutoff.getTime()) {
+                    lightningStrikeTime = lastEpoch;
+                    lightningStrikeDistance = currentConditions.lightning_strike_last_distance
+                        ? Math.round(currentConditions.lightning_strike_last_distance * 0.621371 * 10) / 10
+                        : null;
+                }
+            } else if (!lightningStrikeTime) {
+                // Count exists but no epoch - use latest observation time if available
+                if (latestObs) {
+                    lightningStrikeTime = new Date(latestObs.timestamp * 1000);
+                }
+                lightningStrikeDistance = currentConditions.lightning_strike_last_distance
+                    ? Math.round(currentConditions.lightning_strike_last_distance * 0.621371 * 10) / 10
+                    : null;
             }
         }
 
