@@ -15,6 +15,7 @@ Real-time weather monitoring dashboard for WeatherFlow Tempest stations with Eco
 - Live at https://weather.dukestv.cc
 
 ## Recent Changes
+- 2026-04-26: Indoor Climate overhaul — fit 720p viewport, clear zone hierarchy, delta status, explicit Target labels, lucide icons
 - 2026-04-26: Complete lightning detection overhaul (time-based active state, severity colors, shared helpers)
 - 2026-04-26: Backend lightning: 3-hour window, no distance requirement, WeatherFlow forecast fields preferred
 - 2026-04-26: Radar fallback overlay ("Live radar temporarily unavailable" with glass morphism)
@@ -27,6 +28,8 @@ Real-time weather monitoring dashboard for WeatherFlow Tempest stations with Eco
 - **WeatherFlow has separate schemas for obs vs forecast** — `station_pressure` was optional in CurrentConditions but required in ObsData. Both need to tolerate missing fields independently
 - **Lightning distance is unreliable** — Strike count/time can exist without distance. Never gate lightning detection on distance presence
 - **Cross-origin iframe errors are unreliable** — Windy radar embed won't fire `onerror` consistently. Use a 12s timeout fallback instead
+- **Don't use generic card centering for complex content** — `weather-card-content` with `items-center justify-center` works for simple metrics but breaks for multi-zone thermostat cards. Use content-specific layout classes instead
+- **Flex ratios must be viewport-tested** — `flex-[2.3]` looked fine at 1080p but clipped at 720p. Always verify kiosk layouts at the actual target resolution
 
 ## Next Steps
 - Dependency audit (15 vulnerabilities, including 8 high severity)
