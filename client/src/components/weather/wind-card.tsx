@@ -70,25 +70,28 @@ export default function WindCard({
               </span>
             </div>
           </div>
-          {/* Right: Direction label ABOVE compass, both centered */}
-          <div className="flex flex-col items-center gap-1">
-            <div className="text-[18px] font-semibold text-cyan-400">
-              {windDirectionCardinal || "CALM"}
-            </div>
-            <div className="relative w-12 h-12 rounded-full border-2 border-primary/30 bg-primary/10">
-              <div className="absolute inset-1 flex items-center justify-center">
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 text-[8px] font-bold text-muted-foreground">N</div>
-                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 text-[8px] font-bold text-muted-foreground">E</div>
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-[8px] font-bold text-muted-foreground">S</div>
-                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 text-[8px] font-bold text-muted-foreground">W</div>
+          {/* Center: Compass rose */}
+          <div className="flex-shrink-0">
+            <div className="relative w-16 h-16 lg:w-20 lg:h-20 xl:w-24 xl:h-24 rounded-full border-2 border-primary/30 bg-primary/10">
+              <div className="absolute inset-2 flex items-center justify-center">
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 text-[9px] lg:text-[10px] font-bold text-muted-foreground">N</div>
+                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 text-[9px] lg:text-[10px] font-bold text-muted-foreground">E</div>
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-[9px] lg:text-[10px] font-bold text-muted-foreground">S</div>
+                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 text-[9px] lg:text-[10px] font-bold text-muted-foreground">W</div>
               </div>
               <Navigation
-                className="absolute inset-0 m-auto h-6 w-6 text-cyan-400 drop-shadow-lg"
+                className="absolute inset-0 m-auto h-8 w-8 lg:h-10 lg:w-10 xl:h-14 xl:w-14 text-cyan-400 drop-shadow-lg"
                 style={{
                   transform: `rotate(${(windDirection ?? 0) - 45}deg)`,
                   filter: 'drop-shadow(0 0 8px rgba(34, 211, 238, 0.6))'
                 }}
               />
+            </div>
+          </div>
+          {/* Right: Direction */}
+          <div className="text-right">
+            <div className="text-responsive-xl font-bold text-foreground">
+              {windDirectionCardinal || "CALM"}
             </div>
           </div>
         </div>

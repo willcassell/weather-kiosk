@@ -158,15 +158,15 @@ export default function ThermostatCard({ thermostats, isLoading, isStale, error,
                       </>
                     )}
                   </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    <span className="opacity-70">Target: </span>
-                    <span className="text-foreground/80">
+                  <div className="text-right">
+                    <div className="text-[10px] text-muted-foreground/70 uppercase tracking-wide">Target</div>
+                    <div className="text-[18px] font-bold text-foreground/90 leading-none">
                       {preferences ? (
                         <TemperatureDisplay temperature={thermostat.targetTemp} preferences={preferences} decimals={0} />
                       ) : (
                         <>{thermostat.targetTemp}°F</>
                       )}
-                    </span>
+                    </div>
                   </div>
                 </div>
 

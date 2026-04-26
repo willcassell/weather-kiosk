@@ -48,7 +48,7 @@ export default function LightningCard({
         <div className="flex items-center justify-between space-x-3 w-full">
           {/* Left - Status */}
           <div className="text-left">
-            <div className={`text-responsive-lg font-bold ${hasRecentLightning ? severityColor : 'text-muted-foreground'}`}>
+            <div className={`font-bold ${hasRecentLightning ? `text-responsive-lg ${severityColor}` : 'text-responsive-sm text-muted-foreground'}`}>
               {hasRecentLightning ? 'Detected' : 'No recent strikes'}
             </div>
             <div className="text-responsive-sm text-muted-foreground">Activity</div>
