@@ -114,3 +114,6 @@ credentials.json
 
 # Test/debug scripts
 test-*.js
+
+# Auto-deploy runtime artifacts (logs/state from scripts/auto-deploy.sh)
+.auto-deploy/
