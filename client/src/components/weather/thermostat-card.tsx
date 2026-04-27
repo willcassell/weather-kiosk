@@ -129,9 +129,9 @@ export default function ThermostatCard({ thermostats, isLoading, isStale, error,
             const delta = getDeltaInfo(thermostat.temperature, thermostat.targetTemp);
 
             return (
-              <div key={thermostat.id} className="glass-l3 thermostat-zone-card">
+              <div key={thermostat.id} className="glass-l3 thermostat-zone-card flex flex-col">
                 {/* Row 1: Zone name + Humidity */}
-                <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     {getZoneIcon(thermostat.name)}
                     <span className="text-[12px] font-semibold text-foreground/90 tracking-wide">
@@ -141,43 +141,48 @@ export default function ThermostatCard({ thermostats, isLoading, isStale, error,
                   {thermostat.humidity != null && (
                     <div className="flex items-center gap-1 text-[11px] text-blue-300/80">
                       <Droplets className="h-3 w-3" />
-                      <span>{thermostat.humidity}%</span>
+                      <span>
+                        {thermostat.humidity}
+                        <sup className="text-[0.5em] ml-0.5">%</sup>
+                      </span>
                     </div>
                   )}
                 </div>
 
-                {/* Row 2: Current temp (primary) + Target */}
-                <div className="flex items-baseline justify-between">
-                  <div className="text-[22px] font-medium text-foreground leading-none">
+                {/* Center: Big current temp + delta line */}
+                <div className="flex flex-col items-center justify-center flex-1 py-0.5">
+                  <div className="font-bold text-foreground leading-none tracking-tight text-[clamp(24px,4.2vh,38px)]">
                     {preferences ? (
                       <TemperatureDisplay temperature={thermostat.temperature} preferences={preferences} decimals={1} />
                     ) : (
                       <>
-                        {thermostat.temperature.toFixed(1)}
-                        <sup className="text-[0.5em] ml-0.5">°F</sup>
+                        {Math.trunc(thermostat.temperature)}
+                        <sup className="text-[0.5em] ml-0.5">
+                          .{Math.round((thermostat.temperature % 1) * 10)}°F
+                        </sup>
                       </>
                     )}
                   </div>
-                  <div className="text-right">
-                    <div className="text-[10px] text-muted-foreground/70 uppercase tracking-wide">Target</div>
-                    <div className="text-[18px] font-bold text-foreground/90 leading-none">
+                  <span className={`text-[11px] mt-0.5 ${delta.color}`}>
+                    {delta.text}
+                  </span>
+                </div>
+
+                {/* Footer: Target + HVAC state */}
+                <div className="flex items-center justify-between text-[10px]">
+                  <div className="text-muted-foreground/70 uppercase tracking-wide">
+                    Target{' '}
+                    <span className="text-foreground/85 font-semibold normal-case tracking-normal">
                       {preferences ? (
                         <TemperatureDisplay temperature={thermostat.targetTemp} preferences={preferences} decimals={0} />
                       ) : (
                         <>{thermostat.targetTemp}°F</>
                       )}
-                    </div>
+                    </span>
                   </div>
-                </div>
-
-                {/* Row 3: Delta status + HVAC state */}
-                <div className="flex items-center justify-between mt-1.5">
-                  <span className={`text-[10px] ${delta.color}`}>
-                    {delta.text}
-                  </span>
                   <div className="flex items-center gap-1">
                     {hvac.icon}
-                    <span className={`text-[10px] font-medium ${hvac.color}`}>
+                    <span className={`font-medium ${hvac.color}`}>
                       {hvac.label}
                     </span>
                   </div>

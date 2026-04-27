@@ -15,11 +15,15 @@ export function TemperatureDisplay({
 }: TemperatureDisplayProps) {
   const converted = convertTemperature(temperature, 'fahrenheit', preferences.temperature);
   const symbol = getUnitSymbol(preferences.temperature);
+  const fixed = converted.toFixed(decimals);
+  const [intPart, decPart] = fixed.split('.');
 
   return (
     <span className={className}>
-      {converted.toFixed(decimals)}
-      <sup className="text-[0.5em] ml-0.5">{symbol}</sup>
+      {intPart}
+      <sup className="text-[0.5em] ml-0.5">
+        {decPart ? `.${decPart}` : ''}{symbol}
+      </sup>
     </span>
   );
 }

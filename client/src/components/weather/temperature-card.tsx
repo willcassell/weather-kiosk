@@ -60,30 +60,30 @@ export default function TemperatureCard({
 
           {/* Right - Daily High/Low */}
           <div className="text-right">
-            <div className="flex flex-col space-y-1">
-              <div className="flex items-center space-x-1 justify-end">
-                <span className="text-[16px] text-red-400">&#9650;</span>
+            <div className="flex flex-col space-y-1.5">
+              <div className="flex items-center space-x-1.5 justify-end">
+                <span className="text-[20px] text-red-400">&#9650;</span>
                 <div className="flex flex-col items-end">
-                  <span className="text-[14px] font-medium text-red-400">
+                  <span className="text-[20px] font-bold text-red-400 leading-none">
                     {highTemp !== undefined ? (
                       <TemperatureDisplay temperature={highTemp} preferences={preferences} decimals={1} />
                     ) : "--"}
                   </span>
                   {highTempTime && (
-                    <span className="text-[11px] text-muted-foreground">{formatTime(highTempTime)}</span>
+                    <span className="text-[11px] text-muted-foreground mt-0.5">{formatTime(highTempTime)}</span>
                   )}
                 </div>
               </div>
-              <div className="flex items-center space-x-1 justify-end">
-                <span className="text-[16px] text-blue-400">&#9660;</span>
+              <div className="flex items-center space-x-1.5 justify-end">
+                <span className="text-[20px] text-blue-400">&#9660;</span>
                 <div className="flex flex-col items-end">
-                  <span className="text-[14px] font-medium text-blue-400">
+                  <span className="text-[20px] font-bold text-blue-400 leading-none">
                     {lowTemp !== undefined ? (
                       <TemperatureDisplay temperature={lowTemp} preferences={preferences} decimals={1} />
                     ) : "--"}
                   </span>
                   {lowTempTime && (
-                    <span className="text-[11px] text-muted-foreground">{formatTime(lowTempTime)}</span>
+                    <span className="text-[11px] text-muted-foreground mt-0.5">{formatTime(lowTempTime)}</span>
                   )}
                 </div>
               </div>

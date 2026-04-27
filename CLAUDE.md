@@ -15,6 +15,7 @@ Real-time weather monitoring dashboard for WeatherFlow Tempest stations with Eco
 - Live at https://weather.dukestv.cc
 
 ## Recent Changes
+- 2026-04-27: Typography pass — split-decimal superscripts on all temps + humidity (e.g. `67` big + `.5°F` small sup), bigger/bolder daily high/low (14px med → 20px bold), centered big current-temp in thermostat zone cards with viewport-clamped sizing `clamp(24px,4.2vh,38px)`
 - 2026-04-26: Indoor Climate overhaul — fit 720p viewport, clear zone hierarchy, delta status, explicit Target labels, lucide icons
 - 2026-04-26: Complete lightning detection overhaul (time-based active state, severity colors, shared helpers)
 - 2026-04-26: Backend lightning: 3-hour window, no distance requirement, WeatherFlow forecast fields preferred
@@ -30,6 +31,9 @@ Real-time weather monitoring dashboard for WeatherFlow Tempest stations with Eco
 - **Cross-origin iframe errors are unreliable** — Windy radar embed won't fire `onerror` consistently. Use a 12s timeout fallback instead
 - **Don't use generic card centering for complex content** — `weather-card-content` with `items-center justify-center` works for simple metrics but breaks for multi-zone thermostat cards. Use content-specific layout classes instead
 - **Flex ratios must be viewport-tested** — `flex-[2.3]` looked fine at 1080p but clipped at 720p. Always verify kiosk layouts at the actual target resolution
+- **`TemperatureDisplay` is the single source of truth for all temp rendering** — every °F on the dashboard goes through it. Change formatting once there and it ripples through current temp, feels-like, high/low, dew point, and both thermostat zones. Don't reintroduce inline `toFixed(1)` calls in cards
+- **Use `text-[clamp(min, vh, max)]` for kiosk-prominent values, not fixed px** — fixed sizes look great at one viewport and wrong at the other. Vh-based clamps absorb the 720p ↔ 1080p gap automatically. Prefer `vh` over `vw` because the kiosk is height-constrained
+- **The dashboard's flex column overflows ~65px at 720p even on baseline** — sum of card content exceeds the available height. The bottom of indoor-climate cards has been clipped on production all along. Don't blame layout regressions on changes without measuring scrollHeight vs clientHeight on the section first
 
 ## Next Steps
 - Dependency audit (15 vulnerabilities, including 8 high severity)
